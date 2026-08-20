@@ -1,0 +1,12 @@
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { api } from '@/lib/api';
+import { useCommunity } from '@/store/community';
+import { Avatar, EmptyState, Header, Muted, Screen } from '@/components/UI';
+import { colors } from '@/theme';
+import type { Conversation } from '@/types';
+
+export default function Chat(){const c=useCommunity(s=>s.current);const{data=[]}=useQuery<Conversation[]>({queryKey:['conversations',c?.Id],enabled:!!c,queryFn:async()=>(await api.get(`/communities/${c!.Id}/conversations`)).data});return <Screen scroll><Header title="Chats" subtitle={c?.Name||'Select a community first'} right={c?<Pressable onPress={()=>router.push(`/community/${c.Id}/manage`)} style={styles.add}><Ionicons name="add" size={23} color={colors.primary}/></Pressable>:undefined}/>{!c?<EmptyState icon="chatbubbles-outline" title="No community selected" body="Open a community from Home or Communities to see its chats."/>:!data.length?<EmptyState icon="chatbubble-ellipses-outline" title="No conversations yet" body="Create a chat group from the Admin Centre."/>:data.map((x,i)=><Pressable key={x.Id} onPress={()=>router.push(`/chat/${x.Id}`)} style={styles.row}><Avatar name={x.Name} backgroundColor={i===0?colors.primary:colors.navy}/><View style={{flex:1,borderBottomWidth:1,borderBottomColor:colors.border,paddingBottom:14}}><View style={styles.top}><Text style={styles.name}>{x.Name}</Text><Text style={styles.time}>{i===0?'Now':'Recent'}</Text></View><View style={styles.top}><Muted style={{flex:1}}>{x.LastMessage||'No messages yet. Start the conversation.'}</Muted>{i===0&&x.LastMessage?<View style={styles.unread}><Text style={styles.unreadText}>1</Text></View>:null}</View></View></Pressable>)}</Screen>}
+const styles=StyleSheet.create({add:{width:38,height:38,borderRadius:19,backgroundColor:colors.primarySoft,alignItems:'center',justifyContent:'center'},row:{flexDirection:'row',gap:12,alignItems:'center',paddingVertical:8},top:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},name:{fontSize:15,fontWeight:'900',color:colors.text,flex:1},time:{fontSize:11,color:colors.muted},unread:{minWidth:20,height:20,borderRadius:10,backgroundColor:colors.primary,alignItems:'center',justifyContent:'center',paddingHorizontal:6},unreadText:{fontSize:10,color:'#fff',fontWeight:'900'}})

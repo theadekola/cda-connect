@@ -1,0 +1,7 @@
+import { useState } from 'react';
+import { Alert } from 'react-native';
+import { router } from 'expo-router';
+import { api } from '@/lib/api';
+import { useAuth } from '@/store/auth';
+import { Button, Header, Input, Screen } from '@/components/UI';
+export default function ProfileEdit(){const{user,accessToken,refreshToken,setSession}=useAuth();const[firstName,setFirstName]=useState(user?.FirstName||'');const[lastName,setLastName]=useState(user?.LastName||'');const[phone,setPhone]=useState(user?.Phone||'');const[loading,setLoading]=useState(false);async function save(){try{setLoading(true);await api.patch('/me',{firstName:firstName.trim(),lastName:lastName.trim(),phone:phone.trim()||null});const updated=(await api.get('/me')).data;if(accessToken&&refreshToken)await setSession(updated,accessToken,refreshToken);Alert.alert('Profile updated');(router.canGoBack()?router.back():router.replace('/'))}catch(e:any){Alert.alert('Unable to update profile',e.response?.data?.error??e.message)}finally{setLoading(false)}}return <Screen scroll><Header title="Edit Profile" subtitle="Update your personal details"/><Input placeholder="First name" value={firstName} onChangeText={setFirstName}/><Input placeholder="Last name" value={lastName} onChangeText={setLastName}/><Input placeholder="Phone number" keyboardType="phone-pad" value={phone} onChangeText={setPhone}/><Button title="Save changes" loading={loading} disabled={firstName.trim().length<2||lastName.trim().length<2} onPress={save}/></Screen>}
