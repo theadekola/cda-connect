@@ -40,10 +40,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.cdaconnect"
+      "bundleIdentifier": "com.cdaconnect.app"
     },
     "android": {
-      "package": "com.example.cdaconnect"
+      "package": "com.cdaconnect.app"
     },
     "experiments": {
       "typedRoutes": true
@@ -53,7 +53,7 @@
       "output": "single",
       "name": "CDA Connect",
       "shortName": "CDA Connect",
-      "themeColor": "#0F2C59",
+      "themeColor": "#0F2537",
       "backgroundColor": "#F8FAFC"
     }
   }

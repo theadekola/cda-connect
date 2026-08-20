@@ -14,7 +14,7 @@ export default function Login(){
     <Pressable onPress={()=>(router.canGoBack()?router.back():router.replace('/'))} style={styles.back}><Ionicons name="chevron-back" size={24} color={colors.text}/></Pressable>
     <View style={styles.logo}><Ionicons name="people" size={30} color="#fff"/></View>
     <Text style={styles.title}>Welcome Back! 👋</Text><Muted>Login to continue to your communities.</Muted>
-    <Text style={styles.label}>Email</Text><Input value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="adekola@example.com"/>
+    <Text style={styles.label}>Email</Text><Input value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="you@example.com"/>
     <Text style={styles.label}>Password</Text>
     <Input value={password} onChangeText={setPassword} secureTextEntry placeholder="Enter your password"/>
     <Button title="Login" loading={loading} onPress={submit}/>
