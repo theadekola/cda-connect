@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.expo/
+frontend/android/
+frontend/ios/
+frontend/.env
+backend/.env
+backend/.env.production
+*.tar.gz

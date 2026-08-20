@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "CDA Connect",
+    "slug": "cda-connect",
+    "scheme": "cdaconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-localization",
+      "expo-document-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CDA Connect accesses your photos and videos only when you choose media to share with your community.",
+          "cameraPermission": "CDA Connect uses your camera only when you choose to create community media.",
+          "microphonePermission": "CDA Connect uses your microphone only when you choose to record audio or video."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow CDA Connect to record voice notes you choose to share.",
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CDA Connect uses your camera to scan membership QR codes and capture community media.",
+          "microphonePermission": "CDA Connect uses your microphone only when you choose to record media.",
+          "recordAudioAndroid": true,
+          "barcodeScannerEnabled": true
+        }
+      ],
+      "expo-calendar"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.cdaconnect"
+    },
+    "android": {
+      "package": "com.example.cdaconnect"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "name": "CDA Connect",
+      "shortName": "CDA Connect",
+      "themeColor": "#0F2C59",
+      "backgroundColor": "#F8FAFC"
+    }
+  }
+}

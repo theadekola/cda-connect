@@ -1,0 +1,26 @@
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Card, Header, Muted, Screen, SectionTitle, useAppTheme } from '@/components/UI';
+import { AppLanguage, TextScale, ThemeMode, useAccessibility } from '@/store/accessibility';
+import { languageNames } from '@/i18n';
+
+const themeModes:ThemeMode[]=['system','light','dark'];
+const textScales:TextScale[]=['normal','large','xlarge'];
+const languages=Object.entries(languageNames) as [AppLanguage,string][];
+
+export default function AccessibilitySettings(){
+ const a=useAccessibility(); const {palette,scale}=useAppTheme();
+ const Row=({label,body,value,onValueChange}:{label:string;body?:string;value:boolean;onValueChange:(v:boolean)=>void})=><View style={[st.row,{borderColor:palette.border,minHeight:a.largeTouchTargets?66:56}]}><View style={{flex:1,paddingRight:12}}><Text allowFontScaling style={[st.label,{color:palette.text,fontSize:15*scale}]}>{label}</Text>{body?<Muted>{body}</Muted>:null}</View><Switch accessibilityLabel={label} value={value} onValueChange={onValueChange} trackColor={{true:palette.primary}}/></View>;
+ return <Screen scroll><Header title="Accessibility & Language" subtitle="Make CDA Connect comfortable for you" right={<Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={()=>(router.canGoBack()?router.back():router.replace('/'))} style={st.icon}><Ionicons name="close" size={24} color={palette.text}/></Pressable>}/>
+ <SectionTitle>Appearance</SectionTitle><Card>
+  <Text style={[st.groupLabel,{color:palette.text}]}>Theme</Text><View style={st.chips}>{themeModes.map(x=><Pressable key={x} accessibilityRole="button" accessibilityState={{selected:a.themeMode===x}} onPress={()=>a.update({themeMode:x})} style={[st.chip,{borderColor:palette.border,backgroundColor:a.themeMode===x?palette.primarySoft:palette.surface,minHeight:a.largeTouchTargets?48:40}]}><Text style={{color:a.themeMode===x?palette.primary:palette.text,fontWeight:'700'}}>{x[0].toUpperCase()+x.slice(1)}</Text></Pressable>)}</View>
+  <Row label="High contrast" body="Stronger text and border contrast" value={a.highContrast} onValueChange={v=>a.update({highContrast:v})}/>
+  <Text style={[st.groupLabel,{color:palette.text,marginTop:14}]}>Text size</Text><View style={st.chips}>{textScales.map(x=><Pressable key={x} accessibilityRole="button" accessibilityState={{selected:a.textScale===x}} onPress={()=>a.update({textScale:x})} style={[st.chip,{borderColor:palette.border,backgroundColor:a.textScale===x?palette.primarySoft:palette.surface,minHeight:a.largeTouchTargets?48:40}]}><Text style={{color:a.textScale===x?palette.primary:palette.text,fontWeight:'700'}}>{x==='xlarge'?'Extra large':x[0].toUpperCase()+x.slice(1)}</Text></Pressable>)}</View>
+  <Row label="Larger touch targets" body="Makes important controls easier to tap" value={a.largeTouchTargets} onValueChange={v=>a.update({largeTouchTargets:v})}/><Row label="Reduce motion" body="Uses less animation and movement" value={a.reducedMotion} onValueChange={v=>a.update({reducedMotion:v})}/>
+ </Card>
+ <SectionTitle>Accessible content</SectionTitle><Card><Row label="Captions" body="Show captions and descriptive text for media when available" value={a.captionsEnabled} onValueChange={v=>a.update({captionsEnabled:v})}/><Row label="Voice-note transcription" body="Show transcripts for voice notes when available" value={a.autoTranscripts} onValueChange={v=>a.update({autoTranscripts:v})}/><Row label="Text-to-speech" body="Enable Listen actions for important text" value={a.textToSpeech} onValueChange={v=>a.update({textToSpeech:v})}/></Card>
+ <SectionTitle>Language & understanding</SectionTitle><Card><Text style={[st.groupLabel,{color:palette.text}]}>Preferred language</Text><View style={st.languageList}>{languages.map(([code,name])=><Pressable key={code} accessibilityRole="radio" accessibilityState={{checked:a.language===code}} onPress={()=>a.update({language:code})} style={[st.lang,{borderColor:palette.border,minHeight:a.largeTouchTargets?52:44}]}><Text style={{color:palette.text,flex:1}}>{name}</Text>{a.language===code?<Ionicons name="checkmark-circle" size={22} color={palette.primary}/>:null}</Pressable>)}</View><Row label="Automatic translation" body="Translate posts, comments and announcements into your preferred language" value={a.autoTranslate} onValueChange={v=>a.update({autoTranslate:v})}/><Row label="Simple-language mode" body="Offer easier-to-read versions of important community information" value={a.simpleLanguage} onValueChange={v=>a.update({simpleLanguage:v})}/></Card>
+ </Screen>
+}
+const st=StyleSheet.create({row:{flexDirection:'row',alignItems:'center',borderBottomWidth:1,paddingVertical:8},label:{fontWeight:'800'},groupLabel:{fontWeight:'800',marginBottom:8},chips:{flexDirection:'row',flexWrap:'wrap',gap:8,marginBottom:8},chip:{paddingHorizontal:14,borderWidth:1,borderRadius:999,alignItems:'center',justifyContent:'center'},icon:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center'},languageList:{marginBottom:10},lang:{flexDirection:'row',alignItems:'center',borderBottomWidth:1,paddingVertical:8}})

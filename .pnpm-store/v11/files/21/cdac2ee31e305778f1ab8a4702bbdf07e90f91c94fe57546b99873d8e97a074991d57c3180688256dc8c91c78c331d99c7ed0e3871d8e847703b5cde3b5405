@@ -1,0 +1,217 @@
+/**
+ * Geopolitical Zones of Nigeria
+ */
+type GeopoliticalZone = 'North Central' | 'North East' | 'North West' | 'South East' | 'South South' | 'South West';
+/**
+ * Geographic coordinates (WGS84)
+ */
+interface Coordinates {
+    /** Latitude in decimal degrees */
+    latitude: number;
+    /** Longitude in decimal degrees */
+    longitude: number;
+}
+/**
+ * Bounding box [minLng, minLat, maxLng, maxLat]
+ */
+type BoundingBox = [number, number, number, number];
+/**
+ * Represents a Nigerian State or the Federal Capital Territory
+ */
+interface State {
+    /** Unique identifier slug (e.g., 'lagos', 'kano', 'fct') */
+    id: string;
+    /** Official state name */
+    name: string;
+    /** State capital city */
+    capital: string;
+    /** Geopolitical zone */
+    zone: GeopoliticalZone;
+    /** Centroid coordinates */
+    coordinates?: Coordinates;
+    /** Bounding box [minLng, minLat, maxLng, maxLat] */
+    bbox?: BoundingBox;
+    /** Estimated population (latest available data) */
+    population?: number;
+    /** Land area in square kilometers */
+    area?: number;
+    /** ISO 3166-2:NG code (e.g., 'NG-LA' for Lagos) */
+    isoCode?: string;
+    /** List of LGA IDs within this state */
+    lgaIds: string[];
+}
+/**
+ * Represents a Local Government Area (LGA)
+ */
+interface LGA {
+    /** Unique identifier slug (e.g., 'ikeja', 'kano-municipal') */
+    id: string;
+    /** Official LGA name */
+    name: string;
+    /** Parent state ID */
+    stateId: string;
+    /** Centroid coordinates */
+    coordinates?: Coordinates;
+    /** Bounding box [minLng, minLat, maxLng, maxLat] */
+    bbox?: BoundingBox;
+    /** LGA headquarters/administrative center */
+    headquarters?: string;
+    /** Estimated population (latest available data) */
+    population?: number;
+    /** Land area in square kilometers */
+    area?: number;
+}
+/**
+ * Combined location type for search results
+ */
+interface Location {
+    /** Type discriminator */
+    type: 'state' | 'lga';
+    /** The state or LGA data */
+    data: State | LGA;
+}
+/**
+ * Options for searching locations
+ */
+interface SearchOptions {
+    /** Maximum number of results to return (default: 10) */
+    limit?: number;
+    /** Minimum score threshold for fuzzy matching (0-1, default: 0.3) */
+    threshold?: number;
+    /** Filter by location type */
+    type?: 'state' | 'lga' | 'all';
+    /** Filter by state ID (for LGA searches) */
+    stateId?: string;
+}
+/**
+ * Search result with match score
+ */
+interface SearchResult<T = State | LGA> {
+    /** The matched item */
+    item: T;
+    /** Match score (0-1, higher is better match) */
+    score: number;
+    /** Matched field and indices */
+    matches?: Array<{
+        key: string;
+        value: string;
+        indices: Array<[number, number]>;
+    }>;
+}
+/**
+ * Complete Nigeria geographic data
+ */
+interface NigeriaGeoData {
+    /** All 36 states + FCT */
+    states: State[];
+    /** All 774 LGAs */
+    lgas: LGA[];
+    /** Metadata about the dataset */
+    meta: {
+        version: string;
+        lastUpdated: string;
+        sources: string[];
+    };
+}
+
+/**
+ * Search for states matching the query
+ * @param query - Search string
+ * @param options - Search options
+ * @returns Array of matching states with scores
+ */
+declare function searchStates(query: string, options?: Omit<SearchOptions, 'type' | 'stateId'>): SearchResult<State>[];
+/**
+ * Search for LGAs matching the query
+ * @param query - Search string
+ * @param options - Search options
+ * @returns Array of matching LGAs with scores
+ */
+declare function searchLGAs(query: string, options?: Omit<SearchOptions, 'type'>): SearchResult<LGA>[];
+/**
+ * Search for both states and LGAs matching the query
+ * @param query - Search string
+ * @param options - Search options
+ * @returns Array of matching locations with scores
+ */
+declare function searchLocations(query: string, options?: SearchOptions): SearchResult<State | LGA>[];
+
+/**
+ * @nigeria-geo/core
+ * The definitive geographic data for Nigeria - States, LGAs, and search utilities
+ *
+ * @packageDocumentation
+ */
+
+/**
+ * Get all Nigerian states (36 states + FCT)
+ * @returns Array of all states
+ */
+declare function getStates(): State[];
+/**
+ * Get a state by its ID
+ * @param id - State ID (slug format, e.g., 'lagos', 'fct')
+ * @returns The state or undefined if not found
+ */
+declare function getStateById(id: string): State | undefined;
+/**
+ * Get a state by its name (case-insensitive)
+ * @param name - State name (e.g., 'Lagos', 'Federal Capital Territory')
+ * @returns The state or undefined if not found
+ */
+declare function getStateByName(name: string): State | undefined;
+/**
+ * Get all states in a geopolitical zone
+ * @param zone - The geopolitical zone
+ * @returns Array of states in that zone
+ */
+declare function getStatesByZone(zone: 'North Central' | 'North East' | 'North West' | 'South East' | 'South South' | 'South West'): State[];
+/**
+ * Get all LGAs
+ * @returns Array of all 774 LGAs
+ */
+declare function getLGAs(): LGA[];
+/**
+ * Get an LGA by its ID
+ * @param id - LGA ID (slug format, e.g., 'ikeja', 'kano-municipal')
+ * @returns The LGA or undefined if not found
+ */
+declare function getLGAById(id: string): LGA | undefined;
+/**
+ * Get all LGAs in a state
+ * @param stateId - State ID
+ * @returns Array of LGAs in that state
+ */
+declare function getLGAsByState(stateId: string): LGA[];
+/**
+ * Get an LGA by its name within a state (case-insensitive)
+ * @param name - LGA name
+ * @param stateId - Parent state ID
+ * @returns The LGA or undefined if not found
+ */
+declare function getLGAByName(name: string, stateId?: string): LGA | undefined;
+/**
+ * Get complete Nigeria geographic data
+ * @returns Object containing all states and LGAs with metadata
+ */
+declare function getAllData(): {
+    states: State[];
+    lgas: LGA[];
+    meta: {
+        version: string;
+        stateCount: number;
+        lgaCount: number;
+    };
+};
+/**
+ * Get the total count of states
+ * @returns Number of states (37 including FCT)
+ */
+declare function getStateCount(): number;
+/**
+ * Get the total count of LGAs
+ * @returns Number of LGAs
+ */
+declare function getLGACount(): number;
+
+export { type BoundingBox, type Coordinates, type GeopoliticalZone, type LGA, type Location, type NigeriaGeoData, type SearchOptions, type SearchResult, type State, getAllData, getLGAById, getLGAByName, getLGACount, getLGAs, getLGAsByState, getStateById, getStateByName, getStateCount, getStates, getStatesByZone, searchLGAs, searchLocations, searchStates };

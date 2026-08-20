@@ -1,0 +1,96 @@
+# @some19ice/nigeria-geo-core
+
+> Complete Nigerian States and LGAs Database for JavaScript & TypeScript
+
+[![npm version](https://img.shields.io/npm/v/@some19ice/nigeria-geo-core.svg)](https://www.npmjs.com/package/@some19ice/nigeria-geo-core)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+All **37 Nigerian states** (36 + FCT) and **774 Local Government Areas** with coordinates, fuzzy search, and full TypeScript support.
+
+## Installation
+
+```bash
+npm install @some19ice/nigeria-geo-core
+# or
+pnpm add @some19ice/nigeria-geo-core
+```
+
+## Quick Start
+
+```typescript
+import {
+  getStates,
+  getStateById,
+  getLGAsByState,
+  searchLocations,
+} from '@some19ice/nigeria-geo-core';
+
+// Get all 37 Nigerian states
+const states = getStates();
+
+// Get Lagos State with capital and coordinates
+const lagos = getStateById('lagos');
+// { id: 'lagos', name: 'Lagos', capital: 'Ikeja', zone: 'South West', ... }
+
+// Get all 20 LGAs in Lagos State
+const lagosLGAs = getLGAsByState('lagos');
+
+// Fuzzy search - handles typos!
+const results = searchLocations('ikeha'); // finds "Ikeja"
+```
+
+## API Reference
+
+### States
+
+| Function | Description |
+|----------|-------------|
+| `getStates()` | Get all 37 Nigerian states |
+| `getStateById(id)` | Get state by slug (e.g., `'lagos'`) |
+| `getStateByName(name)` | Get state by name (case-insensitive) |
+| `getStatesByZone(zone)` | Get states by geopolitical zone |
+| `getStateCount()` | Returns 37 |
+
+### LGAs
+
+| Function | Description |
+|----------|-------------|
+| `getLGAs()` | Get all 774 Nigerian LGAs |
+| `getLGAById(id)` | Get LGA by slug |
+| `getLGAsByState(stateId)` | Get all LGAs in a state |
+| `getLGAByName(name, stateId?)` | Get LGA by name |
+| `getLGACount()` | Returns 774 |
+
+### Search
+
+| Function | Description |
+|----------|-------------|
+| `searchStates(query)` | Fuzzy search Nigerian states |
+| `searchLGAs(query)` | Fuzzy search LGAs |
+| `searchLocations(query)` | Search both states and LGAs |
+
+## Data Structure
+
+**State:**
+- `id` - Slug identifier (e.g., `'lagos'`)
+- `name` - Official name (e.g., `'Lagos'`)
+- `capital` - State capital
+- `zone` - Geopolitical zone (North Central, North East, North West, South East, South South, South West)
+- `coordinates` - Centroid `{ latitude, longitude }`
+- `bbox` - Bounding box `[minLng, minLat, maxLng, maxLat]`
+- `isoCode` - ISO 3166-2:NG code
+
+**LGA:**
+- `id` - Slug identifier
+- `name` - Official name
+- `stateId` - Parent state ID
+- `coordinates` - Centroid
+- `bbox` - Bounding box
+
+## License
+
+MIT © [Some19ice](https://github.com/Some19ice)
+
+---
+
+**Keywords:** Nigeria states list, Nigerian LGAs, Nigeria local government areas, Lagos LGAs, Nigerian states API, Nigeria geography data, Nigerian address database

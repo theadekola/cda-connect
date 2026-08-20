@@ -1,0 +1,3 @@
+import { Linking } from 'react-native';
+import { Button, Card, Header, Muted, Screen, SectionTitle } from '@/components/UI';
+export default function Help(){return <Screen scroll><Header title="Help & Support" subtitle="Get help using CDA Connect"/><SectionTitle>Account access</SectionTitle><Card><Muted>If you cannot access your account, contact your CDA administrator and include the email address used to register.</Muted></Card><SectionTitle>Community support</SectionTitle><Card><Muted>For membership, roles, payments or community decisions, contact an administrator for the relevant community.</Muted></Card><Button title="Compose Support Email" onPress={()=>Linking.openURL('mailto:?subject=CDA%20Connect%20Support')}/></Screen>}

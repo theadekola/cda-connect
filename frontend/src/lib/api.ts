@@ -1,0 +1,4 @@
+import axios from 'axios'; import { useAuth } from '../store/auth';
+export const api=axios.create({baseURL:process.env.EXPO_PUBLIC_API_URL,timeout:15000});
+api.interceptors.request.use(config=>{const token=useAuth.getState().accessToken;if(token)config.headers.Authorization=`Bearer ${token}`;return config;});
+api.interceptors.response.use(r=>r,async error=>{const original=error.config;if(error.response?.status===401&&!original?._retry){const refreshToken=useAuth.getState().refreshToken;if(refreshToken){original._retry=true;try{const r=await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/refresh`,{refreshToken});useAuth.setState({accessToken:r.data.accessToken});await import('./storage').then(s=>s.secureSet('accessToken',r.data.accessToken));original.headers.Authorization=`Bearer ${r.data.accessToken}`;return api(original);}catch{await useAuth.getState().logout();}}}return Promise.reject(error);});
