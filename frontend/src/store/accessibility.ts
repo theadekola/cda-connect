@@ -4,11 +4,12 @@ import { create } from 'zustand';
 export type ThemeMode='system'|'light'|'dark';
 export type TextScale='normal'|'large'|'xlarge';
 export type AppLanguage='en'|'fr'|'es'|'pt'|'ar'|'yo'|'ig'|'ha';
-export type AccentColor='#15803D'|'#2563EB'|'#7C3AED'|'#0891B2'|'#F59E0B'|'#DC2626'|'#DB2777';
+export type AccentColor='#0F8A43'|'#08723A'|'#0F1F44';
 
 export interface AccessibilityPrefs {
   themeMode:ThemeMode;
   highContrast:boolean;
+  boldText:boolean;
   textScale:TextScale;
   reducedMotion:boolean;
   largeTouchTargets:boolean;
@@ -31,8 +32,10 @@ export interface AccessibilityPrefs {
   preferredContentLanguages:AppLanguage[];
 }
 
-const defaults:AccessibilityPrefs={themeMode:'system',highContrast:false,textScale:'normal',reducedMotion:false,largeTouchTargets:true,captionsEnabled:true,autoTranscripts:true,textToSpeech:false,language:'en',autoTranslate:false,simpleLanguage:false,accentColor:'#15803D',compactMode:false,roundCorners:true,showCommunityCovers:true,colorBlindFriendly:false,dateFormat:'DMY',timeFormat:'12',firstDayOfWeek:'Monday',numberFormat:'comma-dot',translateComments:true,preferredContentLanguages:['fr','es']};
-const KEY='cda-connect-accessibility-v1';
+const defaults:AccessibilityPrefs={themeMode:'light',highContrast:false,boldText:false,textScale:'normal',reducedMotion:false,largeTouchTargets:true,captionsEnabled:true,autoTranscripts:true,textToSpeech:false,language:'en',autoTranslate:false,simpleLanguage:false,accentColor:'#0F8A43',compactMode:false,roundCorners:true,showCommunityCovers:true,colorBlindFriendly:false,dateFormat:'DMY',timeFormat:'12',firstDayOfWeek:'Monday',numberFormat:'comma-dot',translateComments:true,preferredContentLanguages:['fr','es']};
+// v2 intentionally resets the old device-specific colour selection. Expo Go and
+// web now start from the same CDA light/green/navy palette on first launch.
+const KEY='cda-connect-accessibility-v2';
 
 type Store=AccessibilityPrefs&{hydrated:boolean;load:()=>Promise<void>;update:(patch:Partial<AccessibilityPrefs>)=>Promise<void>;reset:()=>Promise<void>};
 export const useAccessibility=create<Store>((set,get)=>({

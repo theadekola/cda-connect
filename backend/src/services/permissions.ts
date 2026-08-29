@@ -15,11 +15,21 @@ export async function hasPermission(userId: string, communityId: string, permiss
     SELECT TOP 1 1 ok
     FROM CommunityMembers cm
     JOIN CommunityMemberRoles cmr ON cmr.CommunityMemberId=cm.Id
-    JOIN RolePermissions rp ON rp.RoleId=cmr.RoleId
-    JOIN Permissions p ON p.Id=rp.PermissionId
-    WHERE cm.UserId=@u AND cm.CommunityId=@c AND cm.Status='ACTIVE' AND p.Code=@p`);
+    JOIN Roles r ON r.Id=cmr.RoleId
+    LEFT JOIN RolePermissions rp ON rp.RoleId=cmr.RoleId
+    LEFT JOIN Permissions p ON p.Id=rp.PermissionId
+    WHERE cm.UserId=@u AND cm.CommunityId=@c AND cm.Status='ACTIVE'
+      AND (
+        p.Code=@p
+        OR (@p IN ('MEMBER_ROLE_CHANGE','MEMBER_REMOVE') AND r.Name IN ('Owner','Admin','Moderator'))
+      )`);
   return !!r.recordset[0];
 }
 export async function requirePermission(userId:string, communityId:string, permission:string){
+  const memberContributionPermissions=new Set(['CHAT_CREATE','EVENT_CREATE','OPPORTUNITY_MANAGE']);
+  if(memberContributionPermissions.has(permission)){
+    await requireCommunityMember(userId,communityId);
+    return;
+  }
   if(!(await hasPermission(userId,communityId,permission))) throw new AppError(403,`Missing permission: ${permission}`);
 }

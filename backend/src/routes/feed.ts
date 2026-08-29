@@ -8,7 +8,7 @@ import { audit } from '../services/audit.js';
 import { transformText } from '../services/language.js';
 
 export const feedRouter = Router(); feedRouter.use(requireAuth);
-const postTypes=['TEXT','PHOTO','VIDEO','DOCUMENT','POLL','EVENT','LOST_FOUND','RECOMMENDATION','QUESTION','ALERT','LOCAL_NEWS','VOICE'] as const;
+const postTypes=['TEXT','PHOTO','VIDEO','DOCUMENT','POLL','EVENT','OPPORTUNITY','LOST_FOUND','RECOMMENDATION','QUESTION','ALERT','LOCAL_NEWS','VOICE'] as const;
 const reactionTypes=['LIKE','CELEBRATE','SUPPORT'] as const;
 const parseTags=(text:string)=>[...new Set((text.match(/#[\p{L}\p{N}_-]+/gu)||[]).map(x=>x.slice(1).toLowerCase()).filter(Boolean))].slice(0,20);
 const parseMentions=(text:string)=>[...new Set((text.match(/@[\p{L}\p{N}_.-]+/gu)||[]).map(x=>x.slice(1)).filter(Boolean))].slice(0,20);
