@@ -7,3 +7,8 @@ frontend/.env
 backend/.env
 backend/.env.production
 *.tar.gz
+
+.pnpm-store/
+.pnpm-cache/
+node_modules/
+.codex_known_hosts

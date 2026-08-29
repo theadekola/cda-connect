@@ -37,6 +37,12 @@ const schema = z.object({
   PUSH_PROVIDER_TOKEN: z.string().optional(),
   EMAIL_PROVIDER_URL: z.string().optional(),
   EMAIL_PROVIDER_TOKEN: z.string().optional(),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_FROM_NUMBER: z.string().optional(),
+  SMS_CODE_EXPIRES_MINUTES: z.coerce.number().int().min(2).max(30).default(10),
+  SMS_RESEND_SECONDS: z.coerce.number().int().min(30).max(600).default(60),
+  ALLOW_PHONE_VERIFICATION_BYPASS: z.string().default('false').transform(v => v === 'true'),
   EMERGENCY_BATCH_SIZE: z.coerce.number().default(1000)
 });
 

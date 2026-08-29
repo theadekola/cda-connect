@@ -5,7 +5,7 @@
     "scheme": "cdaconnect",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -40,10 +40,22 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.cdaconnect.app"
+      "bundleIdentifier": "com.cdaconnect.app",
+      "infoPlist": {
+        "UIUserInterfaceStyle": "Light"
+      }
     },
     "android": {
-      "package": "com.cdaconnect.app"
+      "package": "com.cdaconnect.app",
+      "userInterfaceStyle": "light"
+    },
+    "androidStatusBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
+    },
+    "androidNavigationBar": {
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
     },
     "experiments": {
       "typedRoutes": true
@@ -53,8 +65,8 @@
       "output": "single",
       "name": "CDA Connect",
       "shortName": "CDA Connect",
-      "themeColor": "#0F2537",
-      "backgroundColor": "#F8FAFC"
+      "themeColor": "#0F8A43",
+      "backgroundColor": "#FFFFFF"
     }
   }
 }
