@@ -37,11 +37,13 @@ const defaults:AccessibilityPrefs={themeMode:'light',highContrast:false,boldText
 // web now start from the same CDA light/green/navy palette on first launch.
 const KEY='cda-connect-accessibility-v2';
 
-type Store=AccessibilityPrefs&{hydrated:boolean;load:()=>Promise<void>;update:(patch:Partial<AccessibilityPrefs>)=>Promise<void>;reset:()=>Promise<void>};
+type Store=AccessibilityPrefs&{hydrated:boolean;draftLanguage:AppLanguage|null;load:()=>Promise<void>;update:(patch:Partial<AccessibilityPrefs>)=>Promise<void>;selectLanguage:(language:AppLanguage)=>void;saveLanguage:()=>Promise<void>;reset:()=>Promise<void>};
 export const useAccessibility=create<Store>((set,get)=>({
-  ...defaults,hydrated:false,
+  ...defaults,hydrated:false,draftLanguage:null,
   load:async()=>{try{const raw=await secureGet(KEY);set({...defaults,...(raw?JSON.parse(raw):{}),hydrated:true});}catch{set({...defaults,hydrated:true});}},
   update:async(patch)=>{const next={...get(),...patch};set(patch);const persist:Object={};for(const k of Object.keys(defaults)) (persist as any)[k]=(next as any)[k];await secureSet(KEY,JSON.stringify(persist));},
+  selectLanguage:(language)=>set({draftLanguage:language}),
+  saveLanguage:async()=>{const language=get().draftLanguage??get().language;const next={...get(),language,autoTranslate:language!=='en',translateComments:true};set({language,draftLanguage:null,autoTranslate:language!=='en',translateComments:true});const persist:Object={};for(const k of Object.keys(defaults)) (persist as any)[k]=(next as any)[k];await secureSet(KEY,JSON.stringify(persist));},
   reset:async()=>{set(defaults);await secureSet(KEY,JSON.stringify(defaults));}
 }));
 

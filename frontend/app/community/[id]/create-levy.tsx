@@ -8,7 +8,7 @@ import { AmountInput, Avatar, Button, Card, Header, Input, Muted, Screen, useApp
 import { DateField } from '@/components/DateField';
 import { amountNumber } from '@/lib/money';
 
-type Member = { UserId: string; FirstName: string; LastName: string; Email: string };
+type Member = { UserId: string; FirstName: string; LastName: string; Email: string; ProfileImage?: string };
 type Audience = 'ALL' | 'SELECTED';
 
 export default function CreateLevy() {
@@ -45,7 +45,7 @@ export default function CreateLevy() {
       <Label text="Recipients *" color={palette.text} /><Selector value={audience === 'ALL' ? 'All Members' : `${selected.length} Selected Members`} onPress={chooseAudience} palette={palette} />
       <Button title="Create Levy" icon="checkmark-circle-outline" variant="success" disabled={!valid || save.isPending} loading={save.isPending} onPress={() => save.mutate()} />
     </Card>
-    <Modal visible={showMembers} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowMembers(false)}><Screen scroll contentStyle={styles.modalPage}><Header title="Select Members" subtitle="Tick every member who should receive this levy" right={<Button title="Done" onPress={() => setShowMembers(false)} />} />{members.isLoading ? <Muted>Loading members…</Muted> : members.data?.map(member => { const checked = selected.includes(member.UserId); return <Pressable key={member.UserId} accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={() => setSelected(current => checked ? current.filter(value => value !== member.UserId) : [...current, member.UserId])} style={[styles.member, compact && styles.compactMember, { borderBottomColor: palette.border }]}><Ionicons name={checked ? 'checkbox' : 'square-outline'} size={25} color={checked ? palette.primary : palette.muted} /><Avatar name={`${member.FirstName} ${member.LastName}`} size={compact ? 38 : 42} /><View style={styles.flex}><Text style={{ color: palette.text, fontWeight: '900' }}>{member.FirstName} {member.LastName}</Text><Muted numberOfLines={1}>{member.Email}</Muted></View></Pressable>; })}</Screen></Modal>
+    <Modal visible={showMembers} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowMembers(false)}><Screen scroll contentStyle={styles.modalPage}><Header title="Select Members" subtitle="Tick every member who should receive this levy" right={<Button title="Done" onPress={() => setShowMembers(false)} />} />{members.isLoading ? <Muted>Loading members…</Muted> : members.data?.map(member => { const checked = selected.includes(member.UserId); return <Pressable key={member.UserId} accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={() => setSelected(current => checked ? current.filter(value => value !== member.UserId) : [...current, member.UserId])} style={[styles.member, compact && styles.compactMember, { borderBottomColor: palette.border }]}><Ionicons name={checked ? 'checkbox' : 'square-outline'} size={25} color={checked ? palette.primary : palette.muted} /><Avatar name={`${member.FirstName} ${member.LastName}`} uri={member.ProfileImage} size={compact ? 38 : 42} /><View style={styles.flex}><Text style={{ color: palette.text, fontWeight: '900' }}>{member.FirstName} {member.LastName}</Text><Muted numberOfLines={1}>{member.Email}</Muted></View></Pressable>; })}</Screen></Modal>
   </Screen>;
 }
 
