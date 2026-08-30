@@ -14,7 +14,7 @@ export default function Notifications(){
  const q=useQuery<Notification[]>({queryKey:['notifications'],queryFn:async()=>(await api.get('/me/notifications')).data,refetchInterval:30000,refetchOnWindowFocus:true});
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(timer)},[]);
- const visible=useMemo(()=>(q.data||[]).filter(item=>new Date(item.CreatedAt).getTime()>clock-48*60*60*1000),[q.data,clock]);
+ const visible=useMemo(()=>(q.data||[]).filter(item=>new Date(item.CreatedAt).getTime()>clock-336*60*60*1000),[q.data,clock]);
  const groups=useMemo(()=>{const map=new Map<string,Notification[]>();for(const item of visible){const sender=item.NotificationType==='POST'?item.Title.replace(/\s+posted$/i,'').trim():item.Title;const key=`${item.NotificationType}:${sender}`;map.set(key,[...(map.get(key)||[]),item])}return[...map.entries()]},[visible]);
  const open=(n:Notification)=>router.push((n.NotificationType==='EMERGENCY'?`/community/${n.CommunityId}/emergency-command`:n.NotificationType==='EVENT'?`/community/${n.CommunityId}/events`:`/community/${n.CommunityId}/feed`) as any);
  const allIds=visible.map(notificationKey),unread=allIds.filter(id=>!readIds[id]).length;

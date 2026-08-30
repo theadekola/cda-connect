@@ -1,6 +1,6 @@
 export const colors = {
   primary: '#0F8A43', primaryDark: '#08723A', primaryLight: '#EAF7EF', primarySoft: '#EAF7EF',
-  background: '#F7F5F0', backgroundSoft: '#F7F5F0', surface: '#FFFFFF',
+  background: '#FFFFFF', backgroundSoft: '#F8FAFC', surface: '#FFFFFF',
   textPrimary: '#0F1F44', textSecondary: '#64748B', textMuted: '#94A3B8', text: '#0F1F44', muted: '#64748B',
   border: '#E2E8F0',
   success: '#16A34A', successText: '#15803D', successLight: '#DCFCE7', successSoft: '#DCFCE7',
@@ -31,4 +31,5 @@ export const highContrastColors = {
 export const radii = {sm: 8, md: 12, lg: 16, xl: 20, pill: 999};
 export const spacing = {xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32};
 // One restrained type scale is shared across native, mobile web and desktop.
-export const typography = {display: 26, pageTitle: 22, sectionTitle: 17, cardTitle: 16, body: 14, caption: 12, lineHeight: 1.45};
+export const typography = {display: 25, pageTitle: 21, sectionTitle: 17, cardTitle: 15, body: 14, caption: 12, lineHeight: 1.45};
+export const iconSizes = {header:24,action:20,inline:18,feature:32};
