@@ -4,23 +4,25 @@ import {router} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import {Button,Card,Muted,Screen,useAppTheme} from '@/components/UI';
 import {api} from '@/lib/api';
+import {secureGet,secureSet} from '@/lib/storage';
 
 type Access='NOBODY'|'ADMINS'|'MEMBERS';
 type PrivacyState={phoneVisibility:Access;emailVisibility:Access;whoCanMessage:Access;whoCanAddToGroups:Access;showOnlineStatus:boolean;showProfilePhoto:boolean;allowCommunityDiscovery:boolean};
-type Panel='home'|'profile'|'activity'|'personal'|'contact'|'tagging'|'blocked'|'report'|'content'|'comments'|'twofactor';
+type Panel='home'|'profile'|'activity'|'personal'|'location'|'contact'|'tagging'|'blocked'|'report'|'content'|'comments'|'twofactor';
 const initial:PrivacyState={phoneVisibility:'ADMINS',emailVisibility:'ADMINS',whoCanMessage:'MEMBERS',whoCanAddToGroups:'ADMINS',showOnlineStatus:true,showProfilePhoto:true,allowCommunityDiscovery:true};
 const accessLabel:Record<Access,string>={NOBODY:'Only Me',ADMINS:'Friends & Admins',MEMBERS:'Community Members'};
 const menu=[['lock-closed-outline','Privacy & Safety','/privacy'],['notifications-outline','Notifications','/notifications-settings'],['sunny-outline','Appearance','/accessibility'],['language-outline','Language','/language'],['chatbox-outline','Communications','/communications'],['options-outline','Community Preferences','/community-preferences'],['server-outline','Data & Storage','/data-usage'],['shield-checkmark-outline','Security','/security'],['help-circle-outline','Help & Support','/help'],['information-circle-outline','About CDA Connect','/about']] as const;
 
 export default function Privacy(){
  const{palette}=useAppTheme();const{width}=useWindowDimensions();const desktop=Platform.OS==='web'&&width>=900;
- const[p,setP]=useState<PrivacyState>(initial);const[expanded,setExpanded]=useState<Panel|null>(null);const[loading,setLoading]=useState(true);const[saving,setSaving]=useState(false);
- useEffect(()=>{api.get('/me/preferences').then(r=>{if(r.data?.privacy)setP({...initial,...r.data.privacy})}).catch(()=>Alert.alert('Privacy settings','Your saved settings could not be loaded.')).finally(()=>setLoading(false))},[]);
+ const[p,setP]=useState<PrivacyState>(initial);const[expanded,setExpanded]=useState<Panel|null>(null);const[loading,setLoading]=useState(true);const[saving,setSaving]=useState(false);const[showLocation,setShowLocation]=useState(false);
+ useEffect(()=>{Promise.allSettled([api.get('/me/preferences').then(r=>{if(r.data?.privacy)setP({...initial,...r.data.privacy})}),secureGet('show-community-location').then(v=>setShowLocation(v==='true'))]).then(results=>{if(results[0].status==='rejected')Alert.alert('Privacy settings','Your saved settings could not be loaded.')}).finally(()=>setLoading(false))},[]);
  const profileChoice:Access=useMemo(()=>p.emailVisibility===p.phoneVisibility?p.emailVisibility:'MEMBERS',[p]);
  const save=async(next=p)=>{const previous=p;setP(next);setSaving(true);try{await api.put('/me/privacy-preferences',next)}catch(e:any){setP(previous);Alert.alert('Unable to save',e.response?.data?.error||e.message)}finally{setSaving(false)}};
  const chooseProfile=(value:Access)=>void save({...p,emailVisibility:value,phoneVisibility:value});
  const open=(name:Panel)=>setExpanded(x=>x===name?null:name);
  const toggle=(key:keyof PrivacyState,value:boolean|Access)=>void save({...p,[key]:value});
+ const toggleLocation=async(value:boolean)=>{const previous=showLocation;setShowLocation(value);setSaving(true);try{await secureSet('show-community-location',String(value))}catch(e:any){setShowLocation(previous);Alert.alert('Unable to save location preference',e.message||'Please try again.')}finally{setSaving(false)}};
  return <Screen scroll contentStyle={styles.page}>
   <View style={styles.heading}><Muted>Control your privacy, manage safety tools, and choose how you interact on CDA Connect.</Muted></View>
   <View style={[styles.layout,!desktop&&styles.stack]}>
@@ -32,6 +34,7 @@ export default function Privacy(){
      {!desktop?<Accordion icon="person-outline" title="Profile Visibility" value={accessLabel[profileChoice]} open={expanded==='profile'} onPress={()=>open('profile')}><Toggle title="Show profile photo" body="Allow permitted members to see your profile picture." value={p.showProfilePhoto} disabled={saving} onChange={v=>toggle('showProfilePhoto',v)}/><Toggle title="Visible to community members" body="Switch off to make your phone and email visible only to you." value={profileChoice!=='NOBODY'} disabled={saving} onChange={v=>void save({...p,emailVisibility:v?'MEMBERS':'NOBODY',phoneVisibility:v?'MEMBERS':'NOBODY'})}/></Accordion>:null}
      <Accordion icon="eye-outline" title="Activity Visibility" value={p.showOnlineStatus?'Community Members':'Only Me'} open={expanded==='activity'} onPress={()=>open('activity')}><Toggle title="Show online status" body="Let permitted members see when you are active." value={p.showOnlineStatus} disabled={saving} onChange={v=>toggle('showOnlineStatus',v)}/></Accordion>
      <Accordion icon="lock-closed-outline" title="Personal Information" value="Manage" open={expanded==='personal'} onPress={()=>open('personal')}><Toggle title="Show phone number" body="Allow community members to see your phone number." value={p.phoneVisibility==='MEMBERS'} disabled={saving} onChange={v=>toggle('phoneVisibility',v?'MEMBERS':'NOBODY')}/><Toggle title="Show email address" body="Allow community members to see your email address." value={p.emailVisibility==='MEMBERS'} disabled={saving} onChange={v=>toggle('emailVisibility',v?'MEMBERS':'NOBODY')}/></Accordion>
+     <Accordion icon="location-outline" title="Location" value={showLocation?'LGA & State shown':'Hidden'} open={expanded==='location'} onPress={()=>open('location')}><Toggle title="Show my location" body="Show only your LGA and state while discovering nearby communities." value={showLocation} disabled={saving} onChange={v=>void toggleLocation(v)}/></Accordion>
      <Accordion icon="mail-outline" title="Contact Me" value={accessLabel[p.whoCanMessage]} open={expanded==='contact'} onPress={()=>open('contact')}><Toggle title="Allow member messages" body="Permit members of your communities to contact you." value={p.whoCanMessage==='MEMBERS'} disabled={saving} onChange={v=>toggle('whoCanMessage',v?'MEMBERS':'NOBODY')}/></Accordion>
      <Accordion icon="pricetag-outline" title="Data & Tagging" value="Manage" open={expanded==='tagging'} onPress={()=>open('tagging')}><Toggle title="Allow group invitations" body="Allow community members to add you to groups." value={p.whoCanAddToGroups==='MEMBERS'} disabled={saving} onChange={v=>toggle('whoCanAddToGroups',v?'MEMBERS':'NOBODY')}/></Accordion>
     </Card>
@@ -50,7 +53,7 @@ export default function Privacy(){
 }
 
 function Detail({panel,p,setP,save,saving,onBack}:{panel:Panel;p:PrivacyState;setP:(v:any)=>void;save:(v?:PrivacyState)=>Promise<void>;saving:boolean;onBack:()=>void}){
- const{palette}=useAppTheme();const title:Record<Panel,string>={home:'Privacy & Safety',profile:'Profile Visibility',activity:'Activity Visibility',personal:'Personal Information',contact:'Contact Me',tagging:'Data & Tagging',blocked:'Blocked Users',report:'Report & Flag',content:'Content Preferences',comments:'Comment Controls',twofactor:'Two-Factor Authentication'};
+ const{palette}=useAppTheme();const title:Record<Panel,string>={home:'Privacy & Safety',profile:'Profile Visibility',activity:'Activity Visibility',personal:'Personal Information',location:'Location',contact:'Contact Me',tagging:'Data & Tagging',blocked:'Blocked Users',report:'Report & Flag',content:'Content Preferences',comments:'Comment Controls',twofactor:'Two-Factor Authentication'};
  const accessKey=panel==='contact'?'whoCanMessage':panel==='comments'?'whoCanMessage':panel==='tagging'?'whoCanAddToGroups':null;
  const setAccess=(v:Access)=>accessKey?setP((x:PrivacyState)=>({...x,[accessKey]:v})):setP((x:PrivacyState)=>({...x,emailVisibility:v,phoneVisibility:v}));
  const selected:Access=accessKey?p[accessKey]:p.emailVisibility===p.phoneVisibility?p.emailVisibility:'MEMBERS';

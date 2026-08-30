@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 
 import { api } from '@/lib/api';
-import { Badge, Card, EmptyState, Muted, Screen, useAppTheme } from '@/components/UI';
+import { Badge, Card, EmptyState, Muted, Screen, TabBar, useAppTheme } from '@/components/UI';
 
 type Tab = 'pending' | 'paid' | 'all';
 
@@ -41,27 +41,7 @@ export default function MyFinancialRecord() {
         <Muted>{all.filter((item: any) => item.Status !== 'PAID').length} levy payment(s) pending</Muted>
       </Card>
 
-      <View style={[styles.tabs, { borderBottomColor: palette.border }]}>
-        {(['pending', 'paid', 'all'] as Tab[]).map((item) => (
-          <Pressable
-            key={item}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: tab === item }}
-            onPress={() => setTab(item)}
-            style={[styles.tab, tab === item && { borderBottomColor: palette.primary }]}
-          >
-            <Text
-              style={{
-                color: tab === item ? palette.primary : palette.muted,
-                fontWeight: '900',
-                textTransform: 'capitalize',
-              }}
-            >
-              {item}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <TabBar value={tab} onChange={setTab} items={[{key:'pending',label:'Pending',icon:'time-outline'},{key:'paid',label:'Paid',icon:'checkmark-circle-outline'},{key:'all',label:'All',icon:'list-outline'}]}/>
 
       {query.isLoading ? (
         <Muted>Loading your levies…</Muted>

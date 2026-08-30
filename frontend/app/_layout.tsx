@@ -1,7 +1,7 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,8 @@ import {useQuery} from '@tanstack/react-query';
 import {api} from '@/lib/api';
 import {completePendingCommunityInvite} from '@/lib/communityInvite';
 import {notificationKey,useNotificationReads} from '@/store/notificationReads';
+import * as Notifications from 'expo-notifications';
+import {notificationPath,registerForPushNotifications} from '@/lib/pushNotifications';
 
 const qc=new QueryClient();
 
@@ -69,6 +71,8 @@ const routeTitles:Record<string,string>={
   '/accessibility':'Appearance','/language':'Language','/communications':'Communications','/community-preferences':'Community Preferences',
   '/data-usage':'Data & Storage','/security':'Security','/help':'Help & Support','/about':'About CDA Connect','/change-password':'Change Password',
   '/two-factor':'Two-Factor Authentication','/delete-account':'Delete Account','/trusted-contacts':'Trusted Contacts','/search':'Search',
+  '/terms-of-service':'Terms of Service','/privacy-policy':'Privacy Policy','/community-guidelines':'Community Guidelines',
+  '/our-mission':'Our Mission','/our-vision':'Our Vision','/our-values':'Our Values','/built-for-communities':'Built for Communities',
   '/join-community':'Join Community','/blocked-users':'Blocked Users',
 };
 const communityRouteTitles:Record<string,string>={
@@ -94,6 +98,8 @@ function AuthenticatedShell({children}:{children:React.ReactNode}){
   const{accessToken,user,updateUser}=useAuth();
   const accessibility=useAccessibility();
   const[modeOpen,setModeOpen]=useState(false);
+  const[headerSearchOpen,setHeaderSearchOpen]=useState(false);
+  const[headerSearch,setHeaderSearch]=useState('');
   const language=accessibility.language;
   const{palette}=useAppTheme();
   const desktop=Platform.OS==='web'&&width>=980;
@@ -101,7 +107,7 @@ function AuthenticatedShell({children}:{children:React.ReactNode}){
   const homePage=pathname==='/home';
   const communitiesPage=pathname==='/communities';
   const profileEditPage=pathname==='/profile-edit';
-  const settingsBackPage=pathname==='/privacy'||pathname==='/blocked-users'||pathname==='/notifications-settings'||pathname==='/language'||pathname==='/communications';
+  const settingsBackPage=pathname==='/privacy'||pathname==='/blocked-users'||pathname==='/notifications-settings'||pathname==='/language'||pathname==='/communications'||pathname==='/community-preferences'||pathname==='/data-usage'||pathname==='/security'||pathname==='/change-password'||pathname==='/two-factor'||pathname==='/help'||pathname==='/about'||pathname==='/delete-account'||pathname==='/terms-of-service'||pathname==='/privacy-policy'||pathname==='/community-guidelines'||pathname==='/our-mission'||pathname==='/our-vision'||pathname==='/our-values'||pathname==='/built-for-communities';
   const communityMatch=pathname.match(/^\/community\/([^/]+)/);
   const communityId=communityMatch?.[1];
   const communityPage=Boolean(communityId);
@@ -115,9 +121,28 @@ function AuthenticatedShell({children}:{children:React.ReactNode}){
   const[notificationClock,setNotificationClock]=useState(Date.now());
   const notifications=useQuery<any[]>({queryKey:['notifications'],queryFn:async()=>(await api.get('/me/notifications')).data,enabled:Boolean(accessToken&&!publicPage),refetchInterval:30000,refetchOnWindowFocus:true,staleTime:10000});
   useEffect(()=>{if(accessToken)void loadNotificationReads()},[accessToken,loadNotificationReads]);
+  useEffect(()=>{
+    if(!accessToken||Platform.OS==='web')return;
+    void registerForPushNotifications().catch(error=>console.warn('Push notification registration failed',error));
+    const subscription=Notifications.addNotificationResponseReceivedListener(response=>{
+      router.push(notificationPath(response.notification.request.content.data) as any);
+    });
+    void Notifications.getLastNotificationResponseAsync().then(response=>{
+      if(response)router.push(notificationPath(response.notification.request.content.data) as any);
+    });
+    return()=>subscription.remove();
+  },[accessToken,router]);
   useEffect(()=>{const timer=setInterval(()=>setNotificationClock(Date.now()),60000);return()=>clearInterval(timer)},[]);
   const unreadNotifications=(notifications.data||[]).filter(item=>new Date(item.CreatedAt).getTime()>notificationClock-48*60*60*1000&&!readIds[notificationKey(item)]).length;
   const openNotifications=()=>{if(pathname==='/notifications'){router.canGoBack()?router.back():router.replace('/(tabs)/home' as any);return}router.push('/notifications' as any)};
+  const closeHeaderSearch=()=>{setHeaderSearchOpen(false);setHeaderSearch('')};
+  const submitHeaderSearch=()=>{
+    const term=headerSearch.trim();
+    if(!term)return;
+    if(communityPage&&pathname.endsWith('/feed'))router.setParams({showSearch:String(Date.now()),headerSearch:term} as any);
+    else router.push({pathname:'/(tabs)/communities',params:{headerSearch:term}} as any);
+    closeHeaderSearch();
+  };
 const communityCapabilities=useQuery<any>({queryKey:['capabilities',communityId],queryFn:async()=>(await api.get(`/communities/${communityId}/capabilities`)).data,enabled:Boolean(accessToken&&communityId&&(pathname===`/community/${communityId}/chat`||pathname===`/community/${communityId}/events`||pathname===`/community/${communityId}/meetings`||pathname===`/community/${communityId}/members`||pathname===`/community/${communityId}/financial-record`||pathname===`/community/${communityId}/services`||pathname===`/community/${communityId}/excos`)),staleTime:30000});
   const communityRoles=(communityCapabilities.data?.roles||[]).map((role:any)=>String(role).toLowerCase());
   const hasCommunityManagementRole=communityRoles.some((role:string)=>['owner','admin','moderator'].includes(role));
@@ -136,10 +161,18 @@ const canManageExcos=communityCapabilities.data?.permissions?.includes('MEMBER_R
   const glass=accessibility.themeMode==='dark'?'rgba(15,31,68,.72)':'rgba(255,255,255,.64)';
   return <View style={[shellStyles.mobileShell,{backgroundColor:palette.background}]}>
     {!conversationPage?<SafeAreaView edges={['top']} style={[shellStyles.mobileHeader,{backgroundColor:palette.background,borderBottomColor:palette.border}]}>
-      {homePage?<View style={shellStyles.mobileBrand}><Image source={require('../assets/branding/cda-connect-logo.png')} style={shellStyles.mobileLogo}/><View><Text style={[shellStyles.mobileBrandName,{color:palette.primary}]}>CDA CONNECT</Text><Text style={[shellStyles.mobileTagline,{color:palette.muted}]}>Stronger Communities, Better Lives</Text></View></View>:communityPage?<View style={shellStyles.mobileBrand}><Pressable accessibilityLabel="Go back" onPress={()=>(router.canGoBack()?router.back():router.replace('/(tabs)/communities' as any))} style={shellStyles.headerAction}><Ionicons name="chevron-back" size={27} color={palette.text}/></Pressable><View style={shellStyles.pageHeaderCopy}><Text numberOfLines={1} style={[shellStyles.pageHeaderTitle,{color:palette.text}]}>{currentPageTitle}</Text><Text numberOfLines={1} style={[shellStyles.pageHeaderSubtitle,{color:palette.muted}]}>{community.data?.Name||'Community'}</Text></View></View>:<View style={shellStyles.mobileBrand}>{profileEditPage||settingsBackPage?<Pressable accessibilityLabel="Go back" onPress={()=>(router.canGoBack()?router.back():router.replace(profileEditPage?'/(tabs)/profile':pathname==='/blocked-users'?'/privacy':'/(tabs)/settings' as any))} style={shellStyles.headerAction}><Ionicons name="chevron-back" size={27} color={palette.text}/></Pressable>:null}<Text numberOfLines={1} style={[shellStyles.pageHeaderTitle,{color:palette.text}]}>{currentPageTitle}</Text></View>}
+      {headerSearchOpen?<View style={shellStyles.headerSearchRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close search" onPress={closeHeaderSearch} style={shellStyles.headerAction}><Ionicons name="chevron-back" size={27} color={palette.text}/></Pressable>
+        <View style={[shellStyles.headerSearchBox,{backgroundColor:accessibility.themeMode==='dark'?palette.surface:'rgba(226,232,240,.62)'}]}>
+          <Ionicons name="search-outline" size={21} color={palette.muted}/>
+          <TextInput autoFocus value={headerSearch} onChangeText={setHeaderSearch} onSubmitEditing={submitHeaderSearch} returnKeyType="search" placeholder={communityPage?'Search this community':'Search communities, posts and events'} placeholderTextColor={palette.muted} selectionColor={palette.primary} style={[shellStyles.headerSearchInput,{color:palette.text}]}/>
+          {headerSearch?<Pressable accessibilityLabel="Clear search" onPress={()=>setHeaderSearch('')} style={shellStyles.headerSearchClear}><Ionicons name="close-circle" size={20} color={palette.muted}/></Pressable>:null}
+        </View>
+      </View>:<>
+      {homePage?<View style={shellStyles.mobileBrand}><Text numberOfLines={1} style={[shellStyles.homeBrandName,{color:palette.primary}]}>CDA Connect</Text></View>:communityPage?<View style={shellStyles.mobileBrand}><Pressable accessibilityLabel="Go back" onPress={()=>(router.canGoBack()?router.back():router.replace('/(tabs)/communities' as any))} style={shellStyles.headerAction}><Ionicons name="chevron-back" size={27} color={palette.text}/></Pressable><View style={shellStyles.pageHeaderCopy}><Text numberOfLines={1} style={[shellStyles.pageHeaderTitle,{color:palette.text}]}>{currentPageTitle}</Text><Text numberOfLines={1} style={[shellStyles.pageHeaderSubtitle,{color:palette.muted}]}>{community.data?.Name||'Community'}</Text></View></View>:<View style={shellStyles.mobileBrand}>{profileEditPage||settingsBackPage?<Pressable accessibilityLabel="Go back" onPress={()=>(router.canGoBack()?router.back():router.replace(profileEditPage?'/(tabs)/profile':pathname==='/blocked-users'?'/privacy':pathname==='/change-password'||pathname==='/two-factor'?'/security':pathname==='/delete-account'?'/help':pathname==='/terms-of-service'||pathname==='/privacy-policy'||pathname==='/community-guidelines'||pathname==='/our-mission'||pathname==='/our-vision'||pathname==='/our-values'||pathname==='/built-for-communities'?'/about':'/(tabs)/settings' as any))} style={shellStyles.headerAction}><Ionicons name="chevron-back" size={27} color={palette.text}/></Pressable>:null}<Text numberOfLines={1} style={[shellStyles.pageHeaderTitle,{color:palette.text}]}>{currentPageTitle}</Text></View>}
       <View style={shellStyles.mobileHeaderActions}>
         {communityPage&&!communityWorkspacePage?<>
-          {pathname===`/community/${communityId}/feed`?<><Pressable accessibilityRole="button" accessibilityLabel="Create community content" onPress={()=>router.setParams({createMenu:String(Date.now())} as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="add" size={25} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Search community feed" onPress={()=>router.setParams({showSearch:String(Date.now())} as any)} style={shellStyles.headerAction}><Ionicons name="search-outline" size={25} color={palette.text}/></Pressable></>:null}
+          {pathname===`/community/${communityId}/feed`?<><Pressable accessibilityRole="button" accessibilityLabel="Create community content" onPress={()=>router.setParams({createMenu:String(Date.now())} as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="add" size={25} color={palette.primary}/></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Search community feed" onPress={()=>setHeaderSearchOpen(true)} style={shellStyles.headerAction}><Ionicons name="search-outline" size={25} color={palette.text}/></Pressable></>:null}
           {pathname===`/community/${communityId}/chat`&&canCreateChatGroup?<Pressable accessibilityRole="button" accessibilityLabel="Create group chat" onPress={()=>router.setParams({createGroup:'1'} as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="people-circle-outline" size={24} color={palette.primary}/></Pressable>:null}
           {pathname===`/community/${communityId}/events`&&canCreateEvent?<Pressable accessibilityRole="button" accessibilityLabel="Create event" onPress={()=>router.setParams({createEvent:'1'} as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="calendar-number-outline" size={23} color={palette.primary}/></Pressable>:null}
           {pathname===`/community/${communityId}/meetings`&&canCreateMeeting?<Pressable accessibilityRole="button" accessibilityLabel="Schedule a meeting" onPress={()=>router.push(`/community/${communityId}/create-meeting` as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="calendar-outline" size={23} color={palette.primary}/></Pressable>:null}
@@ -148,12 +181,12 @@ const canManageExcos=communityCapabilities.data?.permissions?.includes('MEMBER_R
           {pathname===`/community/${communityId}/services`&&canAddDirectory?<Pressable accessibilityRole="button" accessibilityLabel="Add service" onPress={()=>router.setParams({addService:'1'} as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="storefront-outline" size={23} color={palette.primary}/></Pressable>:null}
           {pathname===`/community/${communityId}/excos`&&canManageExcos?<Pressable accessibilityRole="button" accessibilityLabel="Add Exco" onPress={()=>router.setParams({addExco:'1'} as any)} style={[shellStyles.headerIconAction,{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name="person-add-outline" size={23} color={palette.primary}/></Pressable>:null}
           <Pressable accessibilityLabel="Open community menu" onPress={()=>router.push(`/community/${communityId}` as any)} style={shellStyles.headerAction}><Ionicons name="menu-outline" size={27} color={palette.text}/></Pressable>
-        </>:communitiesPage?<Pressable accessibilityLabel="Join with invite code" onPress={()=>router.push('/join-community' as any)} style={shellStyles.headerAction}><Ionicons name="enter-outline" size={27} color={palette.primary}/></Pressable>:!communityPage?<>{pathname==='/settings'?<View><Pressable accessibilityRole="button" accessibilityLabel="Choose appearance mode" accessibilityState={{expanded:modeOpen}} onPress={()=>setModeOpen(value=>!value)} style={shellStyles.headerAction}><Ionicons name={accessibility.themeMode==='dark'?'moon':accessibility.themeMode==='system'?'desktop-outline':'sunny'} size={24} color={palette.primary}/></Pressable>{modeOpen?<View style={[shellStyles.modeMenu,{backgroundColor:palette.surface,borderColor:palette.border,shadowColor:palette.navy}]}>{([['light','Light','sunny-outline'],['dark','Dark','moon-outline'],['system','System','desktop-outline']] as const).map(([value,label,icon])=>{const selected=accessibility.themeMode===value;return <Pressable key={value} accessibilityRole="menuitem" accessibilityLabel={`${label} mode`} accessibilityState={{selected}} onPress={()=>{void accessibility.update({themeMode:value});setModeOpen(false)}} style={[shellStyles.modeOption,selected&&{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name={icon} size={25} color={selected?palette.primary:palette.text}/>{selected?<View style={[shellStyles.modeSelectedDot,{backgroundColor:palette.primary}]}/>:null}</Pressable>})}</View>:null}</View>:null}<Pressable accessibilityLabel={unreadNotifications?`${unreadNotifications} new notifications`:'Notifications'} onPress={openNotifications} style={shellStyles.headerAction}><Ionicons name={unreadNotifications?'notifications':'notifications-outline'} size={25} color={unreadNotifications?palette.primary:palette.text}/>{unreadNotifications?<View style={[shellStyles.notificationBadge,{backgroundColor:palette.danger}]}><Text style={shellStyles.notificationBadgeText}>{unreadNotifications>99?'99+':unreadNotifications}</Text></View>:null}</Pressable></>:null}
+        </>:communitiesPage?<Pressable accessibilityLabel="Join with invite code" onPress={()=>router.push('/join-community' as any)} style={shellStyles.headerAction}><Ionicons name="enter-outline" size={27} color={palette.primary}/></Pressable>:!communityPage?<>{pathname==='/settings'?<View><Pressable accessibilityRole="button" accessibilityLabel="Choose appearance mode" accessibilityState={{expanded:modeOpen}} onPress={()=>setModeOpen(value=>!value)} style={shellStyles.headerAction}><Ionicons name={accessibility.themeMode==='dark'?'moon':accessibility.themeMode==='system'?'desktop-outline':'sunny'} size={24} color={palette.primary}/></Pressable>{modeOpen?<View style={[shellStyles.modeMenu,{backgroundColor:palette.surface,borderColor:palette.border,shadowColor:palette.navy}]}>{([['light','Light','sunny-outline'],['dark','Dark','moon-outline'],['system','System','desktop-outline']] as const).map(([value,label,icon])=>{const selected=accessibility.themeMode===value;return <Pressable key={value} accessibilityRole="menuitem" accessibilityLabel={`${label} mode`} accessibilityState={{selected}} onPress={()=>{void accessibility.update({themeMode:value});setModeOpen(false)}} style={[shellStyles.modeOption,selected&&{backgroundColor:palette.primarySoft,borderColor:palette.primary}]}><Ionicons name={icon} size={25} color={selected?palette.primary:palette.text}/>{selected?<View style={[shellStyles.modeSelectedDot,{backgroundColor:palette.primary}]}/>:null}</Pressable>})}</View>:null}</View>:null}{homePage?<Pressable accessibilityRole="button" accessibilityLabel="Search communities, posts and events" onPress={()=>setHeaderSearchOpen(true)} style={shellStyles.headerAction}><Ionicons name="search-outline" size={25} color={palette.text}/></Pressable>:null}{pathname==='/security'?<Pressable accessibilityRole="button" accessibilityLabel="Run security check" onPress={()=>router.setParams({securityCheck:String(Date.now())} as any)} style={shellStyles.headerAction}><Ionicons name="shield-checkmark-outline" size={25} color={palette.primary}/></Pressable>:null}<Pressable accessibilityLabel={unreadNotifications?`${unreadNotifications} new notifications`:'Notifications'} onPress={openNotifications} style={shellStyles.headerAction}><Ionicons name={unreadNotifications?'notifications':'notifications-outline'} size={25} color={unreadNotifications?palette.primary:palette.text}/>{unreadNotifications?<View style={[shellStyles.notificationBadge,{backgroundColor:palette.danger}]}><Text style={shellStyles.notificationBadgeText}>{unreadNotifications>99?'99+':unreadNotifications}</Text></View>:null}</Pressable></>:null}
         {homePage?<Pressable accessibilityLabel="Profile" onPress={()=>router.replace('/(tabs)/profile')} style={[shellStyles.headerAvatar,{backgroundColor:palette.primary}]}>{user?.ProfileImage?<Image source={{uri:user.ProfileImage}} style={shellStyles.headerAvatarImage}/>:<Text style={shellStyles.headerInitials}>{initials}</Text>}</Pressable>:communitiesPage?<Pressable accessibilityLabel="Create community" onPress={()=>router.push('/create-community' as any)} style={[shellStyles.createCommunity,{backgroundColor:palette.primary}]}><Ionicons name="add" size={27} color="#FFFFFF"/></Pressable>:null}
-      </View>
+      </View></>}
     </SafeAreaView>:null}
     <View style={[shellStyles.mobileContent,!conversationPage&&{marginTop:-insets.top}]}>{children}</View>
-    {!conversationPage?<View style={[shellStyles.mobileNav,{backgroundColor:glass,borderColor:accessibility.themeMode==='dark'?'rgba(255,255,255,.24)':'#CFE2D5',shadowColor:palette.navy},Platform.OS==='web'&&({backdropFilter:'blur(28px) saturate(150%)',WebkitBackdropFilter:'blur(28px) saturate(150%)'} as any)]}>{mobileLinks.map(([icon,label,path])=>{const active=selected===label;const translated=translate(language,navKey[label]);return <Pressable key={label} accessibilityRole="tab" accessibilityLabel={translated} accessibilityState={{selected:active}} onPress={()=>router.replace(path as any)} style={[shellStyles.mobileLink,active&&{backgroundColor:palette.primarySoft}]}><Ionicons name={(active?icon.replace('-outline',''):icon) as any} size={23} color={active?palette.primary:palette.text}/><Text style={[shellStyles.mobileLabel,{color:active?palette.primary:palette.text}]}>{translated}</Text></Pressable>})}</View>:null}
+    {!conversationPage?<View style={[shellStyles.mobileNav,{backgroundColor:glass,borderColor:accessibility.themeMode==='dark'?'rgba(255,255,255,.24)':'#CFE2D5',shadowColor:palette.navy},Platform.OS==='web'&&({backdropFilter:'blur(28px) saturate(150%)',WebkitBackdropFilter:'blur(28px) saturate(150%)'} as any)]}>{mobileLinks.map(([icon,label,path])=>{const active=selected===label;const translated=translate(language,navKey[label]);return <Pressable key={label} accessibilityRole="tab" accessibilityLabel={translated} accessibilityState={{selected:active}} onPress={()=>router.replace(path as any)} style={[shellStyles.mobileLink,Platform.OS==='web'&&({outlineStyle:'none'} as any),active&&{backgroundColor:accessibility.themeMode==='dark'?'rgba(15,138,67,.24)':'rgba(15,138,67,.12)'}]}><Ionicons name={(active?icon.replace('-outline',''):icon) as any} size={27} color={active?palette.primary:palette.text}/></Pressable>})}</View>:null}
   </View>;
 }
 
@@ -182,12 +215,17 @@ const shellStyles=StyleSheet.create({
   mobileBrand:{flexDirection:'row',alignItems:'center',gap:9,flex:1,minWidth:0},
   mobileLogo:{width:54,height:54,resizeMode:'contain'},
   mobileBrandName:{fontSize:18,fontWeight:'900',letterSpacing:.2},
+  homeBrandName:{fontSize:24,fontWeight:'900',letterSpacing:.1},
   pageHeaderTitle:{fontSize:24,fontWeight:'900'},
   pageHeaderCopy:{flex:1,minWidth:0},
   pageHeaderSubtitle:{fontSize:11,fontWeight:'700',marginTop:1},
   mobileTagline:{fontSize:9.5,marginTop:2},
   mobileHeaderActions:{flexDirection:'row',alignItems:'center',gap:5},
   headerAction:{width:42,height:42,alignItems:'center',justifyContent:'center'},
+  headerSearchRow:{width:'100%',flexDirection:'row',alignItems:'center',gap:6},
+  headerSearchBox:{flex:1,minWidth:0,height:44,borderRadius:22,flexDirection:'row',alignItems:'center',paddingLeft:14},
+  headerSearchInput:{flex:1,minWidth:0,fontSize:15,paddingHorizontal:9,paddingVertical:10},
+  headerSearchClear:{width:38,height:42,alignItems:'center',justifyContent:'center'},
   notificationBadge:{position:'absolute',right:0,top:0,minWidth:18,height:18,borderRadius:9,paddingHorizontal:4,alignItems:'center',justifyContent:'center'},
   notificationBadgeText:{color:'#FFFFFF',fontSize:9,fontWeight:'900'},
   modeMenu:{position:'absolute',right:0,top:46,width:58,borderWidth:1,borderRadius:14,padding:5,elevation:18,shadowOpacity:.18,shadowRadius:16,shadowOffset:{width:0,height:8},zIndex:4000},
@@ -201,4 +239,5 @@ const shellStyles=StyleSheet.create({
   mobileNav:{position:'absolute',left:12,right:12,bottom:10,height:72,zIndex:3000,flexDirection:'row',alignItems:'center',justifyContent:'space-around',borderWidth:1.25,borderRadius:36,padding:6,shadowOpacity:.14,shadowRadius:11,shadowOffset:{width:0,height:6},elevation:8,overflow:'hidden'},
   mobileLink:{flex:1,minHeight:58,borderRadius:29,alignItems:'center',justifyContent:'center',gap:4},
   mobileLabel:{fontSize:10,fontWeight:'800'},
+  mobileLabelActive:{fontWeight:'900'},
 });

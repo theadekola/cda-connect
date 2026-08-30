@@ -1,19 +1,14 @@
-import {useState} from 'react';
-import {Alert,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {router} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
-import {api} from '@/lib/api';
 import {useAuth} from '@/store/auth';
 import {Avatar,Muted,Screen,useAppTheme} from '@/components/UI';
 
 type Item={icon:keyof typeof Ionicons.glyphMap;title:string;body:string;path?:string;tone:string;action?:()=>void;danger?:boolean};
 
 export default function Settings(){
- const{palette}=useAppTheme(),{user,logout}=useAuth(),name=`${user?.FirstName||''} ${user?.LastName||''}`.trim()||'Community Member',username=String(user?.Email||'member').split('@')[0],since=user?.CreatedAt?new Date(user.CreatedAt).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'Not available';
- const[deactivating,setDeactivating]=useState(false);
+ const{palette}=useAppTheme(),{user}=useAuth(),name=`${user?.FirstName||''} ${user?.LastName||''}`.trim()||'Community Member',username=String(user?.Email||'member').split('@')[0],since=user?.CreatedAt?new Date(user.CreatedAt).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'Not available';
  const open=(path?:string)=>path&&router.push(path as any);
- const performDeactivate=async()=>{if(deactivating)return;try{setDeactivating(true);await api.post('/me/deactivate');await logout();router.replace('/(auth)/welcome')}catch(e:any){const message=e.response?.data?.error||e.response?.data?.message||e.message;if(Platform.OS==='web')globalThis.alert(`Unable to deactivate account: ${message}`);else Alert.alert('Unable to deactivate account',message)}finally{setDeactivating(false)}};
- const deactivate=()=>{const message='Your account will be disabled and you will be signed out. Contact support when you want to reactivate it.';if(Platform.OS==='web'){if(globalThis.confirm(`Deactivate account?\n\n${message}`))void performDeactivate();return}Alert.alert('Deactivate account?',message,[{text:'Cancel',style:'cancel'},{text:'Deactivate',style:'destructive',onPress:()=>void performDeactivate()}])};
  const account:Item[]=[
   {icon:'shield-checkmark-outline',title:'Privacy & Safety',body:'Manage your privacy and safety',path:'/privacy',tone:'#08723A'},
   {icon:'notifications-outline',title:'Notifications',body:'Control your notifications',path:'/notifications-settings',tone:'#0F8A43'},
@@ -28,15 +23,9 @@ export default function Settings(){
   {icon:'help-circle-outline',title:'Help & Support',body:'Get help and contact support',path:'/help',tone:'#0F1F44'},
   {icon:'information-circle-outline',title:'About CDA Connect',body:'App version and information',path:'/about',tone:'#64748B'},
  ];
- const actions:Item[]=[
-  {icon:'key-outline',title:'Change Password',body:'Update your password',path:'/change-password',tone:'#0F1F44'},
-  {icon:'shield-checkmark-outline',title:'Two-Factor Authentication',body:'Add extra security to your account',path:'/two-factor',tone:'#16A34A'},
-  {icon:'desktop-outline',title:'Active Sessions',body:'Manage your active sessions',path:'/security',tone:'#08723A'},
- ];
  return <Screen scroll contentStyle={s.page}><Muted style={s.subtitle}>Manage your account, preferences and community experience.</Muted>
   <View style={[s.profile,{borderColor:palette.border,backgroundColor:palette.surface}]}><Avatar name={name} uri={user?.ProfileImage} size={78}/><View style={{flex:1}}><View style={s.nameRow}><Text style={[s.name,{color:palette.text}]}>{name}</Text><Ionicons name="checkmark-circle" size={19} color={palette.primary}/></View><Muted>@{username}　·　Member since {since}</Muted><View style={[s.active,{backgroundColor:palette.primarySoft}]}><View style={s.dot}/><Text style={{color:palette.primary,fontWeight:'800'}}>Active Member</Text></View></View></View>
-  <Group label="Preferences" items={account} open={open} palette={palette}/><Group label="Communication" items={communication} open={open} palette={palette}/><Group label="Data & Security" items={data} open={open} palette={palette}/><Group label="Account Actions" items={actions} open={open} palette={palette}/>
-  <View style={s.dangerActions}><Pressable accessibilityRole="button" accessibilityLabel="Deactivate Account" accessibilityState={{disabled:deactivating}} disabled={deactivating} onPress={deactivate} style={[s.dangerButton,{borderColor:palette.warning,backgroundColor:palette.warningSoft,opacity:deactivating?.6:1}]}><Ionicons name="time-outline" size={24} color={palette.warning}/><Text style={[s.dangerButtonText,{color:palette.warning}]}>{deactivating?'Deactivating…':'Deactivate Account'}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Delete Account" onPress={()=>router.push('/delete-account')} style={[s.dangerButton,{borderColor:palette.danger,backgroundColor:palette.dangerSoft}]}><Ionicons name="trash-outline" size={24} color={palette.danger}/><Text style={[s.dangerButtonText,{color:palette.danger}]}>Delete Account</Text></Pressable></View>
+  <Group label="Preferences" items={account} open={open} palette={palette}/><Group label="Communication" items={communication} open={open} palette={palette}/><Group label="Data & Security" items={data} open={open} palette={palette}/>
  </Screen>
 }
 function Group({label,items,open,palette}:{label:string;items:Item[];open:(p?:string)=>void;palette:any}){return <View><Text style={[s.groupLabel,{color:palette.muted}]}>{label}</Text><View style={[s.group,{borderColor:palette.border,backgroundColor:palette.surface}]}>{items.map((item,i)=><Pressable accessibilityRole="button" accessibilityLabel={item.title} key={item.title} onPress={item.action||(()=>open(item.path))} style={[s.row,i<items.length-1&&{borderBottomColor:palette.border,borderBottomWidth:1},item.danger&&{borderColor:palette.danger,borderWidth:1,borderRadius:12}]}><View style={[s.icon,{backgroundColor:`${item.tone}16`}]}><Ionicons name={item.icon} size={23} color={item.tone}/></View><View style={{flex:1}}><Text style={[s.rowTitle,{color:item.danger?palette.danger:palette.text}]}>{item.title}</Text><Muted>{item.body}</Muted></View><Ionicons name="chevron-forward" size={20} color={palette.text}/></Pressable>)}</View></View>}

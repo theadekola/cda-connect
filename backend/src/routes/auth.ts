@@ -8,6 +8,7 @@ import { asyncHandler, AppError } from '../utils/errors.js';
 import { hashToken, signAccess, signRefresh, verifyRefresh } from '../utils/auth.js';
 import { env } from '../config/env.js';
 import {normalizePhone,sendVerificationSms} from '../services/sms.js';
+import {sendEmailBatch} from '../services/notifications.js';
 import {requireAuth} from '../middleware/auth.js';
 
 export const authRouter=Router();
@@ -106,11 +107,36 @@ authRouter.post('/logout',asyncHandler(async(req,res)=>{const token=z.object({re
 authRouter.get('/security',requireAuth,asyncHandler(async(req,res)=>{
   const pool=await getPool();
   const [userResult,sessionsResult]=await Promise.all([
-    pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT Email,Phone,PhoneVerified,CreatedAt FROM Users WHERE Id=@uid'),
-    pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT Id,CreatedAt,ExpiresAt FROM UserSessions WHERE UserId=@uid AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() ORDER BY CreatedAt DESC')
+    pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT Email,Phone,EmailVerified,PhoneVerified,CreatedAt FROM Users WHERE Id=@uid'),
+    pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('current',sql.NVarChar(64),hashToken(String(req.headers['x-refresh-token']||''))).query('SELECT Id,CreatedAt,ExpiresAt,CASE WHEN RefreshTokenHash=@current THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END IsCurrent FROM UserSessions WHERE UserId=@uid AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() ORDER BY CreatedAt DESC')
   ]);
   const user=userResult.recordset[0];if(!user)throw new AppError(404,'Account not found');
-  res.json({email:user.Email,phone:user.Phone,emailPresent:Boolean(user.Email),phoneVerified:Boolean(user.PhoneVerified),accountCreatedAt:user.CreatedAt,activeSessions:sessionsResult.recordset});
+  res.json({email:user.Email,phone:user.Phone,emailVerified:Boolean(user.EmailVerified),phoneVerified:Boolean(user.PhoneVerified),accountCreatedAt:user.CreatedAt,activeSessions:sessionsResult.recordset});
+}));
+
+authRouter.post('/account-verification/request',requireAuth,asyncHandler(async(req,res)=>{
+  const {method}=z.object({method:z.enum(['email','phone'])}).parse(req.body),pool=await getPool();
+  const result=await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT Email,Phone,EmailVerified,PhoneVerified FROM Users WHERE Id=@uid');const user=result.recordset[0];
+  if(!user)throw new AppError(404,'Account not found');if(method==='email'&&user.EmailVerified)return res.json({alreadyVerified:true});if(method==='phone'&&user.PhoneVerified)return res.json({alreadyVerified:true});
+  const destination=method==='email'?user.Email:user.Phone;if(!destination)throw new AppError(400,`Add an ${method==='email'?'email address':'phone number'} before verification`);
+  const purpose=`verify-${method}`,recent=await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('purpose',sql.NVarChar(30),purpose).query('SELECT TOP 1 CreatedAt FROM TwoFactorChallenges WHERE UserId=@uid AND Purpose=@purpose AND ConsumedAt IS NULL ORDER BY CreatedAt DESC');
+  if(recent.recordset[0]){const wait=env.SMS_RESEND_SECONDS-Math.floor((Date.now()-new Date(recent.recordset[0].CreatedAt).getTime())/1000);if(wait>0)throw new AppError(429,`Please wait ${wait} seconds before requesting another code`)}
+  const code=crypto.randomInt(100000,1000000).toString(),expires=new Date(Date.now()+env.SMS_CODE_EXPIRES_MINUTES*60000),challenge=await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('purpose',sql.NVarChar(30),purpose).input('hash',sql.NVarChar(64),verificationHash(req.user!.id,code)).input('expires',sql.DateTime2,expires).query('INSERT INTO TwoFactorChallenges(UserId,Purpose,CodeHash,ExpiresAt) OUTPUT INSERTED.Id VALUES(@uid,@purpose,@hash,@expires)');
+  try{if(method==='phone')await sendVerificationSms(destination,code);else{const sent=await sendEmailBatch([{to:destination,subject:'Your CDA Connect verification code',text:`Your CDA Connect verification code is ${code}. It expires in ${env.SMS_CODE_EXPIRES_MINUTES} minutes.`}]);if(sent.skipped)throw new Error('Email delivery is not configured')}}catch(error){await pool.request().input('id',sql.UniqueIdentifier,challenge.recordset[0].Id).query('DELETE FROM TwoFactorChallenges WHERE Id=@id');throw error}
+  res.status(202).json({challengeId:challenge.recordset[0].Id,expiresInSeconds:env.SMS_CODE_EXPIRES_MINUTES*60});
+}));
+
+authRouter.post('/account-verification/verify',requireAuth,asyncHandler(async(req,res)=>{
+  const d=z.object({method:z.enum(['email','phone']),challengeId:z.string().uuid(),code:z.string().regex(/^\d{6}$/)}).parse(req.body),pool=await getPool();
+  await verifySmsChallenge(pool,req.user!.id,d.challengeId,`verify-${d.method}`,d.code);
+  await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query(`UPDATE Users SET ${d.method==='email'?'EmailVerified':'PhoneVerified'}=1,UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid`);
+  res.json({success:true});
+}));
+
+authRouter.post('/sessions/:sessionId/revoke',requireAuth,asyncHandler(async(req,res)=>{
+  const d=z.object({refreshToken:z.string().min(1)}).parse(req.body),pool=await getPool(),current=hashToken(d.refreshToken);
+  const result=await pool.request().input('id',sql.UniqueIdentifier,req.params.sessionId).input('uid',sql.UniqueIdentifier,req.user!.id).input('current',sql.NVarChar(64),current).query('UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() OUTPUT INSERTED.Id WHERE Id=@id AND UserId=@uid AND RefreshTokenHash<>@current AND RevokedAt IS NULL');
+  if(!result.recordset[0])throw new AppError(400,'This session is already signed out or is your current device');res.json({success:true});
 }));
 
 authRouter.get('/two-factor',requireAuth,asyncHandler(async(req,res)=>{const pool=await getPool(),result=await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT TwoFactorEnabled,TwoFactorMethod,Phone,PhoneVerified FROM Users WHERE Id=@uid'),row=result.recordset[0];if(!row)throw new AppError(404,'Account not found');res.json({enabled:Boolean(row.TwoFactorEnabled),method:row.TwoFactorMethod,phone:row.Phone,phoneVerified:Boolean(row.PhoneVerified)})}));
