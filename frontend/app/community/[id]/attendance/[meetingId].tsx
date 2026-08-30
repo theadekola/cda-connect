@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { api } from '@/lib/api';
-import { Avatar, Badge, Button, Card, EmptyState, Input, Muted, Screen, useAppTheme } from '@/components/UI';
+import { Avatar, Badge, Button, Card, EmptyState, Input, Muted, Screen, TabBar, useAppTheme } from '@/components/UI';
 
 export default function MeetingAttendance() {
   const { id, meetingId } = useLocalSearchParams<{ id: string; meetingId: string }>();
@@ -41,7 +41,7 @@ export default function MeetingAttendance() {
 
     <Card style={[styles.summary, narrow && styles.summaryWrap]}><Stat value={data.participants.length} label="Members" color={palette.primary} /><Stat value={present} label="Present" color={palette.success} /><Stat value={data.participants.filter((person: any) => person.Status === 'LATE').length} label="Late" color={palette.warning} /><Stat value={data.participants.length - present} label="Not marked" color={palette.muted} /></Card>
     {data.canManage ? <Input placeholder="Search by name or member ID" value={search} onChangeText={setSearch} /> : null}
-    <View style={styles.tabs}><Pressable onPress={() => setTab('members')} style={[styles.tab, tab === 'members' && { borderBottomColor: palette.primary }]}><Text style={{ color: tab === 'members' ? palette.primary : palette.muted, fontWeight: '900' }}>All Members</Text></Pressable><Pressable onPress={() => setTab('recent')} style={[styles.tab, tab === 'recent' && { borderBottomColor: palette.primary }]}><Text style={{ color: tab === 'recent' ? palette.primary : palette.muted, fontWeight: '900' }}>Recent Check-ins</Text></Pressable></View>
+    <TabBar value={tab} onChange={setTab} items={[{key:'members',label:'All Members',icon:'people-outline'},{key:'recent',label:'Recent Check-ins',icon:'time-outline'}]}/>
     {people.map((person: any) => <Card key={person.UserId} style={styles.person}><Avatar name={`${person.FirstName} ${person.LastName}`} uri={person.ProfileImage} size={narrow ? 42 : 50} /><View style={styles.flex}><Text style={[styles.name, { color: palette.text }]}>{person.FirstName} {person.LastName}</Text><Muted>{person.CardNumber || 'Community member'}</Muted>{person.CheckedInAt ? <Muted>{new Date(person.CheckedInAt).toLocaleString()} · {person.CheckInMethod}</Muted> : null}</View>{person.Status ? <Badge text={person.Status} tone={person.Status === 'ABSENT' ? 'red' : person.Status === 'LATE' ? 'orange' : 'green'} /> : active ? <View style={styles.markButton}><Button title="Mark Present" variant="success" onPress={() => mark.mutate({ userId: person.UserId, status: 'PRESENT' })} /></View> : <Badge text="Not marked" tone="gray" />}</Card>)}
     {!people.length ? <EmptyState icon="people-outline" title="No participants" body={tab === 'recent' ? 'No members have checked in yet.' : 'No matching community members were found.'} /> : null}
     {active ? <Button title="End Attendance" variant="danger" icon="stop-outline" loading={end.isPending} onPress={() => Alert.alert('End attendance?', 'The meeting code will immediately stop accepting check-ins.', [{ text: 'Cancel', style: 'cancel' }, { text: 'End', style: 'destructive', onPress: () => end.mutate() }])} /> : null}

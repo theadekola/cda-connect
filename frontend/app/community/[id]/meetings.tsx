@@ -4,7 +4,7 @@ import {router,useLocalSearchParams} from 'expo-router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {Ionicons} from '@expo/vector-icons';
 import {api} from '@/lib/api';
-import {Badge,Button,Card,EmptyState,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Badge,Button,Card,EmptyState,Muted,Screen,TabBar,useAppTheme} from '@/components/UI';
 import type {Meeting} from '@/types';
 
 type MeetingRecord=Meeting&{CommunityId:string;OnlineMeetingUrl?:string;Agenda?:string};
@@ -20,13 +20,12 @@ export default function GeneralMeetings(){
  const upcomingCount=sorted.filter(m=>new Date(m.EndDateTime||m.StartDateTime).getTime()>=now).length;
  return <Screen scroll contentStyle={s.screen}>
   <Card style={[s.intro,{borderColor:palette.primarySoft}]}><View style={[s.introIcon,{backgroundColor:palette.primarySoft}]}><Ionicons name="people-circle-outline" size={34} color={palette.primary}/></View><View style={{flex:1}}><Text style={[s.introTitle,{color:palette.primary}]}>Community decisions start here</Text><Muted>Review meeting details, respond to invitations and revisit completed meetings.</Muted></View></Card>
-  <View accessibilityRole="tablist" style={[s.tabs,{backgroundColor:palette.backgroundSoft,borderColor:palette.border}]}><TabButton label="Upcoming Meetings" selected={tab==='upcoming'} count={upcomingCount} onPress={()=>setTab('upcoming')} palette={palette}/><TabButton label="Past Meetings" selected={tab==='past'} count={sorted.length-upcomingCount} onPress={()=>setTab('past')} palette={palette}/></View>
+  <TabBar value={tab} onChange={setTab} items={[{key:'upcoming',label:'Upcoming Meetings',icon:'calendar-outline',count:upcomingCount},{key:'past',label:'Past Meetings',icon:'time-outline',count:sorted.length-upcomingCount}]}/>
   <View style={s.sectionHead}><View><Text style={[s.sectionTitle,{color:palette.text}]}>{tab==='upcoming'?'Upcoming Meetings':'Past Meetings'}</Text><Muted>{tab==='upcoming'?'Meetings scheduled for your community':'Completed community meeting history'}</Muted></View><Ionicons name={tab==='upcoming'?'calendar-outline':'time-outline'} size={24} color={palette.primary}/></View>
   {meetings.isError?<EmptyState icon="cloud-offline-outline" title="Could not load meetings" body="Check your connection, then try again."/>:visible.length?visible.map(meeting=><MeetingCard key={meeting.Id} meeting={meeting} past={tab==='past'} busy={rsvp.isPending} onRsvp={response=>rsvp.mutate({meetingId:meeting.Id,response})} palette={palette}/>):<EmptyState icon={tab==='upcoming'?'calendar-outline':'archive-outline'} title={tab==='upcoming'?'No upcoming meetings':'No past meetings'} body={tab==='upcoming'?'New general meetings created by community administrators will appear here.':'Completed meetings will be kept here for reference.'}/>}
  </Screen>
 }
 
-function TabButton({label,count,selected,onPress,palette}:{label:string;count:number;selected:boolean;onPress:()=>void;palette:any}){return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={[s.tab,selected&&{backgroundColor:palette.primary}]}><Text style={[s.tabText,{color:selected?'#fff':palette.text}]}>{label}</Text><View style={[s.count,{backgroundColor:selected?'rgba(255,255,255,.2)':palette.primarySoft}]}><Text style={{color:selected?'#fff':palette.primary,fontSize:11,fontWeight:'900'}}>{count}</Text></View></Pressable>}
 
 function MeetingCard({meeting,past,busy,onRsvp,palette}:{meeting:MeetingRecord;past:boolean;busy:boolean;onRsvp:(response:'GOING'|'MAYBE'|'NOT_GOING')=>void;palette:any}){
  const start=new Date(meeting.StartDateTime);const end=new Date(meeting.EndDateTime);const response=meeting.MyResponse;

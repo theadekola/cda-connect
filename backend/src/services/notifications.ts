@@ -10,8 +10,9 @@ async function postJson(url: string, token: string | undefined, body: unknown) {
 }
 
 export async function sendPushBatch(messages: unknown[]) {
-  if (!env.PUSH_PROVIDER_URL) return { skipped: true, count: messages.length };
-  await postJson(env.PUSH_PROVIDER_URL, env.PUSH_PROVIDER_TOKEN, { messages });
+  if (!messages.length) return { skipped: false, count: 0 };
+  if (env.PUSH_PROVIDER_URL) await postJson(env.PUSH_PROVIDER_URL, env.PUSH_PROVIDER_TOKEN, { messages });
+  else await postJson('https://exp.host/--/api/v2/push/send', env.PUSH_PROVIDER_TOKEN, messages);
   return { skipped: false, count: messages.length };
 }
 
