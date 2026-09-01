@@ -49,7 +49,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.cdaconnect.app",
       "infoPlist": {
-        "UIUserInterfaceStyle": "Light"
+        "UIUserInterfaceStyle": "Light",
+        "NSFaceIDUsageDescription": "CDA Connect uses Face ID only when you choose to protect biometric login on this device."
       }
     },
     "android": {

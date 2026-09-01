@@ -1,11 +1,11 @@
 import {useState} from 'react';
-import {Alert,Image,Pressable,ScrollView,StyleSheet,Switch,Text,View} from 'react-native';
+import {Alert,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useMutation,useQueryClient} from '@tanstack/react-query';
 import {Ionicons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import {api} from '@/lib/api';
-import {AmountInput,Button,Card,Header,Input,Muted,Screen,useAppTheme} from '@/components/UI';
+import {AmountInput,Button,Card,Header,Input,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {amountNumber} from '@/lib/money';
 const types=['FOR_SALE','FREE','WANTED','SERVICES','RENTALS','JOBS'] as const;const conditions=['NEW','LIKE_NEW','GOOD','FAIR','NOT_APPLICABLE'] as const;const deliveries=['MEETUP','DELIVERY'] as const;const contacts=['IN_APP','PHONE','WHATSAPP'] as const;
 async function upload(uri:string,index:number){const fd=new FormData();fd.append('file',{uri,name:`listing-${Date.now()}-${index}.jpg`,type:'image/jpeg'} as any);return (await api.post('/media/upload',fd,{headers:{'Content-Type':'multipart/form-data'}})).data.url as string}

@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Switch,Text,TextInput,View} from 'react-native';
+import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {Button,Card,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Button,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {api} from '@/lib/api';
 import {useAuth} from '@/store/auth';
 

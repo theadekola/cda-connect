@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 import { asyncHandler, AppError } from '../utils/errors.js';
 import { storeObject } from '../services/storage.js';
 import { getPool, sql } from '../config/db.js';
+import sharp from 'sharp';
 
 const allowed = new Set([
   'image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','audio/m4a','audio/mp4','audio/mpeg','audio/wav',
@@ -20,10 +21,14 @@ export const mediaRouter = Router();
 mediaRouter.use(requireAuth);
 mediaRouter.post('/media/upload', upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) throw new AppError(400, 'File required');
-  const stored = await storeObject({ buffer: req.file.buffer, originalName: req.file.originalname, mimeType: req.file.mimetype, prefix: 'media' });
+  const pollImage=req.query.profile==='poll-option'||req.query.profile==='poll';
+  if(pollImage&&!req.file.mimetype.startsWith('image/'))throw new AppError(400,'Poll artwork must be an image');
+  const processed=pollImage?await sharp(req.file.buffer).rotate().resize(512,512,{fit:'cover',position:'centre',withoutEnlargement:true}).webp({quality:78,effort:4}).toBuffer():req.file.buffer;
+  const originalName=pollImage?`${req.file.originalname.replace(/\.[^.]+$/,'')}.webp`:req.file.originalname,mimeType=pollImage?'image/webp':req.file.mimetype;
+  const stored = await storeObject({ buffer: processed, originalName, mimeType, prefix: 'media' });
   const pool = await getPool();
-  await pool.request().input('u', sql.UniqueIdentifier, req.user!.id).input('k', sql.NVarChar(1000), stored.key).input('url', sql.NVarChar(1500), stored.url).input('name', sql.NVarChar(500), req.file.originalname).input('mime', sql.NVarChar(150), req.file.mimetype).input('size', sql.BigInt, req.file.size).query(`INSERT INTO StoredObjects(UploadedBy,StorageKey,PublicUrl,OriginalName,MimeType,SizeBytes) VALUES(@u,@k,@url,@name,@mime,@size)`);
-  res.status(201).json({ url: stored.url, storageKey: stored.key, name: req.file.originalname, mimeType: req.file.mimetype, size: req.file.size });
+  await pool.request().input('u', sql.UniqueIdentifier, req.user!.id).input('k', sql.NVarChar(1000), stored.key).input('url', sql.NVarChar(1500), stored.url).input('name', sql.NVarChar(500), originalName).input('mime', sql.NVarChar(150), mimeType).input('size', sql.BigInt, processed.length).query(`INSERT INTO StoredObjects(UploadedBy,StorageKey,PublicUrl,OriginalName,MimeType,SizeBytes) VALUES(@u,@k,@url,@name,@mime,@size)`);
+  res.status(201).json({ url: stored.url, storageKey: stored.key, name: originalName, mimeType, size: processed.length,processed:pollImage });
 }));
 mediaRouter.post('/media/transcribe', upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) throw new AppError(400, 'Audio file required');

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { api } from '@/lib/api';
 import { Badge, Card, EmptyState, Muted, Screen, TabBar, useAppTheme } from '@/components/UI';
+import { AttachmentPreview, type Attachment } from '@/components/AttachmentPreview';
 
 type Tab = 'pending' | 'paid' | 'all';
 
@@ -13,6 +14,7 @@ export default function MyFinancialRecord() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { palette } = useAppTheme();
   const [tab, setTab] = useState<Tab>('pending');
+  const [preview, setPreview] = useState<Attachment>(null);
 
   const query = useQuery<any>({
     queryKey: ['finance-me', id],
@@ -59,11 +61,8 @@ export default function MyFinancialRecord() {
         />
       ) : (
         items.map((item: any) => (
-          <Pressable
+          <View
             key={item.Id}
-            accessibilityRole="button"
-            disabled={item.Status === 'PAID'}
-            onPress={() => router.push(`/community/${id}/pay-levy/${item.Id}` as any)}
           >
             <Card>
               <View style={styles.row}>
@@ -98,15 +97,22 @@ export default function MyFinancialRecord() {
                           : 'red'
                     }
                   />
+                  {item.EvidenceUrl ? (
+                    <Pressable accessibilityRole="button" accessibilityLabel={`View evidence for ${item.PlanName}`} onPress={() => setPreview({ url: item.EvidenceUrl, title: `${item.PlanName} payment evidence` })} style={[styles.evidenceButton, { borderColor: palette.primary }]}>
+                      <Ionicons name="eye-outline" size={15} color={palette.primary} />
+                      <Text style={[styles.evidenceText, { color: palette.primary }]}>View evidence</Text>
+                    </Pressable>
+                  ) : null}
                   {item.Status !== 'PAID' && item.SubmissionStatus !== 'PENDING' ? (
-                    <Text style={{ color: palette.primary, fontWeight: '900' }}>Pay now</Text>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`Pay ${item.PlanName}`} onPress={() => router.push(`/community/${id}/pay-levy/${item.Id}` as any)}><Text style={{ color: palette.primary, fontWeight: '900' }}>Pay now</Text></Pressable>
                   ) : null}
                 </View>
               </View>
             </Card>
-          </Pressable>
+          </View>
         ))
       )}
+      <AttachmentPreview attachment={preview} onClose={() => setPreview(null)} />
     </Screen>
   );
 }
@@ -128,6 +134,8 @@ const styles = StyleSheet.create({
   icon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   details: { flex: 1, minWidth: 0 },
   status: { maxWidth: '34%', alignItems: 'flex-end', gap: 8 },
+  evidenceButton:{minHeight:30,borderWidth:1,borderRadius:15,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:4},
+  evidenceText:{fontSize:10.5,fontWeight:'900'},
   title: { fontSize: 16, fontWeight: '900' },
   money: { fontSize: 18, fontWeight: '900', marginTop: 8 },
 });

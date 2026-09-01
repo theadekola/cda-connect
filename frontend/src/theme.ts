@@ -1,12 +1,12 @@
 export const colors = {
-  primary: '#0F8A43', primaryDark: '#08723A', primaryLight: '#EAF7EF', primarySoft: '#EAF7EF',
+  primary: '#0F8A43', primaryDark: '#08723A', primaryLight: '#FFFFFF', primarySoft: '#FFFFFF',
   background: '#FFFFFF', backgroundSoft: '#F8FAFC', surface: '#FFFFFF',
   textPrimary: '#0F1F44', textSecondary: '#64748B', textMuted: '#94A3B8', text: '#0F1F44', muted: '#64748B',
   border: '#E2E8F0',
-  success: '#16A34A', successText: '#15803D', successLight: '#DCFCE7', successSoft: '#DCFCE7',
+  success: '#0F8A43', successText: '#08723A', successLight: '#FFFFFF', successSoft: '#FFFFFF',
   warning: '#F59E0B', warningText: '#B45309', warningLight: '#FEF3C7', warningSoft: '#FEF3C7',
   danger: '#DC2626', dangerDark: '#B91C1C', dangerText: '#B91C1C', dangerLight: '#FEF2F2', dangerSoft: '#FEE2E2', dangerBorder: '#FECACA',
-  info: '#0F8A43', infoText: '#08723A', infoLight: '#EAF7EF',
+  info: '#0F8A43', infoText: '#08723A', infoLight: '#FFFFFF',
   purple: '#0F1F44', purpleText: '#0F1F44', purpleLight: '#F8FAFC', orange: '#0F8A43', rose: '#DC2626',
   disabled: '#D1E9DB', white: '#FFFFFF', black: '#000000',
   // Backwards-compatible aliases used by existing screens.
@@ -18,14 +18,14 @@ export const darkColors = {
   ...colors,
   background: '#08141D', backgroundSoft: '#0B1B27', surface: '#0F1F44',
   text: '#F8FAFC', textPrimary: '#F8FAFC', textSecondary: '#CBD5E1', textMuted: '#94A3B8', muted: '#CBD5E1', border: '#294052',
-  primary: '#22C55E', accent: '#22C55E', primarySoft: '#123D25', primaryLight: '#123D25',
-  dangerSoft: '#4A1717', warningSoft: '#422D0A', successSoft: '#123D25',
+  primary: '#22C55E', accent: '#22C55E', primarySoft: '#0F1F44', primaryLight: '#0F1F44',
+  dangerSoft: '#0F1F44', warningSoft: '#0F1F44', successSoft: '#0F1F44', successLight:'#0F1F44',infoLight:'#0F1F44',
 };
 
 export const highContrastColors = {
   ...colors,
   background: '#FFFFFF', surface: '#FFFFFF', text: '#000000', textPrimary: '#000000', muted: '#262626', border: '#000000',
-  primary: '#007A99', primaryDark: '#001A38', primarySoft: '#E6F9FE', danger: '#C81E1E', success: '#087A32',
+  primary: '#007A99', primaryDark: '#001A38', primarySoft: '#FFFFFF', primaryLight:'#FFFFFF',successSoft:'#FFFFFF',successLight:'#FFFFFF',infoLight:'#FFFFFF',danger: '#C81E1E', success: '#087A32',
 };
 
 export const radii = {sm: 8, md: 12, lg: 16, xl: 20, pill: 999};
