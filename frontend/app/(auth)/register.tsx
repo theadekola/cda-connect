@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import {FlatList,Modal,Pressable,ScrollView,StyleSheet,Switch,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {FlatList,Modal,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {router} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import {StatusBar} from 'expo-status-bar';
 import {City,Country,type ICountry,type IState,State} from 'country-state-city';
 import {getLGAsByState,getStateByName} from '@some19ice/nigeria-geo-core';
 import {api} from '@/lib/api';
+import {ToggleSwitch as Switch} from '@/components/UI';
 import {useAuth} from '@/store/auth';
 import {colors} from '@/theme';
 import {DateField as AppDateField} from '@/components/DateField';

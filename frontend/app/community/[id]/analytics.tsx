@@ -13,7 +13,7 @@ export default function Analytics() {
 
   const Metric = ({ label, value }: { label: string; value: string | number }) => <Card style={styles.metric}><Muted>{label}</Muted><Text style={[styles.value, { color: palette.text }]}>{value}</Text></Card>;
   return <Screen scroll>
-    <Header title="Admin Analytics" subtitle="Operational metrics that help administrators take action"/>
+    <Muted style={styles.intro}>Operational metrics that help administrators take action</Muted>
     <View style={styles.grid}>
       <Metric label="Members" value={analytics.members.count}/><Metric label="New this month" value={`+${analytics.members.new30d}`}/><Metric label="Monthly active" value={`${analytics.monthlyActivePercent}%`}/><Metric label="Meeting RSVP" value={`${analytics.meetingRsvpPercent}%`}/><Metric label="Poll participation" value={`${analytics.pollParticipationPercent}%`}/><Metric label="Posts and messages (30 days)" value={analytics.postMessageCount30d}/><Metric label="Open issues" value={analytics.issues.open}/><Metric label="Resolved (30 days)" value={analytics.issues.resolved30d}/>
     </View>
@@ -22,4 +22,4 @@ export default function Analytics() {
   </Screen>;
 }
 
-const styles = StyleSheet.create({ grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, metric: { flexGrow: 1, flexBasis: 180, marginBottom: 0 }, value: { fontSize: 24, fontWeight: '900', marginTop: 5 }, health: { fontSize: 28, fontWeight: '900', textAlign: 'center', marginBottom: 15 }, score: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 }, scoreLabel: { fontWeight: '700' }, scoreValue: { fontWeight: '900' }, explanation: { marginTop: 12 } });
+const styles = StyleSheet.create({ intro: { marginBottom: 12 }, grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10 }, metric: { width: '48.5%', minHeight: 108, marginBottom: 0, justifyContent: 'space-between' }, value: { fontSize: 24, fontWeight: '900', marginTop: 5 }, health: { fontSize: 28, fontWeight: '900', textAlign: 'center', marginBottom: 15 }, score: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 }, scoreLabel: { fontWeight: '700' }, scoreValue: { fontWeight: '900' }, explanation: { marginTop: 12 } });

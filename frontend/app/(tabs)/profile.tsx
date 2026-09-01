@@ -1,11 +1,11 @@
 import {useEffect,useState} from 'react';
-import {Alert,Pressable,Share,StyleSheet,Switch,Text,View} from 'react-native';
+import {Alert,Pressable,Share,StyleSheet,Text,View} from 'react-native';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
 import {api} from '@/lib/api';
 import {useAuth} from '@/store/auth';
-import {Avatar,Card,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Avatar,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {useAccessibility} from '@/store/accessibility';
 import {languageFlags,languageNames} from '@/i18n';
 

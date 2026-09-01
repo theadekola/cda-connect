@@ -1,7 +1,7 @@
-import {Platform,Pressable,StyleSheet,Switch,Text,View,useWindowDimensions} from 'react-native';
+import {Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {router} from 'expo-router';
 import {Ionicons} from '@expo/vector-icons';
-import {Button,Card,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Button,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {AccentColor,TextScale,ThemeMode,useAccessibility} from '@/store/accessibility';
 
 const themes:[ThemeMode,string,string,keyof typeof Ionicons.glyphMap][]=[['light','Light','Clean and bright','sunny-outline'],['dark','Dark','Easy on the eyes','moon-outline'],['system','System','Follow device settings','desktop-outline']];

@@ -15,7 +15,7 @@ const parseMentions=(text:string)=>[...new Set((text.match(/@[\p{L}\p{N}_.-]+/gu
 
 feedRouter.get('/communities/:communityId/feed',asyncHandler(async(req,res)=>{
  await requireCommunityMember(req.user!.id,req.params.communityId); const pool=await getPool();
- const r=await pool.request().input('c',sql.UniqueIdentifier,req.params.communityId).input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT p.Id,p.CommunityId,p.CreatedBy,p.Body,p.PostType,p.MediaUrl,p.MediaType,p.DocumentName,p.Caption,p.Transcript,p.OriginalLanguage,p.IsPinned,p.IsAnnouncement,p.CreatedAt,p.UpdatedAt,u.FirstName,u.LastName,u.ProfileImage,
+ const r=await pool.request().input('c',sql.UniqueIdentifier,req.params.communityId).input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT p.Id,p.CommunityId,p.CreatedBy,p.Body,p.PostType,p.MediaUrl,p.MediaType,p.DocumentName,p.Caption,p.Transcript,p.OriginalLanguage,p.IsPinned,p.IsAnnouncement,p.CreatedAt,p.UpdatedAt,u.FirstName,u.LastName,u.ProfileImage,(SELECT TOP 1 cm.Id FROM CommunityMembers cm WHERE cm.CommunityId=p.CommunityId AND cm.UserId=p.CreatedBy AND cm.Status='ACTIVE') MembershipId,
  (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id) ReactionCount,
  (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='LIKE') LikeCount,
  (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='CELEBRATE') CelebrateCount,

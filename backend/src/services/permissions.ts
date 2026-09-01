@@ -14,6 +14,7 @@ export async function hasPermission(userId: string, communityId: string, permiss
   const r=await pool.request().input('u',sql.UniqueIdentifier,userId).input('c',sql.UniqueIdentifier,communityId).input('p',sql.NVarChar(100),permission).query(`
     SELECT TOP 1 1 ok
     FROM CommunityMembers cm
+    JOIN Communities community ON community.Id=cm.CommunityId
     JOIN CommunityMemberRoles cmr ON cmr.CommunityMemberId=cm.Id
     JOIN Roles r ON r.Id=cmr.RoleId
     LEFT JOIN RolePermissions rp ON rp.RoleId=cmr.RoleId
@@ -21,6 +22,8 @@ export async function hasPermission(userId: string, communityId: string, permiss
     WHERE cm.UserId=@u AND cm.CommunityId=@c AND cm.Status='ACTIVE'
       AND (
         p.Code=@p
+        OR community.OwnerUserId=@u
+        OR r.Name IN ('Owner','Admin')
         OR (@p IN ('MEMBER_ROLE_CHANGE','MEMBER_REMOVE') AND r.Name IN ('Owner','Admin','Moderator'))
       )`);
   return !!r.recordset[0];
