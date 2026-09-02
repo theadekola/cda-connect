@@ -1,10 +1,19 @@
 import { Queue } from 'bullmq';
+import crypto from 'node:crypto';
 import { createRedisConnection } from '../config/redis.js';
 import { getPool, sql } from '../config/db.js';
 
 export const emergencyQueue = new Queue('emergency-broadcasts', { connection: createRedisConnection() });
 export const notificationQueue = new Queue('notifications', { connection: createRedisConnection() });
 export const backgroundQueue = new Queue('background-jobs', { connection: createRedisConnection() });
+
+export type CommunityNotificationJob={communityId:string;actorUserId?:string;conversationId?:string;targetUserId?:string;type:string;title:string;body:string;entityId?:string;preference?:'DirectMessages'|'Mentions'|'CommunityPosts'|'Polls'|'Events'|'Marketplace'|'BusinessPromotions';data?:Record<string,string>};
+
+export async function enqueueCommunityNotification(message:CommunityNotificationJob){
+  try{
+    await notificationQueue.add('community-activity',message,{jobId:`push:${message.type}:${message.entityId??crypto.randomUUID()}`,attempts:4,backoff:{type:'exponential',delay:1500},removeOnComplete:1000,removeOnFail:1000});
+  }catch(error){console.error('Unable to queue push notification',error);}
+}
 
 export async function enqueueEmergencyBroadcast(alertId: string, communityId: string) {
   const pool = await getPool();

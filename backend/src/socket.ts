@@ -2,6 +2,7 @@ import type { Server } from 'socket.io';
 import { verifyAccess } from './utils/auth.js';
 import { getPool, sql } from './config/db.js';
 import { getRedis } from './config/redis.js';
+import { enqueueCommunityNotification } from './queues/index.js';
 
 export function configureSocket(io: Server) {
   io.use((socket, next) => {
@@ -43,6 +44,8 @@ export function configureSocket(io: Server) {
           .query('INSERT INTO Messages(ConversationId,SenderUserId,MessageType,MessageText,MediaUrl) OUTPUT INSERTED.* VALUES(@cv,@u,@type,@text,@media)');
         const msg = r.recordset[0];
         io.to(`conversation:${d.conversationId}`).emit('message:new', msg);
+        const conversation=await pool.request().input('cv',sql.UniqueIdentifier,d.conversationId).query('SELECT CommunityId,Name FROM Conversations WHERE Id=@cv');
+        if(conversation.recordset[0])await enqueueCommunityNotification({communityId:conversation.recordset[0].CommunityId,conversationId:d.conversationId,actorUserId:user.id,type:'CHAT_MESSAGE',title:conversation.recordset[0].Name||'New message',body:d.messageText||`Sent a ${d.messageType.toLowerCase()}`,entityId:msg.Id,preference:'DirectMessages',data:{conversationId:d.conversationId}});
         ack?.({ ok: true, message: msg });
       } catch (e) { console.error(e); ack?.({ ok: false, error: 'Unable to send message' }); }
     });
