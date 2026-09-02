@@ -7,7 +7,7 @@ import {Avatar,Muted,Screen,useAppTheme} from '@/components/UI';
 type Item={icon:keyof typeof Ionicons.glyphMap;title:string;body:string;path?:string;tone:string;action?:()=>void;danger?:boolean};
 
 export default function Settings(){
- const{palette}=useAppTheme(),{user}=useAuth(),name=`${user?.FirstName||''} ${user?.LastName||''}`.trim()||'Community Member',username=String(user?.Email||'member').split('@')[0],since=user?.CreatedAt?new Date(user.CreatedAt).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'Not available';
+ const{palette}=useAppTheme(),{user}=useAuth(),name=`${user?.FirstName||''} ${user?.LastName||''}`.trim()||'Community Member',since=user?.CreatedAt?new Date(user.CreatedAt).toLocaleDateString(undefined,{month:'short',year:'numeric'}):'Not available';
  const open=(path?:string)=>path&&router.push(path as any);
  const account:Item[]=[
   {icon:'shield-checkmark-outline',title:'Privacy & Safety',body:'Manage your privacy and safety',path:'/privacy',tone:'#08723A'},
@@ -24,7 +24,7 @@ export default function Settings(){
   {icon:'information-circle-outline',title:'About CDA Connect',body:'App version and information',path:'/about',tone:'#64748B'},
  ];
  return <Screen scroll contentStyle={s.page}><Muted style={s.subtitle}>Manage your account, preferences and community experience.</Muted>
-  <View style={[s.profile,{borderColor:palette.border,backgroundColor:palette.surface}]}><Avatar name={name} uri={user?.ProfileImage} size={78}/><View style={{flex:1}}><View style={s.nameRow}><Text style={[s.name,{color:palette.text}]}>{name}</Text><Ionicons name="checkmark-circle" size={19} color={palette.primary}/></View><Muted>@{username}　·　Member since {since}</Muted><View style={[s.active,{backgroundColor:palette.primarySoft}]}><View style={s.dot}/><Text style={{color:palette.primary,fontWeight:'800'}}>Active Member</Text></View></View></View>
+  <View style={[s.profile,{borderColor:palette.border,backgroundColor:palette.surface}]}><Avatar name={name} uri={user?.ProfileImage} size={78}/><View style={{flex:1}}><View style={s.nameRow}><Text style={[s.name,{color:palette.text}]}>{name}</Text><Ionicons name="checkmark-circle" size={19} color={palette.primary}/></View><Muted>Member since {since}</Muted><View style={[s.active,{backgroundColor:palette.primarySoft}]}><View style={s.dot}/><Text style={{color:palette.primary,fontWeight:'800'}}>Active Member</Text></View></View></View>
   <Group label="Preferences" items={account} open={open} palette={palette}/><Group label="Communication" items={communication} open={open} palette={palette}/><Group label="Data & Security" items={data} open={open} palette={palette}/>
  </Screen>
 }

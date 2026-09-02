@@ -3,7 +3,7 @@ import { createRedisConnection } from '../config/redis.js';
 import { env } from '../config/env.js';
 import { getPool, sql } from '../config/db.js';
 import { sendEmailBatch, sendPushBatch } from '../services/notifications.js';
-import { emergencyQueue } from '../queues/index.js';
+import { emergencyQueue,type CommunityNotificationJob } from '../queues/index.js';
 
 type EmergencyData = { alertId:string; communityId:string; auditId:string };
 
@@ -66,7 +66,26 @@ async function recoverPendingEmergencyJobs() {
 }
 
 const emergencyWorker = new Worker<EmergencyData>('emergency-broadcasts', processEmergency, { connection: createRedisConnection(), concurrency: 4 });
-const notificationWorker = new Worker('notifications', async job => ({ accepted: true, type: job.name, data: job.data }), { connection: createRedisConnection(), concurrency: 20 });
+async function processNotification(job:Job<CommunityNotificationJob>){
+  const d=job.data,pool=await getPool();
+  const preference=d.preference??'CommunityPosts';
+  const recipientJoin=d.conversationId?'JOIN ConversationMembers recipient ON recipient.UserId=cm.UserId AND recipient.ConversationId=@conversation':'';
+  const targetFilter=d.targetUserId?'AND cm.UserId=@target':'';
+  const result=await pool.request().input('community',sql.UniqueIdentifier,d.communityId).input('actor',sql.UniqueIdentifier,d.actorUserId??null).input('conversation',sql.UniqueIdentifier,d.conversationId??null).input('target',sql.UniqueIdentifier,d.targetUserId??null).query(`
+    SELECT DISTINCT devices.DeviceToken
+    FROM CommunityMembers cm
+    ${recipientJoin}
+    JOIN UserDevices devices ON devices.UserId=cm.UserId
+    LEFT JOIN NotificationPreferences preferences ON preferences.UserId=cm.UserId
+    WHERE cm.CommunityId=@community AND cm.Status='ACTIVE' AND (@actor IS NULL OR cm.UserId<>@actor) ${targetFilter}
+      AND COALESCE(CASE '${preference}' WHEN 'DirectMessages' THEN preferences.DirectMessages WHEN 'Mentions' THEN preferences.Mentions WHEN 'CommunityPosts' THEN preferences.CommunityPosts WHEN 'Polls' THEN preferences.Polls WHEN 'Events' THEN preferences.Events WHEN 'Marketplace' THEN preferences.Marketplace WHEN 'BusinessPromotions' THEN preferences.BusinessPromotions END,'ON')<>'OFF'
+  `);
+  const tokens=[...new Set(result.recordset.map(x=>String(x.DeviceToken)).filter(Boolean))];
+  for(let i=0;i<tokens.length;i+=100)await sendPushBatch(tokens.slice(i,i+100).map(to=>({to,sound:'default',title:d.title,body:d.body.slice(0,240),data:{...d.data,type:d.type,communityId:d.communityId,entityId:d.entityId},channelId:'default',priority:'high'})));
+  return{recipients:tokens.length};
+}
+
+const notificationWorker = new Worker<CommunityNotificationJob>('notifications', processNotification, { connection: createRedisConnection(), concurrency: 20 });
 const backgroundWorker = new Worker('background-jobs', async job => ({ accepted: true, type: job.name, data: job.data }), { connection: createRedisConnection(), concurrency: 8 });
 
 emergencyWorker.on('failed', async (job,error) => {

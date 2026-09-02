@@ -9,12 +9,13 @@ import sharp from 'sharp';
 
 const allowed = new Set([
   'image/jpeg','image/png','image/webp','image/gif','video/mp4','video/quicktime','audio/m4a','audio/mp4','audio/mpeg','audio/wav',
-  'application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  'application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation','text/plain','text/csv','application/rtf','application/json','application/xml','application/zip','application/x-7z-compressed','application/x-rar-compressed','application/epub+zip','application/octet-stream'
 ]);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
-  fileFilter: (_r, f, cb) => allowed.has(f.mimetype) ? cb(null, true) : cb(new AppError(400, 'Unsupported file type'))
+  fileFilter: (_r, f, cb) => allowed.has(f.mimetype) || f.mimetype.startsWith('text/') ? cb(null, true) : cb(new AppError(400, 'Unsupported file type'))
 });
 
 export const mediaRouter = Router();
