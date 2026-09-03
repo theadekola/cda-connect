@@ -1,6 +1,6 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Keyboard, Platform, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -124,16 +124,16 @@ function AuthenticatedShell({children}:{children:React.ReactNode}){
   const community=useQuery<any>({queryKey:['community',communityId],queryFn:async()=>(await api.get(`/communities/${communityId}`)).data,enabled:Boolean(accessToken&&communityId),staleTime:30000});
   const{readIds,load:loadNotificationReads}=useNotificationReads();
   const[notificationClock,setNotificationClock]=useState(Date.now());
+  const handledNotificationIds=useRef(new Set<string>());
   const notifications=useQuery<any[]>({queryKey:['notifications'],queryFn:async()=>(await api.get('/me/notifications')).data,enabled:Boolean(accessToken&&!publicPage),refetchInterval:30000,refetchOnWindowFocus:true,staleTime:10000});
   useEffect(()=>{if(accessToken)void loadNotificationReads()},[accessToken,loadNotificationReads]);
   useEffect(()=>{
     if(!accessToken||Platform.OS==='web')return;
     void registerForPushNotifications().catch(error=>console.warn('Push notification registration failed',error));
-    const subscription=Notifications.addNotificationResponseReceivedListener(response=>{
-      router.push(notificationPath(response.notification.request.content.data) as any);
-    });
+    const openNotification=async(response:Notifications.NotificationResponse)=>{const request=response.notification.request,id=request.identifier;if(handledNotificationIds.current.has(id))return;handledNotificationIds.current.add(id);const data=request.content.data??{},communityId=typeof data.communityId==='string'?data.communityId:null;try{if(communityId)await api.get(`/communities/${communityId}`);router.push(notificationPath(data) as any)}catch{router.push('/notifications' as any)}finally{setTimeout(()=>handledNotificationIds.current.delete(id),30_000)}};
+    const subscription=Notifications.addNotificationResponseReceivedListener(response=>{void openNotification(response)});
     void Notifications.getLastNotificationResponseAsync().then(response=>{
-      if(response)router.push(notificationPath(response.notification.request.content.data) as any);
+      if(response)void openNotification(response);
     });
     return()=>subscription.remove();
   },[accessToken,router]);
@@ -202,7 +202,7 @@ export default function Root(){
   const{palette,dark}=useAppTheme();
   useEffect(()=>{load();a.load()},[]);
   if(!hydrated||!a.hydrated)return <View style={{flex:1,alignItems:'center',justifyContent:'center',backgroundColor:colors.background}}><ActivityIndicator color={colors.primary}/></View>;
-  return <QueryClientProvider client={qc}><StatusBar style={dark?'light':'dark'} backgroundColor={palette.background}/><DesktopShell><AuthenticatedShell><Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.background},animation:a.reducedMotion?'none':'slide_from_right',animationDuration:260,gestureEnabled:true}}><Stack.Screen name="index"/><Stack.Screen name="(auth)"/><Stack.Screen name="(tabs)"/><Stack.Screen name="community/[id]"/><Stack.Screen name="chat/[id]"/></Stack></AuthenticatedShell></DesktopShell></QueryClientProvider>;
+  return <QueryClientProvider client={qc}><StatusBar style={dark?'light':'dark'}/><DesktopShell><AuthenticatedShell><Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.background},animation:a.reducedMotion?'none':'slide_from_right',animationDuration:260,gestureEnabled:true}}><Stack.Screen name="index"/><Stack.Screen name="(auth)"/><Stack.Screen name="(tabs)"/><Stack.Screen name="community/[id]"/><Stack.Screen name="chat/[id]"/></Stack></AuthenticatedShell></DesktopShell></QueryClientProvider>;
 }
 
 const shellStyles=StyleSheet.create({

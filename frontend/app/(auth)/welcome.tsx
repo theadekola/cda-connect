@@ -54,7 +54,7 @@ const styles=StyleSheet.create({
   hero:{height:'59%',minHeight:350,width:'100%',alignItems:'center'},
   heroCompact:{height:'55%',minHeight:300},
   heroImage:{width:'100%',height:'100%'},
-  heroWash:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(255,255,255,.08)'},
+  heroWash:{...StyleSheet.absoluteFill,backgroundColor:'rgba(255,255,255,.08)'},
   dissolve:{position:'absolute',left:0,right:0,bottom:0,height:118},
   logoFrame:{position:'absolute',left:'50%',marginLeft:-60,top:'22%',width:120,height:120,alignItems:'center',justifyContent:'center'},
   logoFrameCompact:{width:108,height:108,marginLeft:-54},
