@@ -6,7 +6,7 @@ import {api} from '@/lib/api';
 import {Card,Header,Muted,Screen,useAppTheme} from '@/components/UI';
 
 type Category='Constitution'|'Policies'|'Meeting minutes'|'Financial reports'|'Forms'|'Newsletters'|'Community rules'|'Emergency procedures'|'Archives'|'Other';
-type Doc={Id:string;Category:Category};
+type Doc={Id:string;Category:string};
 type Folder={key:string;label:string;description:string;icon:keyof typeof Ionicons.glyphMap;categories:Category[];color:string;background:string};
 const folders:Folder[]=[
  {key:'All',label:'All Documents',description:'Every document shared with the community',icon:'folder-outline',categories:['Constitution','Policies','Meeting minutes','Financial reports','Forms','Newsletters','Community rules','Emergency procedures','Archives','Other'],color:'#149447',background:'#EAF7EE'},
@@ -19,8 +19,9 @@ const folders:Folder[]=[
 export default function DocumentFolders(){
  const{id}=useLocalSearchParams<{id:string}>();const{palette}=useAppTheme();
  const docs=useQuery<Doc[]>({queryKey:['documents',id],queryFn:async()=>(await api.get(`/communities/${id}/documents`)).data});
- const count=(folder:Folder)=>(docs.data||[]).filter(doc=>folder.categories.includes(doc.Category)).length;
+ const count=(folder:Folder)=>folder.key==='All'?(docs.data||[]).length:(docs.data||[]).filter(doc=>folder.categories.some(category=>category===doc.Category)).length;
  return <Screen scroll contentStyle={s.page}><Header page title="Document Folders" subtitle="Browse community files by category"/>
+  {docs.isError?<Muted>Document folder counts could not be loaded. Try again shortly.</Muted>:null}
   <View style={s.grid}>{folders.map(folder=><Pressable key={folder.key} accessibilityRole="button" accessibilityLabel={`Open ${folder.label}`} onPress={()=>router.push({pathname:`/community/${id}/documents` as any,params:{group:folder.key}})} style={s.cell}><Card style={[s.folder,{borderColor:palette.border}]}><View style={[s.icon,{backgroundColor:folder.background}]}><Ionicons name={folder.icon} size={28} color={folder.color}/></View><Text style={[s.title,{color:palette.text}]}>{folder.label}</Text><Muted style={s.description}>{folder.description}</Muted><View style={s.footer}><Text style={[s.count,{color:folder.color}]}>{docs.isLoading?'—':count(folder)} documents</Text><Ionicons name="chevron-forward" size={18} color={folder.color}/></View></Card></Pressable>)}</View>
  </Screen>;
 }

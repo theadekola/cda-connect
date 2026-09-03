@@ -7,13 +7,19 @@ async function postJson(url: string, token: string | undefined, body: unknown) {
     body: JSON.stringify(body)
   });
   if (!response.ok) throw new Error(`Provider failed with ${response.status}`);
+  return response.json().catch(()=>null);
 }
 
 export async function sendPushBatch(messages: unknown[]) {
   if (!messages.length) return { skipped: false, count: 0 };
-  if (env.PUSH_PROVIDER_URL) await postJson(env.PUSH_PROVIDER_URL, env.PUSH_PROVIDER_TOKEN, { messages });
-  else await postJson('https://exp.host/--/api/v2/push/send', env.PUSH_PROVIDER_TOKEN, messages);
-  return { skipped: false, count: messages.length };
+  const response=env.PUSH_PROVIDER_URL?await postJson(env.PUSH_PROVIDER_URL, env.PUSH_PROVIDER_TOKEN, { messages }):await postJson('https://exp.host/--/api/v2/push/send', env.PUSH_PROVIDER_TOKEN, messages);
+  return { skipped: false, count: messages.length, tickets:Array.isArray(response?.data)?response.data:[] };
+}
+
+export async function getPushReceipts(ids:string[]){
+  if(!ids.length||env.PUSH_PROVIDER_URL)return{} as Record<string,any>;
+  const response=await postJson('https://exp.host/--/api/v2/push/getReceipts',env.PUSH_PROVIDER_TOKEN,{ids});
+  return(response?.data??{}) as Record<string,any>;
 }
 
 export async function sendEmailBatch(messages: unknown[]) {

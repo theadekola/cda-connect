@@ -23,7 +23,7 @@ export default function Communities(){
  useEffect(()=>{if(headerSearch){setMode('discover');setSearch(String(headerSearch));}},[headerSearch]);
  useEffect(()=>{secureGet('community-favourites').then(v=>v&&setFavs(JSON.parse(v))).catch(()=>{})},[]);
  useFocusEffect(useCallback(()=>{secureGet('show-community-location').then(v=>setShowLocation(v==='true')).catch(()=>setShowLocation(false))},[]));
- const mine=useQuery<Item[]>({queryKey:['communities'],queryFn:async()=>(await api.get('/communities')).data});
+ const mine=useQuery<Item[]>({queryKey:['communities'],queryFn:async()=>(await api.get('/communities')).data,refetchOnMount:'always',refetchOnWindowFocus:true,staleTime:0});
  const discovery=useQuery<Item[]>({queryKey:['community-discover',search],enabled:mode==='discover',queryFn:async()=>(await api.get('/communities/discover/search',{params:{q:search}})).data});
  const admins=(mine.data||[]).filter(x=>['Admin','Owner'].includes(String(x.UserRole))||/Admin|Owner/i.test(String((x as any).Roles||'')));
  const requests=useQuery<Request[]>({queryKey:['all-community-join-requests',admins.map(x=>x.Id).join(',')],enabled:!!admins.length,queryFn:async()=>(await Promise.all(admins.map(async c=>{try{return((await api.get(`/communities/${c.Id}/join-requests`)).data as any[]).map(x=>({...x,CommunityId:c.Id,CommunityName:c.Name}))}catch{return[]}}))).flat()});

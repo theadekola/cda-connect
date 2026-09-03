@@ -68,10 +68,6 @@
       "backgroundColor": "#FFFFFF",
       "barStyle": "dark-content"
     },
-    "androidNavigationBar": {
-      "backgroundColor": "#FFFFFF",
-      "barStyle": "dark-content"
-    },
     "experiments": {
       "typedRoutes": true
     },
