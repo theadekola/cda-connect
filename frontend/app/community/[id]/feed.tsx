@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,8 @@ import { useAccessibility } from '@/store/accessibility';
 import {LinkText} from '@/components/LinkText';
 import { AttachmentPreview, type Attachment } from '@/components/AttachmentPreview';
 import {DateField} from '@/components/DateField';
+
+function KeyboardAvoidingView({behavior:_,keyboardVerticalOffset:__,...props}:any){return <View {...props}/>}
 
 const POST_TYPES=[['TEXT','Text','create-outline'],['PHOTO','Photo','image-outline'],['VIDEO','Video','videocam-outline'],['DOCUMENT','Document','document-outline'],['VOICE','Voice','mic-outline'],['POLL','Poll','stats-chart-outline'],['EVENT','Event','calendar-outline'],['LOST_FOUND','Lost & found','search-outline'],['RECOMMENDATION','Recommend','thumbs-up-outline'],['QUESTION','Question','help-circle-outline'],['ALERT','Alert','warning-outline'],['LOCAL_NEWS','Local news','newspaper-outline'],['OPPORTUNITY','Opportunity','briefcase-outline']] as const;
 const OPPORTUNITY_TYPES=['JOB','VOLUNTEERING','TRAINING','SCHOLARSHIP','INTERNSHIP','COMMUNITY'] as const;

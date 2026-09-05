@@ -217,3 +217,12 @@ test('shared UI clamps avatar dimensions and disables loading buttons',async()=>
   assert.match(source,/disabled=Boolean\(p\.disabled\|\|loading\)/);
   assert.match(source,/accessibilityState=\{\{disabled,busy/);
 });
+
+test('public media uploads return a URL while private document uploads do not',async()=>{
+  const media=await readFile(new URL('../src/routes/media.ts',import.meta.url),'utf8');
+  const api=await readFile(new URL('../../frontend/src/lib/api.ts',import.meta.url),'utf8');
+  assert.match(media,/\.\.\.\(documentUpload\?\{\}:\{url:stored\.url\}\)/);
+  assert.match(api,/localhost','127\.0\.0\.1','0\.0\.0\.0/);
+  assert.match(api,/url\.hostname=apiUrl\.hostname/);
+  assert.match(api,/url\.pathname\.startsWith\('\/uploads\/'\)/);
+});

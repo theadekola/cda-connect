@@ -8,7 +8,7 @@ import {Card,EmptyState,Muted,Screen,useAppTheme} from '@/components/UI';
 
 type Item={Label:string;Value:number};type Option={Id:string;OptionText:string;ImageUrl?:string;VoteCount:number};
 type Analysis={poll:{Id:string;Question:string;Description?:string;ImageUrl?:string;CreatedAt:string;StartAt:string;EndAt?:string;CommunityName:string;EligibleMembers:number;CreatedByName:string;IsAnonymous:boolean;AllowMultiple:boolean;AllowChangeVote:boolean};summary:{totalVoters:number;totalSelections:number;avgMinutesToVote:number|null;turnout:number};options:Option[];timeline:{VoteDate:string;Votes:number;CumulativeVotes:number}[];ageGroups:Item[];memberGroups:Item[];voters:{UserId:string;FirstName:string;LastName:string;ProfileImage?:string;Vote:string;VotedAt:string}[]};
-const colors=['#16A34A','#2563EB','#7C3AED','#F59E0B','#0891B2','#DC2626'];
+const colors=['#0F8A43','#2563EB','#7C3AED','#F59E0B','#0891B2','#DC2626'];
 
 export default function PollAnalysis(){const{id,pollId}=useLocalSearchParams<{id:string;pollId:string}>(),{palette}=useAppTheme(),{width}=useWindowDimensions();const query=useQuery<Analysis>({queryKey:['poll-analysis',pollId],queryFn:async()=>(await api.get(`/polls/${pollId}/analysis`)).data});
  if(query.isLoading)return <Screen contentStyle={s.page}><Muted>Loading poll analysis…</Muted></Screen>;
