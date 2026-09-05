@@ -8,7 +8,7 @@ import {Avatar,Card,EmptyState,Muted,Screen,useAppTheme} from '@/components/UI';
 
 type Tab='overview'|'voters'|'details';type Option={Id:string;OptionText:string;ImageUrl?:string;VoteCount:number};type Voter={UserId:string;FirstName:string;LastName:string;ProfileImage?:string;Vote:string;VotedAt:string};
 type Analysis={poll:{Id:string;Question:string;Description?:string;ImageUrl?:string;CreatedAt:string;StartAt:string;EndAt?:string;CommunityName:string;EligibleMembers:number;CreatedByName:string;IsAnonymous:boolean;AllowMultiple:boolean;AllowChangeVote:boolean};summary:{totalVoters:number;totalSelections:number;avgMinutesToVote:number|null;turnout:number};options:Option[];voters:Voter[]};
-const colors=['#16A34A','#2563EB','#7C3AED','#F59E0B','#0891B2','#DC2626'];
+const colors=['#0F8A43','#2563EB','#7C3AED','#F59E0B','#0891B2','#DC2626'];
 
 export default function ViewPoll(){const{id,pollId}=useLocalSearchParams<{id:string;pollId:string}>(),{palette}=useAppTheme(),{width}=useWindowDimensions();const[tab,setTab]=useState<Tab>('overview');const query=useQuery<Analysis>({queryKey:['poll-analysis',pollId],queryFn:async()=>(await api.get(`/polls/${pollId}/analysis`)).data});
  if(query.isLoading)return <Screen contentStyle={s.page}><Muted>Loading poll…</Muted></Screen>;if(query.isError||!query.data)return <Screen contentStyle={s.page}><EmptyState icon="lock-closed-outline" title="Poll viewer unavailable" body="This page is available only to administrators and moderators."/></Screen>;const d=query.data,ended=!!d.poll.EndAt&&new Date(d.poll.EndAt)<=new Date();async function share(){await Share.share({title:d.poll.Question,message:`${d.poll.Question}\n${d.summary.totalVoters} voter${d.summary.totalVoters===1?'':'s'} · ${d.summary.turnout}% turnout`})}

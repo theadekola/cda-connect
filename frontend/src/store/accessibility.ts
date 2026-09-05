@@ -4,7 +4,7 @@ import { create } from 'zustand';
 export type ThemeMode='system'|'light'|'dark';
 export type TextScale='normal'|'large'|'xlarge';
 export type AppLanguage='en'|'fr'|'es'|'pt'|'ar'|'yo'|'ig'|'ha';
-export type AccentColor='#0F8A43'|'#08723A'|'#0F1F44';
+export type AccentColor='#0F8A43'|'#08723A'|'#11243F';
 
 export interface AccessibilityPrefs {
   themeMode:ThemeMode;

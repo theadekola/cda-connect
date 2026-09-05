@@ -1,31 +1,31 @@
 export const colors = {
-  primary: '#0F8A43', primaryDark: '#08723A', primaryLight: '#FFFFFF', primarySoft: '#FFFFFF',
-  background: '#FFFFFF', backgroundSoft: '#F8FAFC', surface: '#FFFFFF',
-  textPrimary: '#0F1F44', textSecondary: '#64748B', textMuted: '#94A3B8', text: '#0F1F44', muted: '#64748B',
-  border: '#E2E8F0',
-  success: '#0F8A43', successText: '#08723A', successLight: '#FFFFFF', successSoft: '#FFFFFF',
-  warning: '#F59E0B', warningText: '#B45309', warningLight: '#FEF3C7', warningSoft: '#FEF3C7',
-  danger: '#DC2626', dangerDark: '#B91C1C', dangerText: '#B91C1C', dangerLight: '#FEF2F2', dangerSoft: '#FEE2E2', dangerBorder: '#FECACA',
-  info: '#0F8A43', infoText: '#08723A', infoLight: '#FFFFFF',
-  purple: '#0F1F44', purpleText: '#0F1F44', purpleLight: '#F8FAFC', orange: '#0F8A43', rose: '#DC2626',
-  disabled: '#D1E9DB', white: '#FFFFFF', black: '#000000',
+  primary: '#0F8A43', primaryDark: '#08723A', primaryLight: '#E1EAF7', primarySoft: '#EDF3FB',
+  background: '#EEF3F8', backgroundSoft: '#E8EEF5', surface: '#FFFFFF',
+  textPrimary: '#11243F', textSecondary: '#60708C', textMuted: '#8794A9', text: '#11243F', muted: '#66758F',
+  border: '#D7E0EA',
+  success: '#0F8A43', successText: '#08723A', successLight: '#E1EAF7', successSoft: '#EDF3FB',
+  warning: '#F3A326', warningText: '#9A5B00', warningLight: '#FFF2D8', warningSoft: '#FFF2D8',
+  danger: '#DC5575', dangerDark: '#B63D5B', dangerText: '#A73350', dangerLight: '#FCE8EE', dangerSoft: '#FBE5EB', dangerBorder: '#F3C7D2',
+  info: '#0F8A43', infoText: '#08723A', infoLight: '#E1EAF7',
+  purple: '#667896', purpleText: '#4E607F', purpleLight: '#EDF1F7', orange: '#F3A326', rose: '#DC5575',
+  disabled: '#D8E0EA', white: '#FFFFFF', black: '#08172D',
   // Backwards-compatible aliases used by existing screens.
-  navy: '#0F1F44', cyan: '#0F8A43', gold: '#F59E0B', green: '#0F8A43', red: '#DC2626',
-  secondary: '#0F1F44', accent: '#0F8A43',
+  navy: '#11243F', cyan: '#0F8A43', gold: '#F3A326', green: '#0F8A43', red: '#DC5575',
+  secondary: '#667896', accent: '#0F8A43',
 };
 
 export const darkColors = {
   ...colors,
-  background: '#08141D', backgroundSoft: '#0B1B27', surface: '#0F1F44',
-  text: '#F8FAFC', textPrimary: '#F8FAFC', textSecondary: '#CBD5E1', textMuted: '#94A3B8', muted: '#CBD5E1', border: '#294052',
-  primary: '#22C55E', accent: '#22C55E', primarySoft: '#0F1F44', primaryLight: '#0F1F44',
-  dangerSoft: '#0F1F44', warningSoft: '#0F1F44', successSoft: '#0F1F44', successLight:'#0F1F44',infoLight:'#0F1F44',
+  background: '#0C1728', backgroundSoft: '#111F34', surface: '#17263C',
+  text: '#F5F8FC', textPrimary: '#F5F8FC', textSecondary: '#CBD5E1', textMuted: '#94A3B8', muted: '#C2CDDC', border: '#34445A',
+  primary: '#7FA6E5', primaryDark:'#A8C2EC', accent: '#7FA6E5', primarySoft: '#203655', primaryLight: '#203655',
+  dangerSoft: '#452438', warningSoft: '#43351F', successSoft: '#203655', successLight:'#203655',infoLight:'#203655',
 };
 
 export const highContrastColors = {
   ...colors,
   background: '#FFFFFF', surface: '#FFFFFF', text: '#000000', textPrimary: '#000000', muted: '#262626', border: '#000000',
-  primary: '#007A99', primaryDark: '#001A38', primarySoft: '#FFFFFF', primaryLight:'#FFFFFF',successSoft:'#FFFFFF',successLight:'#FFFFFF',infoLight:'#FFFFFF',danger: '#C81E1E', success: '#087A32',
+  primary: '#174EA6', primaryDark: '#082B67', primarySoft: '#FFFFFF', primaryLight:'#FFFFFF',successSoft:'#FFFFFF',successLight:'#FFFFFF',infoLight:'#FFFFFF',danger: '#B51E3F', success: '#174EA6',
 };
 
 export const radii = {sm: 8, md: 12, lg: 16, xl: 20, pill: 999};

@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   formCategoryText: { flex: 1, minWidth: 0, fontSize: 16, fontWeight: '600' },
   formPicker: { width: '100%', borderWidth: 1, borderRadius: 16, padding: 10, marginTop: -5, marginBottom: 14 },
   backdrop: { flex: 1, backgroundColor: 'rgba(15,31,68,.38)', alignItems: 'center', justifyContent: 'center', padding: 18 },
-  picker: { width: '100%', maxWidth: 430, maxHeight: '86%', borderWidth: 1, borderRadius: 22, padding: 16, shadowColor: '#0F1F44', shadowOpacity: .2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 10 },
+  picker: { width: '100%', maxWidth: 430, maxHeight: '86%', borderWidth: 1, borderRadius: 22, padding: 16, shadowColor: '#11243F', shadowOpacity: .2, shadowRadius: 24, shadowOffset: { width: 0, height: 8 }, elevation: 10 },
   pickerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 },
   pickerTitle: { fontSize: 19, fontWeight: '900' }, close: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   pickerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

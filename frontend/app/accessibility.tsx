@@ -6,7 +6,7 @@ import {AccentColor,TextScale,ThemeMode,useAccessibility} from '@/store/accessib
 
 const themes:[ThemeMode,string,string,keyof typeof Ionicons.glyphMap][]=[['light','Light','Clean and bright','sunny-outline'],['dark','Dark','Easy on the eyes','moon-outline'],['system','System','Follow device settings','desktop-outline']];
 const scales:[TextScale,string,string][]=[['normal','A','Small'],['large','A','Medium'],['xlarge','A','Large']];
-const accents:AccentColor[]=['#0F8A43','#08723A','#0F1F44'];
+const accents:AccentColor[]=['#0F8A43','#08723A','#11243F'];
 const menu=[['lock-closed-outline','Privacy & Safety','/privacy'],['notifications-outline','Notifications','/notifications-settings'],['sunny-outline','Appearance','/accessibility'],['language-outline','Language','/language'],['chatbox-outline','Communications','/communications'],['options-outline','Community Preferences','/community-preferences'],['server-outline','Data & Storage','/data-usage'],['shield-checkmark-outline','Security','/security'],['help-circle-outline','Help & Support','/help'],['information-circle-outline','About CDA Connect','/about']] as const;
 const top=StyleSheet.create({brandBar:{minHeight:68,flexDirection:'row',alignItems:'center',gap:8},back:{width:44,height:44,borderRadius:22,borderWidth:1,alignItems:'center',justifyContent:'center'},logo:{width:48,height:48,resizeMode:'contain'},brand:{fontSize:17,fontWeight:'900'},tagline:{fontSize:9},action:{width:44,height:44,alignItems:'center',justifyContent:'center'}});
 
