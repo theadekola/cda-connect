@@ -1,4 +1,4 @@
-export type User={Id:string;FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string;CoverImage?:string;Country?:string;State?:string;LGA?:string;Postcode?:string;Address?:string;DateOfBirth?:string;CreatedAt?:string};
+export type User={Id:string;FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string;CoverImage?:string;Country?:string;State?:string;LGA?:string;Postcode?:string;Address?:string;DateOfBirth?:string;CreatedAt?:string;SystemRole?:'MEMBER'|'SYSTEM_ADMIN'|'SUPER_ADMIN';IsProtectedAccount?:boolean;TwoFactorEnabled?:boolean};
 export type Community={Id:string;Name:string;Description?:string;LogoUrl?:string;CommunityType?:string;Category?:string;City?:string;Postcode?:string;Country?:string;JoinCode?:string;IsVerified?:boolean;VerifiedAt?:string};
 export type Announcement={Id:string;Title:string;Body:string;IsPinned:boolean;CreatedAt:string;FirstName?:string;LastName?:string};
 export type Meeting={Id:string;Title:string;Description?:string;Location?:string;StartDateTime:string;EndDateTime:string;MeetingType?:string;MyResponse?:string};
