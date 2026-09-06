@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const route=fs.readFileSync(new URL('../src/routes/systemAdmin.ts',import.meta.url),'utf8');
+const migration=fs.readFileSync(new URL('../sql/20260906_protected_super_admin.sql',import.meta.url),'utf8');
+test('all system routes inherit authentication and system-admin checks',()=>{assert.match(route,/use\(requireAuth,requireSystemAdmin\)/)});
+test('sensitive mutations require password and written reason',()=>{assert.match(route,/reason:z\.string\(\)\.trim\(\)\.min\(10\)/);assert.match(route,/confirmPassword/)});
+test('protected account cannot be changed by route or database',()=>{assert.match(route,/Protected Super Admin/);assert.match(migration,/TR_Users_ProtectSuperAdmin/)});
+test('audit history is append only',()=>{assert.match(migration,/INSTEAD OF UPDATE,DELETE/)});
+test('bootstrap rejects plaintext and permits one protected account',()=>{assert.match(migration,/UX_Users_ProtectedSuperAdmin/);assert.match(migration,/@hash NOT LIKE '\$2%\$%'/)});

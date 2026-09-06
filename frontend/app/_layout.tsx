@@ -38,7 +38,7 @@ function DesktopShell({children}:{children:React.ReactNode}){
   const[open,setOpen]=useState(true);
   const desktop=Platform.OS==='web'&&width>=980;
   const publicPage=pathname==='/'||pathname.startsWith('/login')||pathname.startsWith('/register')||pathname.startsWith('/forgot-password');
-  if(!desktop||!accessToken||publicPage)return <>{children}</>;
+  if(pathname.startsWith('/system-admin')||!desktop||!accessToken||publicPage)return <>{children}</>;
   const sidebarWidth=open?238:76;
   const active=(path:string)=>pathname===path.replace('/(tabs)','')||(path.includes('/home')&&pathname==='/home');
   return <View style={shellStyles.shell}>
@@ -162,7 +162,7 @@ const canEditCommunity=communityCapabilities.data?.permissions?.includes('MEMBER
 const canManageDocuments=communityCapabilities.data?.permissions?.includes('DOCUMENT_MANAGE')&&hasCommunityManagementRole;
   useEffect(()=>{if(profile.data)void updateUser(profile.data)},[profile.data,updateUser]);
   useEffect(()=>{if(accessToken)void completePendingCommunityInvite().then(joined=>{if(joined)router.replace(`/community/${joined.Id}` as any)}).catch(()=>{})},[accessToken]);
-  if(desktop||!accessToken||publicPage)return <>{children}</>;
+  if(pathname.startsWith('/system-admin')||desktop||!accessToken||publicPage)return <>{children}</>;
   const selected=pathname==='/home'?'Home':pathname==='/assistant'?'Assistant':pathname==='/profile'||pathname.startsWith('/profile-edit')||pathname==='/language'?'Profile':pathname==='/communities'||pathname.startsWith('/community/')||pathname==='/calendar'?'Communities':pathname==='/settings'||pathname.startsWith('/privacy')||pathname.startsWith('/security')||pathname.startsWith('/change-password')||pathname.startsWith('/two-factor')||pathname.startsWith('/delete-account')||pathname.startsWith('/notifications-settings')||pathname.startsWith('/accessibility')||pathname.startsWith('/communications')||pathname.startsWith('/community-preferences')||pathname.startsWith('/data-usage')||pathname.startsWith('/help')||pathname.startsWith('/about')?'Settings':'';
   const name=`${user?.FirstName||''} ${user?.LastName||''}`.trim()||'CDA Member',initials=name.split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();
   return <View style={[shellStyles.mobileShell,{backgroundColor:palette.background}]}>
