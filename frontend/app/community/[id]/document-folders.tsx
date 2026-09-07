@@ -1,7 +1,7 @@
-import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useQuery} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
 import {Card,Header,Muted,Screen,useAppTheme} from '@/components/UI';
 

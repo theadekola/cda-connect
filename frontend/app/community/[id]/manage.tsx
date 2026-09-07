@@ -1,4 +1,4 @@
-import {Redirect,useLocalSearchParams} from 'expo-router';
+import {Redirect,useLocalSearchParams} from '@/router';
 
 // Backward-compatible redirect for old notifications, bookmarks and cached app links.
 // Community administration now lives in Govern & Protect on the community page.

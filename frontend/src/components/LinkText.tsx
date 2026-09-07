@@ -1,5 +1,5 @@
 import React from 'react';
-import {Linking,Text,type StyleProp,type TextStyle} from 'react-native';
+import {Linking,Text,type StyleProp,type TextStyle} from '@/platform/react-native';
 import {useAppTheme} from './UI';
 
 const linkPattern=/((?:https?:\/\/|www\.)[^\s<>]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/gi;

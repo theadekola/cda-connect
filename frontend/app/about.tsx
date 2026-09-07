@@ -1,16 +1,17 @@
-import {Image,Linking,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import Constants from 'expo-constants';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Image,Linking,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
+import Constants from '@/platform/constants';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {Card,Muted,Screen,useAppTheme} from '@/components/UI';
+import appLogo from '../assets/branding/cda-connect-logo.png';
 
 const menu=[['lock-closed-outline','Privacy & Safety','/privacy'],['notifications-outline','Notifications','/notifications-settings'],['sunny-outline','Appearance','/accessibility'],['language-outline','Language','/language'],['chatbox-outline','Communications','/communications'],['options-outline','Community Preferences','/community-preferences'],['server-outline','Data & Storage','/data-usage'],['shield-checkmark-outline','Security','/security'],['help-circle-outline','Help & Support','/help'],['information-circle-outline','About CDA Connect','/about']] as const;
 const aboutItems=[['Our Mission','Connect people, resources and opportunities.','/our-mission'],['Our Vision','Stronger communities built through trusted collaboration.','/our-vision'],['Our Values','Community, trust, inclusion, safety and meaningful impact.','/our-values'],['Built for Communities','A practical platform for residents, leaders and organisations.','/built-for-communities']] as const;
 const legalItems=[['Terms of Service','Rules governing access to and use of CDA Connect.','/terms-of-service'],['Privacy Policy','How account and community information is handled.','/privacy-policy'],['Community Guidelines','Standards for safe, respectful community participation.','/community-guidelines']] as const;
 
-export default function About(){const{palette}=useAppTheme(),{width}=useWindowDimensions(),desktop=Platform.OS==='web'&&width>=900,version=Constants.expoConfig?.version||Constants.nativeAppVersion||'1.0.0';
+export default function About(){const{palette}=useAppTheme(),{width}=useWindowDimensions(),desktop=Platform.OS==='web'&&width>=900,version=Constants.appVersion||Constants.nativeAppVersion||'1.0.0';
  return <Screen scroll contentStyle={s.page}><View style={s.heading}><Muted>Learn about our purpose, principles and the app communities can trust.</Muted></View><View style={[s.layout,!desktop&&s.stack]}>{desktop?<SettingsMenu/>:null}<View style={s.main}>
-  <Card style={s.brand}><Image source={require('../assets/branding/cda-connect-logo.png')} resizeMode="contain" style={s.logo}/><View style={s.brandCopy}><Text style={[s.brandName,{color:palette.success}]}>CDA CONNECT</Text><Text style={[s.tagline,{color:palette.text}]}>Stronger Communities, Better Lives</Text><Muted style={{textAlign:'center'}}>CDA Connect brings residents, leaders and organisations together to share updates, participate in community decisions, organise activities and access local resources.</Muted></View></Card>
+  <Card style={s.brand}><Image source={{uri:appLogo}} resizeMode="contain" style={s.logo}/><View style={s.brandCopy}><Text style={[s.brandName,{color:palette.success}]}>CDA CONNECT</Text><Text style={[s.tagline,{color:palette.text}]}>Stronger Communities, Better Lives</Text><Muted style={{textAlign:'center'}}>CDA Connect brings residents, leaders and organisations together to share updates, participate in community decisions, organise activities and access local resources.</Muted></View></Card>
   <Text style={[s.sectionTitle,{color:palette.text}]}>Who We Are</Text><Card style={s.list}>{aboutItems.map(([title,summary,path])=><PolicyLink key={title} title={title} summary={summary} press={()=>router.push(path as any)}/>)}</Card>
   <Text style={[s.sectionTitle,{color:palette.text}]}>Policies & Guidelines</Text><Card style={s.list}>{legalItems.map(([title,summary,path])=><PolicyLink key={title} title={title} summary={summary} press={()=>router.push(path as any)}/>)}</Card>
   <View style={s.actions}><Pressable accessibilityRole="link" onPress={()=>Linking.openURL('https://www.cdaconnect.org')} style={[s.action,{borderColor:palette.primary}]}><Ionicons name="globe-outline" size={21} color={palette.primary}/><Text style={[s.actionText,{color:palette.primary}]}>Visit Website</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>router.push('/help')} style={[s.action,{borderColor:palette.primary}]}><Ionicons name="headset-outline" size={21} color={palette.primary}/><Text style={[s.actionText,{color:palette.primary}]}>Help & Support</Text></Pressable></View>

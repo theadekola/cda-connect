@@ -1,8 +1,8 @@
 import {useEffect,useState} from 'react';
-import {Linking,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
-import * as Notifications from 'expo-notifications';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Linking,Platform,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import * as Notifications from '@/platform/notifications';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {useAuth} from '@/store/auth';
 import {Avatar,Muted,Screen,useAppTheme} from '@/components/UI';
 

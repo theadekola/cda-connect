@@ -1,6 +1,6 @@
-import {Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {Button,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {AccentColor,TextScale,ThemeMode,useAccessibility} from '@/store/accessibility';
 

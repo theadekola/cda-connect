@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-BqfDQeLH.js";import{z as t}from"./index-DXUBJbxB.js";var n=e();function r(){return(0,n.jsx)(t,{screenOptions:{headerShown:!1}})}export{r as default};
+//# sourceMappingURL=_layout-D5FgozR8.js.map

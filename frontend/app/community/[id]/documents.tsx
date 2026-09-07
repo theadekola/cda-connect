@@ -1,10 +1,10 @@
 import {useMemo,useState} from 'react';
-import {Alert,Platform,Pressable,Share,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Platform,Pressable,Share,StyleSheet,Text,useWindowDimensions,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
+import {Ionicons} from '@/platform/icons';
+import * as DocumentPicker from '@/platform/document-picker';
+import * as ImagePicker from '@/platform/image-picker';
 import {api} from '@/lib/api';
 import {Button,Card,Header,Input,Muted,Screen,useAppTheme} from '@/components/UI';
 

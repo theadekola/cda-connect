@@ -1,8 +1,8 @@
-import {Image,Pressable,Share,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Image,Pressable,Share,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {useQuery} from '@tanstack/react-query';
-import Svg,{Circle,Polyline} from 'react-native-svg';
+import Svg,{Circle,Polyline} from '@/platform/svg';
 import {api} from '@/lib/api';
 import {Card,EmptyState,Muted,Screen,useAppTheme} from '@/components/UI';
 

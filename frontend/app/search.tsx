@@ -1,4 +1,4 @@
-import {Redirect} from 'expo-router';
+import {Redirect} from '@/router';
 
 /** Legacy route retained for old bookmarks and cached navigation state. */
 export default function LegacyDiscoveryPreferences(){

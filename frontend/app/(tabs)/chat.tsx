@@ -1,7 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from '@/platform/react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { router } from '@/router';
+import { Ionicons } from '@/platform/icons';
 import { api } from '@/lib/api';
 import { useCommunity } from '@/store/community';
 import { Avatar, EmptyState, Header, Muted, Screen } from '@/components/UI';

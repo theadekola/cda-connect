@@ -1,8 +1,8 @@
 import React from 'react';
-import {Linking,Pressable,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Linking,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
 import {Badge,Button,Card,EmptyState,Muted,Screen,TabBar,useAppTheme} from '@/components/UI';
 import type {Meeting} from '@/types';

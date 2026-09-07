@@ -10,7 +10,7 @@ const schema = z.object({
   DB_NAME: z.string().min(1),
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
-  DB_ENCRYPT: z.string().default('false').transform(v => v === 'true'),
+  DB_ENCRYPT: z.string().default('true').transform(v => v.toLowerCase() === 'true'),
   DB_TRUST_CERT: z.string().default('true').transform(v => v === 'true'),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),

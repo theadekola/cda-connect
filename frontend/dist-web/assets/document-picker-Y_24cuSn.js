@@ -1,0 +1,2 @@
+async function e(e={}){return new Promise(t=>{let n=document.createElement(`input`);n.type=`file`,n.accept=Array.isArray(e.type)?e.type.join(`,`):e.type||`*/*`,n.multiple=!!e.multiple,n.onchange=()=>t({canceled:!n.files?.length,assets:Array.from(n.files||[]).map(e=>({file:e,name:e.name,size:e.size,mimeType:e.type,uri:URL.createObjectURL(e)}))}),n.click()})}export{e as t};
+//# sourceMappingURL=document-picker-Y_24cuSn.js.map

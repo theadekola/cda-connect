@@ -1,16 +1,16 @@
 import {useEffect,useState} from 'react';
-import {Alert,FlatList,Image,KeyboardAvoidingView,Linking,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,FlatList,Image,KeyboardAvoidingView,Linking,Platform,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useQuery} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {Ionicons} from '@/platform/icons';
+import {SafeAreaView} from '@/platform/safe-area';
 import {api} from '@/lib/api';
 import {connectSocket,socket} from '@/lib/socket';
 import {Avatar,Input,Muted,useAppTheme} from '@/components/UI';
 import {InAppAudioCall} from '@/components/InAppAudioCall';
 import {useAuth} from '@/store/auth';
 import {LinkText} from '@/components/LinkText';
-import * as DocumentPicker from 'expo-document-picker';
+import * as DocumentPicker from '@/platform/document-picker';
 
 type Conversation={Id:string;Name:string;Type:'COMMUNITY'|'GROUP'|'DIRECT';CommunityId:string;CommunityName:string;CommunityImage?:string;DirectImage?:string};
 const createClientMessageId=()=>('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx').replace(/[xy]/g,value=>{const random=Math.floor(Math.random()*16);return(value==='x'?random:(random&3)|8).toString(16)});

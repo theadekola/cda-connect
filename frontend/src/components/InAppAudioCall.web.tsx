@@ -1,12 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {ActivityIndicator,Modal,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
 import {connectSocket,socket} from '../lib/socket';
 import {useAppTheme} from './UI';
 
 type Props={visible:boolean;conversationId:string;title:string;onEnd:()=>void};
 type Signal={type?:RTCSdpType;sdp?:string;candidate?:RTCIceCandidateInit};
-const turnUrl=process.env.EXPO_PUBLIC_TURN_URL;const rtcConfig:RTCConfiguration={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},...(turnUrl?[{urls:turnUrl,username:process.env.EXPO_PUBLIC_TURN_USERNAME,credential:process.env.EXPO_PUBLIC_TURN_CREDENTIAL}]:[])]};
+const turnUrl=import.meta.env.EXPO_PUBLIC_TURN_URL;const rtcConfig:RTCConfiguration={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},...(turnUrl?[{urls:turnUrl,username:import.meta.env.EXPO_PUBLIC_TURN_USERNAME,credential:import.meta.env.EXPO_PUBLIC_TURN_CREDENTIAL}]:[])]};
 
 export function InAppAudioCall({visible,conversationId,title,onEnd}:Props){
  const{palette}=useAppTheme();const[status,setStatus]=useState('Connecting…');const[muted,setMuted]=useState(false);const[participants,setParticipants]=useState(1);const streamRef=useRef<MediaStream|null>(null);const peersRef=useRef(new Map<string,RTCPeerConnection>());const audioRef=useRef(new Map<string,HTMLAudioElement>());

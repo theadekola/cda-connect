@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import {Platform} from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import {Platform} from '@/platform/react-native';
+import * as SecureStore from '@/platform/secure-store';
 import type { User } from '../types';
 import { secureDelete,secureGet,secureSet } from '../lib/storage';
 

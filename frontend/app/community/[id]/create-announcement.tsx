@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Alert, StyleSheet, Text, View } from '@/platform/react-native';
+import { router, useLocalSearchParams } from '@/router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/platform/icons';
 import { api } from '@/lib/api';
 import { Button, Card, Input, Muted, Screen, useAppTheme } from '@/components/UI';
 

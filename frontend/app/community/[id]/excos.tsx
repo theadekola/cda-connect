@@ -1,10 +1,10 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Pressable,ScrollView,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
-import {Avatar,Badge,Button,Card,EmptyState,Header,Input,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Avatar,Badge,Button,Card,EmptyState,Header,Input,Modal,Muted,Screen,useAppTheme} from '@/components/UI';
 import {DateField} from '@/components/DateField';
 
 type Exco={Id:string;UserId:string;Position:string;Department?:string;AppointedDate:string;TenureEndDate?:string;Notes?:string;Status:'ACTIVE'|'INACTIVE';FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string};

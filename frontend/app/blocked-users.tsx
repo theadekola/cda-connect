@@ -1,4 +1,4 @@
-import {Alert,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,Platform,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
 import {api} from '@/lib/api';
 import {Avatar,EmptyState,Muted,Screen,useAppTheme} from '@/components/UI';

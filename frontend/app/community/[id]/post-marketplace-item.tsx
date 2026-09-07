@@ -1,9 +1,9 @@
 import {useState} from 'react';
-import {Alert,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Image,Pressable,ScrollView,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import {Ionicons} from '@/platform/icons';
+import * as ImagePicker from '@/platform/image-picker';
 import {api} from '@/lib/api';
 import {AmountInput,Button,Card,Header,Input,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {amountNumber} from '@/lib/money';

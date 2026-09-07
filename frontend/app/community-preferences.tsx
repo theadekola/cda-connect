@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
-import {Alert,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Alert,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {Button,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {api} from '@/lib/api';
 import {secureGet,secureSet} from '@/lib/storage';

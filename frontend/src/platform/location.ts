@@ -1,0 +1,6 @@
+import {Geolocation} from '@capacitor/geolocation';
+export const Accuracy={High:'high',Balanced:'balanced'};
+export async function requestForegroundPermissionsAsync(){try{await Geolocation.requestPermissions();return {status:'granted',granted:true}}catch{return {status:'denied',granted:false}}}
+export async function getCurrentPositionAsync(options?:any){const p=await Geolocation.getCurrentPosition(options);return {coords:p.coords,timestamp:p.timestamp}}
+export async function reverseGeocodeAsync({latitude,longitude}:any){const response=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);const data=await response.json();return [{city:data.address?.city||data.address?.town||data.address?.village,region:data.address?.state,subregion:data.address?.state_district,country:data.address?.country,isoCountryCode:data.address?.country_code?.toUpperCase(),district:data.address?.county,street:data.address?.road,postalCode:data.address?.postcode,name:data.display_name}]}
+export async function geocodeAsync(address:string){const response=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`);const data=await response.json();return data.map((item:any)=>({latitude:Number(item.lat),longitude:Number(item.lon),accuracy:null,altitude:null}))}

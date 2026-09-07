@@ -1,6 +1,6 @@
 import {useMemo,useState} from 'react';
-import {FlatList,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {FlatList,Modal,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
 import {useAppTheme} from './UI';
 
 const pad=(n:number)=>String(n).padStart(2,'0');

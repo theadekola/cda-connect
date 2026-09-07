@@ -1,9 +1,9 @@
 import {useCallback,useEffect,useState} from 'react';
-import {Alert,Modal,Platform,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
-import Constants from 'expo-constants';
+import {Alert,Modal,Platform,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
+import {Ionicons} from '@/platform/icons';
+import * as SecureStore from '@/platform/secure-store';
+import Constants from '@/platform/constants';
 import {Button,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {api} from '@/lib/api';
 import {secureDelete,secureGet,secureSet} from '@/lib/storage';

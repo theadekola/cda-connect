@@ -1,5 +1,5 @@
-import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
 import {AppLanguage,useAccessibility} from '@/store/accessibility';
 import {languageNames} from '@/i18n';
 import {Muted,Screen,useAppTheme} from '@/components/UI';

@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-BqfDQeLH.js";import{R as t}from"./index-DXUBJbxB.js";var n=e();function r(){return(0,n.jsx)(t,{href:`/(tabs)/communities`})}export{r as default};
+//# sourceMappingURL=search-BCl5sWFd.js.map

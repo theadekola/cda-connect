@@ -1,19 +1,19 @@
 import {useMemo,useState} from 'react';
-import {Alert,FlatList,Modal,Platform,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import {Alert,FlatList,Platform,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from '@/platform/react-native';
+import {SafeAreaView} from '@/platform/safe-area';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
+import * as ImagePicker from '@/platform/image-picker';
 import {City,Country,State,type ICountry,type IState} from 'country-state-city';
 import {getLGAsByState,getStateByName} from '@some19ice/nigeria-geo-core';
 import {api} from '@/lib/api';
 import {useAuth} from '@/store/auth';
-import {Avatar,Button,Card,Input,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Avatar,Button,Card,Input,Modal,Muted,Screen,useAppTheme} from '@/components/UI';
 import {DateField as AppDateField} from '@/components/DateField';
 import {CountryPhoneField} from '@/components/CountryPhoneField';
 import {countryUsesPostcode} from '@/lib/postalCodes';
 type Option={label:string;value:string};
-function usableMediaUrl(url:string){try{const apiBase=new URL(process.env.EXPO_PUBLIC_API_URL||'');const media=new URL(url);if(['localhost','127.0.0.1'].includes(media.hostname)){media.protocol=apiBase.protocol;media.hostname=apiBase.hostname;media.port=apiBase.port==='80'||apiBase.port==='443'?'':apiBase.port}return media.toString()}catch{return url}}
+function usableMediaUrl(url:string){try{const apiBase=new URL(import.meta.env.EXPO_PUBLIC_API_URL||window.location.origin);const media=new URL(url);if(['localhost','127.0.0.1'].includes(media.hostname)){media.protocol=apiBase.protocol;media.hostname=apiBase.hostname;media.port=apiBase.port==='80'||apiBase.port==='443'?'':apiBase.port}return media.toString()}catch{return url}}
 
 export default function ProfileEdit(){
  const{user,accessToken,refreshToken,setSession}=useAuth(),{palette}=useAppTheme(),{width}=useWindowDimensions(),desktop=Platform.OS==='web'&&width>=800;

@@ -1,8 +1,8 @@
 import {useEffect,useState} from 'react';
-import {Alert,Platform,Pressable,Share,StyleSheet,Text,View} from 'react-native';
+import {Alert,Platform,Pressable,Share,StyleSheet,Text,View} from '@/platform/react-native';
 import {useQuery} from '@tanstack/react-query';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
 import {useAuth} from '@/store/auth';
 import {Avatar,Card,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';

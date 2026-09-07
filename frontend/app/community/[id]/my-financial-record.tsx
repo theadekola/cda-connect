@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from '@/platform/react-native';
+import { router, useLocalSearchParams } from '@/router';
 import { useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/platform/icons';
 
 import { api } from '@/lib/api';
 import { Badge, Card, EmptyState, Muted, Screen, TabBar, useAppTheme } from '@/components/UI';

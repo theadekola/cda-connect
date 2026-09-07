@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Alert,Image,Platform,Pressable,StyleSheet,Text,View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Alert,Image,Platform,Pressable,StyleSheet,Text,View } from '@/platform/react-native';
+import { useLocalSearchParams } from '@/router';
 import { useMutation,useQueryClient } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';import * as DocumentPicker from 'expo-document-picker';
+import { Ionicons } from '@/platform/icons';
+import * as ImagePicker from '@/platform/image-picker';import * as DocumentPicker from '@/platform/document-picker';
 import { api } from '@/lib/api';import { Button,Card,Input,Muted,Screen,useAppTheme } from '@/components/UI';
 const categories=[['Inappropriate Content','chatbubbles-outline','#0F8A43'],['Harassment or Bullying','person-remove-outline','#F58413'],['Spam or Scams','mail-outline','#7C3AED'],['Fake Profile','person-circle-outline','#1683E8'],['Violence or Threats','shield-outline','#E31B23'],['Hate Speech','megaphone-outline','#1683E8'],['Privacy Violation','lock-closed-outline','#0F8A43'],['Other','ellipsis-horizontal-circle-outline','#64748B']] as const;
 type Attachment={uri:string;name:string;type:string;kind:string};

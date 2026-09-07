@@ -1,7 +1,7 @@
 import {useMemo,useState} from 'react';
-import {FlatList,Image,Modal,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {Ionicons} from '@expo/vector-icons';
+import {FlatList,Image,Modal,Pressable,StyleSheet,Text,TextInput,View} from '@/platform/react-native';
+import {SafeAreaView} from '@/platform/safe-area';
+import {Ionicons} from '@/platform/icons';
 import {Country,type ICountry} from 'country-state-city';
 import {useAppTheme} from '@/components/UI';
 

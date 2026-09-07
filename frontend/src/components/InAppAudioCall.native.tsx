@@ -1,11 +1,11 @@
 import {useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Modal,NativeModules,Pressable,StyleSheet,Text,View} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {ActivityIndicator,Modal,NativeModules,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
 import {connectSocket,socket} from '../lib/socket';
 import {useAppTheme} from './UI';
 
 type Props={visible:boolean;conversationId:string;title:string;onEnd:()=>void};
-const turnUrl=process.env.EXPO_PUBLIC_TURN_URL;const rtcConfig={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},...(turnUrl?[{urls:turnUrl,username:process.env.EXPO_PUBLIC_TURN_USERNAME,credential:process.env.EXPO_PUBLIC_TURN_CREDENTIAL}]:[])]};
+const turnUrl=import.meta.env.EXPO_PUBLIC_TURN_URL;const rtcConfig={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},...(turnUrl?[{urls:turnUrl,username:import.meta.env.EXPO_PUBLIC_TURN_USERNAME,credential:import.meta.env.EXPO_PUBLIC_TURN_CREDENTIAL}]:[])]};
 let mediaDevices:any,RTCIceCandidate:any,RTCPeerConnection:any,RTCSessionDescription:any;let RTCView:any=()=>null;
 
 export function InAppAudioCall({visible,conversationId,title,onEnd}:Props){

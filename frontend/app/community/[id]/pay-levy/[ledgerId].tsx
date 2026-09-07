@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Alert, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from '@/platform/react-native';
+import { router, useLocalSearchParams } from '@/router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as DocumentPicker from 'expo-document-picker';
-import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from '@/platform/document-picker';
+import { Ionicons } from '@/platform/icons';
 import { api } from '@/lib/api';
 import { Button, Card, Header, Input, Muted, Screen, SectionTitle, useAppTheme } from '@/components/UI';
 import { formatAmount } from '@/lib/money';

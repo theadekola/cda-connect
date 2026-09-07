@@ -1,6 +1,6 @@
-import {Platform,StyleSheet,View,useWindowDimensions} from 'react-native';
-import {Tabs} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Platform,StyleSheet,View,useWindowDimensions} from '@/platform/react-native';
+import {Tabs} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {useAppTheme} from '@/components/UI';
 import {useI18n} from '@/i18n';
 
@@ -10,10 +10,10 @@ export default function TabsLayout(){
   const{width}=useWindowDimensions();
   const{palette}=useAppTheme();
   const{t}=useI18n();
-  const desktop=Platform.OS==='web'&&width>=980;
+  const desktop=Platform.OS==='web'&&width>=768;
 
   return <View style={styles.shell}>
-    <Tabs screenOptions={({route})=>({
+    <Tabs screenOptions={({route}:{route:{name:string}})=>({
       headerShown:false,
       tabBarPosition:'bottom',
       tabBarActiveTintColor:palette.primary,

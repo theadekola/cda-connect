@@ -1,1 +1,25 @@
-{"extends":"expo/tsconfig.base","compilerOptions":{"strict":true,"baseUrl":".","ignoreDeprecations":"6.0","paths":{"@/*":["./src/*"]}},"include":["**/*.ts","**/*.tsx",".expo/types/**/*.ts","expo-env.d.ts"]}
+{
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {"@/*": ["./src/*"]},
+    "types": ["vite/client", "vite-plugin-pwa/client"]
+  },
+  "include": ["src", "app", "vite.config.ts", "capacitor.config.ts"]
+}

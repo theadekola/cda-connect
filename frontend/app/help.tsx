@@ -1,7 +1,7 @@
 import {useMemo,useState} from 'react';
-import {Alert,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Alert,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View,useWindowDimensions} from '@/platform/react-native';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {Card,Muted,Screen,useAppTheme} from '@/components/UI';
 
 type Category={name:string;summary:string;icon:keyof typeof Ionicons.glyphMap;details:string[]};

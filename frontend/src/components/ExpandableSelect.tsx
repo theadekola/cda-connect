@@ -1,6 +1,6 @@
 import {useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
 import {useAppTheme} from '@/components/UI';
 
 type Props={label:string;value:string;options:string[];onChange:(value:string)=>void;icon?:keyof typeof Ionicons.glyphMap};

@@ -1,7 +1,6 @@
-import {Platform} from 'react-native';
-import Constants from 'expo-constants';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import {Platform} from '@/platform/react-native';
+import * as Device from '@/platform/device';
+import * as Notifications from '@/platform/notifications';
 import {api} from './api';
 import {secureDelete,secureGet,secureSet} from './storage';
 
@@ -21,8 +20,7 @@ export async function registerForPushNotifications(){
   let permission=await Notifications.getPermissionsAsync();
   if(permission.status!=='granted')permission=await Notifications.requestPermissionsAsync();
   if(permission.status!=='granted')return null;
-  const projectId=Constants.easConfig?.projectId??Constants.expoConfig?.extra?.eas?.projectId;
-  const token=(await Notifications.getExpoPushTokenAsync(projectId?{projectId}:undefined)).data;
+  const token=(await Notifications.getPushTokenAsync()).data;
   await api.post('/users/devices',{
     deviceToken:token,
     platform:Platform.OS,

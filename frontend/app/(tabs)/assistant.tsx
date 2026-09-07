@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
 import {useQuery} from '@tanstack/react-query';
 import {api} from '@/lib/api';
 import {useCommunity} from '@/store/community';

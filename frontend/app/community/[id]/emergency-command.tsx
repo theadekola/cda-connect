@@ -1,9 +1,9 @@
 import {useState} from 'react';
-import {Alert,Linking,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Linking,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
-import {api} from '@/lib/api';import {Badge,Button,Card,EmptyState,Header,Input,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Ionicons} from '@/platform/icons';
+import {api} from '@/lib/api';import {Badge,Button,Card,EmptyState,Header,Input,Modal,Muted,Screen,useAppTheme} from '@/components/UI';
 import {CountryPhoneField} from '@/components/CountryPhoneField';
 type Contact={Id:string;Name:string;Phone:string;ContactType?:string;IsOfficial:boolean};type EmergencyAlert={Id:string;Title:string;Message:string;Severity:string;AlertType?:string;AffectedArea?:string;Active:boolean;CreatedAt:string;MyResponse?:string;ResolutionNote?:string};
 export default function Emergency(){const{id}=useLocalSearchParams<{id:string}>();const{palette}=useAppTheme();const qc=useQueryClient();const[sosOpen,setSosOpen]=useState(false),[alertOpen,setAlertOpen]=useState(false),[contactOpen,setContactOpen]=useState(false),[sosMessage,setSosMessage]=useState(''),[sosArea,setSosArea]=useState(''),[title,setTitle]=useState(''),[message,setMessage]=useState(''),[area,setArea]=useState(''),[severity,setSeverity]=useState<'INFO'|'NOTICE'|'WARNING'|'HIGH'|'CRITICAL'>('HIGH'),[contactName,setContactName]=useState(''),[contactPhone,setContactPhone]=useState(''),[contactType,setContactType]=useState('Emergency contact');

@@ -1,8 +1,8 @@
 import {useMemo,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
-import {router} from 'expo-router';
+import {Alert,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
 import {Card,EmptyState,Muted,Screen,useAppTheme} from '@/components/UI';
 

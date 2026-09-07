@@ -1,9 +1,9 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,Alert,Image,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,Alert,Image,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from '@/platform/react-native';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {router,useFocusEffect,useLocalSearchParams} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import {router,useFocusEffect,useLocalSearchParams} from '@/router';
+import {Ionicons} from '@/platform/icons';
+import * as Location from '@/platform/location';
 import {api} from '@/lib/api';
 import {secureGet,secureSet} from '@/lib/storage';
 import {useAuth} from '@/store/auth';

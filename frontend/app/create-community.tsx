@@ -1,13 +1,13 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,FlatList,Image,Linking,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Alert,FlatList,Image,Linking,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
 import {useMutation,useQueryClient} from '@tanstack/react-query';
-import {router} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
-import * as Location from 'expo-location';
+import {router} from '@/router';
+import {Ionicons} from '@/platform/icons';
+import * as Location from '@/platform/location';
 import {City,Country,type ICountry,type IState,State} from 'country-state-city';
 import {getLGAsByState,getStateByName} from '@some19ice/nigeria-geo-core';
 import {api} from '@/lib/api';
-import {Button,Card,Input,Muted,Screen,useAppTheme} from '@/components/UI';
+import {Button,Card,Input,Modal,Muted,Screen,useAppTheme} from '@/components/UI';
 
 const steps=['Basic Details','Location','Settings','Review & Create'];
 const categories=['Residents','Sports','Business','Environment','Faith','Education','Health & Wellness','Technology','Other'];
@@ -22,7 +22,7 @@ export default function CreateCommunity(){
  const country=selectedCountry.name,state=selectedState?.name||'',city=lga;
  const locationLabel=[area,lga,state,country].filter(Boolean).join(', ');
  const latitude=coordinates?.latitude??Number(selectedState?.latitude||selectedCountry.latitude||9.082);const longitude=coordinates?.longitude??Number(selectedState?.longitude||selectedCountry.longitude||8.6753);
- const googleMapsKey=process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;const mapUrl=googleMapsKey?`https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=${area?15:selectedState?9:5}&size=900x360&scale=2&maptype=roadmap&markers=color:green%7C${latitude},${longitude}&key=${googleMapsKey}`:`https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=${area?15:selectedState?9:5}&size=900x360&maptype=mapnik&markers=${latitude},${longitude},red-pushpin`;
+ const googleMapsKey=import.meta.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;const mapUrl=googleMapsKey?`https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=${area?15:selectedState?9:5}&size=900x360&scale=2&maptype=roadmap&markers=color:green%7C${latitude},${longitude}&key=${googleMapsKey}`:`https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=${area?15:selectedState?9:5}&size=900x360&maptype=mapnik&markers=${latitude},${longitude},red-pushpin`;
  const googleMapsUrl=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationLabel||`${latitude},${longitude}`)}`;
  useEffect(()=>{if(!selectedState)return;let active=true;const timer=setTimeout(async()=>{try{const found=await Location.geocodeAsync(locationLabel);if(active&&found[0])setCoordinates({latitude:found[0].latitude,longitude:found[0].longitude})}catch{setCoordinates(null)}},700);return()=>{active=false;clearTimeout(timer)}},[area,lga,state,country,locationLabel,selectedState]);
  function chooseCountry(option:Option){const next=countries.find(x=>x.isoCode===option.value);if(!next)return;setSelectedCountry(next);setSelectedState(null);setLga('')}

@@ -1,15 +1,14 @@
 import {useEffect,useRef,useState} from 'react';
-import {Alert,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
-import {router} from 'expo-router';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {StatusBar} from 'expo-status-bar';
+import {Alert,Image,KeyboardAvoidingView,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
+import {router} from '@/router';
+import {SafeAreaView} from '@/platform/safe-area';
+import {StatusBar} from '@/platform/status-bar';
 import {api} from '@/lib/api';
 import {colors} from '@/theme';
 import {CountryPhoneField} from '@/components/CountryPhoneField';
-
-const requestArt=require('../../assets/branding/forgot-password.png');
-const resetArt=require('../../assets/branding/reset-password.png');
+import requestArt from '../../assets/branding/forgot-password.png';
+import resetArt from '../../assets/branding/reset-password.png';
 
 const passwordRules=(value:string)=>[
   {label:'At least 8 characters',ok:value.length>=8},
@@ -59,7 +58,7 @@ export default function ForgotPassword(){
   return <SafeAreaView style={s.safe}><StatusBar style="dark"/><KeyboardAvoidingView style={s.flex} behavior={Platform.OS==='ios'?'padding':undefined}><ScrollView contentContainerStyle={[s.shell,width>560&&s.webShell]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
     <Pressable accessibilityLabel="Back" onPress={back} style={s.back}><Ionicons name="chevron-back" size={28} color={colors.textPrimary}/></Pressable>
     {step==='request'?<>
-      <View style={[s.artCrop,{backgroundColor:colors.background,isolation:'isolate' as any}]}><Image source={requestArt} resizeMode="cover" style={[s.art,{mixBlendMode:'multiply'} as any]}/></View>
+      <View style={[s.artCrop,{backgroundColor:colors.background,isolation:'isolate' as any}]}><Image source={{uri:requestArt}} resizeMode="cover" style={[s.art,{mixBlendMode:'multiply'} as any]}/></View>
       <Text accessibilityRole="header" style={s.title}>Forgot password?</Text>
       <Text style={s.subtitle}>No worries! Enter your registered mobile number and we’ll send you a reset code.</Text>
       <Text style={s.label}>Mobile number</Text>
@@ -69,7 +68,7 @@ export default function ForgotPassword(){
       <PrimaryButton title={loading?'Sending…':'Send reset code'} disabled={loading} press={requestCode}/>
       <View style={s.help}><View style={s.helpIcon}><Ionicons name="help" size={20} color={colors.primary}/></View><View style={s.helpText}><Text style={s.infoTitle}>Need help?</Text><Text style={s.infoBody}>Contact our support team if you’re still having trouble accessing your account.</Text></View><Pressable accessibilityRole="button" onPress={()=>Alert.alert('CDA Connect support','Please contact your CDA Connect administrator or support team.')}><Text style={s.helpLink}>Contact support ›</Text></Pressable></View>
     </>:<>
-      <View style={[s.artCropSmall,{backgroundColor:colors.background,isolation:'isolate' as any}]}><Image source={resetArt} resizeMode="cover" style={[s.artSmall,{mixBlendMode:'multiply'} as any]}/></View>
+      <View style={[s.artCropSmall,{backgroundColor:colors.background,isolation:'isolate' as any}]}><Image source={{uri:resetArt}} resizeMode="cover" style={[s.artSmall,{mixBlendMode:'multiply'} as any]}/></View>
       <Text accessibilityRole="header" style={s.title}>Let’s reset your password</Text>
       <Text style={[s.subtitle,{marginBottom:4}]}>Enter the 6-digit code we sent to</Text>
       <View style={s.editRow}><Text style={s.phoneText}>{masked}</Text><Pressable onPress={()=>{setStep('request');setError('')}}><Text style={s.edit}>Edit</Text></Pressable></View>

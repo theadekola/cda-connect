@@ -1,9 +1,9 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,FlatList,Image,Modal,Platform,Pressable,Share,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Alert,FlatList,Image,Modal,Platform,Pressable,Share,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from '@/platform/image-picker';
 import {City,Country,State} from 'country-state-city';
 import {getLGAsByState,getStateByName} from '@some19ice/nigeria-geo-core';
 import {api} from '@/lib/api';

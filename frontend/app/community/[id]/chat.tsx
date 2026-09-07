@@ -1,10 +1,10 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Alert,Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Image,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
-import {Avatar,Button,Card,EmptyState,Input,Muted,Screen,TabBar,useAppTheme} from '@/components/UI';
+import {Avatar,Button,Card,EmptyState,Input,Modal,Muted,Screen,TabBar,useAppTheme} from '@/components/UI';
 import {useAuth} from '@/store/auth';
 
 type Conversation={Id:string;Name:string;Type:'COMMUNITY'|'GROUP'|'DIRECT';CreatedAt:string;LastMessage?:string;CommunityImage?:string;DirectImage?:string;DirectUserId?:string;Virtual?:boolean};

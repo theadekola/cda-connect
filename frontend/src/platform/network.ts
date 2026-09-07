@@ -1,0 +1,2 @@
+export async function getNetworkState(){return {isConnected:typeof navigator==='undefined'||navigator.onLine,isInternetReachable:typeof navigator==='undefined'||navigator.onLine}}
+export function watchNetwork(listener:(state:{isConnected:boolean;isInternetReachable:boolean})=>void){const update=()=>void getNetworkState().then(listener);window.addEventListener('online',update);window.addEventListener('offline',update);return()=>{window.removeEventListener('online',update);window.removeEventListener('offline',update)}}

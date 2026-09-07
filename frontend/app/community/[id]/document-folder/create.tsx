@@ -1,6 +1,6 @@
-import {Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+import {Modal,Pressable,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
+import {Ionicons} from '@/platform/icons';
 import {Muted,useAppTheme} from '@/components/UI';
 
 const folders=[['Policies','document-text-outline'],['Reports','people-outline'],['Forms','reader-outline'],['Archives','archive-outline'],['Emergency procedures','shield-checkmark-outline'],['Other','folder-outline']] as const;

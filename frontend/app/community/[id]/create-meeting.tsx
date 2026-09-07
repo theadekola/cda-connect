@@ -1,10 +1,10 @@
 import {useEffect,useState,type ComponentProps} from 'react';
-import {Alert,Pressable,Share,StyleSheet,Text,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Pressable,Share,StyleSheet,Text,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
-import {Ionicons} from '@expo/vector-icons';
+import AsyncStorage from '@/platform/browser-storage';
+import * as Location from '@/platform/location';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
 import {Button,Card,Input as BaseInput,Muted,Screen,ToggleSwitch as Switch,useAppTheme} from '@/components/UI';
 import {DateField} from '@/components/DateField';

@@ -1,0 +1,2 @@
+export function useVideoPlayer(source:any,setup?:(player:any)=>void){const player={source,play(){player.playing=true},pause(){player.playing=false},loop:false,playing:false,currentTime:0};setup?.(player);return player}
+export function VideoView({player,style,...props}:any){const source=typeof player?.source==='string'?player.source:player?.source?.uri;return <video src={source} style={style} controls playsInline {...props}/>}

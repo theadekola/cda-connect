@@ -1,0 +1,2 @@
+import{t as e}from"./jsx-runtime-BqfDQeLH.js";var t=e();function n({source:e,style:n,onError:r,title:i=`Document`,...a}){let o=e?.uri||e;return(0,t.jsx)(`iframe`,{src:o,title:i,style:{border:0,width:`100%`,height:`100%`,...Array.isArray(n)?Object.assign({},...n):n},onError:r,...a})}export{n as t};
+//# sourceMappingURL=web-view-DR5w7jj1.js.map

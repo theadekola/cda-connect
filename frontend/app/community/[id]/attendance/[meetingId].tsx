@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Alert, Pressable, StyleSheet, Text, View, useWindowDimensions } from '@/platform/react-native';
+import { router, useLocalSearchParams } from '@/router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/platform/icons';
 import { api } from '@/lib/api';
 import { Avatar, Badge, Button, Card, EmptyState, Input, Muted, Screen, TabBar, useAppTheme } from '@/components/UI';
 

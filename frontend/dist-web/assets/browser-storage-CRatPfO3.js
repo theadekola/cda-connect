@@ -1,0 +1,2 @@
+var e=typeof window>`u`?null:window.localStorage,t={async getItem(t){return e?.getItem(t)??null},async setItem(t,n){e?.setItem(t,n)},async removeItem(t){e?.removeItem(t)}};export{t};
+//# sourceMappingURL=browser-storage-CRatPfO3.js.map

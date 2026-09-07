@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from '@/platform/react-native';
+import { router, useLocalSearchParams } from '@/router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/platform/icons';
 import { api } from '@/lib/api';
-import { Avatar, Badge, Button, Card, EmptyState, Header, Input, Muted, Screen, useAppTheme } from '@/components/UI';
+import { Avatar, Badge, Button, Card, EmptyState, Header, Input, Modal, Muted, Screen, useAppTheme } from '@/components/UI';
 import { CountryPhoneField } from '@/components/CountryPhoneField';
 
 const categories = ['Electricians', 'Plumbers', 'Cleaners', 'Mechanics', 'Tutors', 'Childcare', 'Restaurants', 'Healthcare', 'Legal services', 'Technology', 'Transport', 'Security', 'Catering', 'Beauty & wellness', 'Home repairs', 'Other'];

@@ -1,8 +1,8 @@
 import {useRef,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
-import {router,useLocalSearchParams} from 'expo-router';
+import {Alert,Pressable,StyleSheet,Text,TextInput,View} from '@/platform/react-native';
+import {router,useLocalSearchParams} from '@/router';
 import {useMutation} from '@tanstack/react-query';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons} from '@/platform/icons';
 import {api} from '@/lib/api';
 import {Button,Card,Muted,Screen,useAppTheme} from '@/components/UI';
 

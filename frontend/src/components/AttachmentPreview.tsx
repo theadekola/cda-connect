@@ -1,8 +1,8 @@
 import React,{useEffect,useState} from 'react';
-import {ActivityIndicator,Alert,Image,Linking,Modal,Platform,Pressable,Share,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
-import {useVideoPlayer,VideoView} from 'expo-video';
-import {WebView} from 'react-native-webview';
+import {ActivityIndicator,Alert,Image,Linking,Modal,Platform,Pressable,Share,StyleSheet,Text,View,useWindowDimensions} from '@/platform/react-native';
+import {Ionicons} from '@/platform/icons';
+import {useVideoPlayer,VideoView} from '@/platform/video';
+import {WebView} from '@/platform/web-view';
 import {Muted,useAppTheme} from './UI';
 
 export type Attachment={url:string;title?:string;mimeType?:string;posterName?:string;posterImage?:string;caption?:string;reactionCount?:number;commentCount?:number;shareCount?:number;liked?:boolean;saved?:boolean;onLike?:()=>void;onComment?:()=>void;onShare?:()=>void;onSave?:()=>void}|null;

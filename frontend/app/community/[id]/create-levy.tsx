@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Alert, Pressable, StyleSheet, Text, View, useWindowDimensions } from '@/platform/react-native';
+import { router, useLocalSearchParams } from '@/router';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@/platform/icons';
 import { api } from '@/lib/api';
-import { AmountInput, Avatar, Button, Card, Header, Input, Muted, Screen, useAppTheme } from '@/components/UI';
+import { AmountInput, Avatar, Button, Card, Header, Input, Modal, Muted, Screen, useAppTheme } from '@/components/UI';
 import { DateField } from '@/components/DateField';
 import { amountNumber } from '@/lib/money';
 

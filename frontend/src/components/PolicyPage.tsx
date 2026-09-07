@@ -1,4 +1,4 @@
-import {StyleSheet,Text,View} from 'react-native';
+import {StyleSheet,Text,View} from '@/platform/react-native';
 import {Card,Muted,Screen,useAppTheme} from '@/components/UI';
 
 export type PolicySection={heading:string;paragraphs:string[]};

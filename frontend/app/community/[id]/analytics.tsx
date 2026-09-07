@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { StyleSheet, Text, View } from '@/platform/react-native';
+import { useLocalSearchParams } from '@/router';
 import { useQuery } from '@tanstack/react-query';
 import { Card, Header, Muted, Screen, SectionTitle, useAppTheme } from '@/components/UI';
 import { api } from '@/lib/api';
