@@ -14,4 +14,4 @@ const pubClient = createRedisConnection();
 const subClient = pubClient.duplicate();
 io.adapter(createAdapter(pubClient, subClient));
 configureSocket(io);
-server.listen(env.PORT, () => console.log(`CDA Connect API listening on :${env.PORT}`));
+server.listen(env.PORT, env.HOST, () => console.log(`CDA Connect API listening on ${env.HOST}:${env.PORT}`));

@@ -24,9 +24,11 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
-    "multer": "^2.0.2",
+    "multer": "^2.3.0",
+    "nodemailer": "^10.0.1",
     "sharp": "^0.35.4",
     "socket.io": "^4.8.1",
+    "web-push": "^3.6.7",
     "zod": "^4.0.17"
   },
   "devDependencies": {
@@ -37,7 +39,13 @@
     "@types/mssql": "^9.1.8",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.2.1",
+    "@types/nodemailer": "^8.0.1",
+    "@types/web-push": "^3.6.4",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.13"
   }
 }

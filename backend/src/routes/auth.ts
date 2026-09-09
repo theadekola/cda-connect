@@ -1,3 +1,5 @@
+import {emailVerificationRouter} from './emailVerification.js';
+import {verifyRegistrationIdentity} from '../utils/registration.js';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
@@ -12,6 +14,7 @@ import {sendEmailBatch} from '../services/notifications.js';
 import {requireAuth} from '../middleware/auth.js';
 
 export const authRouter=Router();
+authRouter.use(emailVerificationRouter);
 const verificationHash=(phone:string,code:string)=>hashToken(`${phone}:${code}:${env.JWT_ACCESS_SECRET}`);
 const base32Alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const base32Encode=(input:Buffer)=>{let bits=0,value=0,out='';for(const byte of input){value=(value<<8)|byte;bits+=8;while(bits>=5){out+=base32Alphabet[(value>>>(bits-5))&31];bits-=5}}if(bits)out+=base32Alphabet[(value<<(5-bits))&31];return out};
@@ -23,7 +26,7 @@ const encryptSecret=(value:string)=>{const iv=crypto.randomBytes(12),cipher=cryp
 const decryptSecret=(value:string)=>{const[iv,tag,data]=value.split('.');const decipher=crypto.createDecipheriv('aes-256-gcm',secretKey(),Buffer.from(iv,'base64url'));decipher.setAuthTag(Buffer.from(tag,'base64url'));return Buffer.concat([decipher.update(Buffer.from(data,'base64url')),decipher.final()]).toString('utf8')};
 async function createSmsChallenge(pool:any,userId:string,phone:string,purpose:string){const code=crypto.randomInt(100000,1000000).toString(),expires=new Date(Date.now()+env.SMS_CODE_EXPIRES_MINUTES*60000);const result=await pool.request().input('uid',sql.UniqueIdentifier,userId).input('purpose',sql.NVarChar(30),purpose).input('hash',sql.NVarChar(64),verificationHash(userId,code)).input('expires',sql.DateTime2,expires).query('INSERT INTO TwoFactorChallenges(UserId,Purpose,CodeHash,ExpiresAt) OUTPUT INSERTED.Id VALUES(@uid,@purpose,@hash,@expires)');const challengeId=result.recordset[0].Id as string;try{await sendVerificationSms(phone,code)}catch(error){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('DELETE FROM TwoFactorChallenges WHERE Id=@id');throw error}return challengeId}
 async function verifySmsChallenge(pool:any,userId:string,challengeId:string,purpose:string,code:string){const result=await pool.request().input('id',sql.UniqueIdentifier,challengeId).input('uid',sql.UniqueIdentifier,userId).input('purpose',sql.NVarChar(30),purpose).query('SELECT CodeHash,Attempts,ExpiresAt,ConsumedAt FROM TwoFactorChallenges WHERE Id=@id AND UserId=@uid AND Purpose=@purpose');const row=result.recordset[0];if(!row||row.ConsumedAt||new Date(row.ExpiresAt)<=new Date())throw new AppError(400,'Verification code is invalid or expired');if(row.Attempts>=5)throw new AppError(429,'Too many incorrect attempts');const actual=Buffer.from(verificationHash(userId,code),'hex'),expected=Buffer.from(row.CodeHash,'hex');if(actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected)){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('UPDATE TwoFactorChallenges SET Attempts=Attempts+1 WHERE Id=@id');throw new AppError(400,'Verification code is incorrect')}await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('UPDATE TwoFactorChallenges SET ConsumedAt=SYSUTCDATETIME() WHERE Id=@id')}
-async function issueSession(pool:any,row:any){const user={id:row.Id,email:row.Email},accessToken=signAccess(user),refreshToken=signRefresh(user);await pool.request().input('uid',sql.UniqueIdentifier,user.id).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+env.JWT_REFRESH_EXPIRES_DAYS*86400000)).query('INSERT INTO UserSessions(UserId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@hash,@exp)');delete row.PasswordHash;delete row.TwoFactorSecret;return{user:row,accessToken,refreshToken}}
+async function issueSession(pool:any,row:any){if(row.AccountStatus!=='ACTIVE')throw new AppError(403,'Account is not active');const user={id:row.Id,email:row.Email},accessToken=signAccess(user),refreshToken=signRefresh(user);await pool.request().input('uid',sql.UniqueIdentifier,user.id).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+env.JWT_REFRESH_EXPIRES_DAYS*86400000)).query('INSERT INTO UserSessions(UserId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@hash,@exp)');delete row.PasswordHash;delete row.TwoFactorSecret;return{user:row,accessToken,refreshToken}}
 
 authRouter.post('/phone-verification/request',asyncHandler(async(req,res)=>{
   const phone=normalizePhone(z.object({phone:z.string().min(8).max(30)}).parse(req.body).phone);const pool=await getPool();
@@ -48,19 +51,18 @@ authRouter.post('/phone-verification/verify',asyncHandler(async(req,res)=>{
   const verificationToken=jwt.sign({purpose:'phone-verification',phone},env.JWT_ACCESS_SECRET,{expiresIn:'15m'});res.json({success:true,verificationToken});
 }));
 
-const registerSchema=z.object({firstName:z.string().trim().min(2).max(100),lastName:z.string().trim().min(2).max(100),email:z.string().trim().toLowerCase().email(),phone:z.string().trim().min(8).max(30),phoneVerificationToken:z.string().min(1),country:z.string().trim().min(2).max(100),state:z.string().trim().min(1).max(100),lga:z.string().trim().min(1).max(150).optional(),postcode:z.string().trim().min(1).max(30).optional(),address:z.string().trim().min(2,'Enter your area or community').max(500),dateOfBirth:z.coerce.date().max(new Date()),password:z.string().min(8).max(200)});
+const registerSchema=z.object({firstName:z.string().trim().min(2).max(100),lastName:z.string().trim().min(2).max(100),email:z.string().trim().toLowerCase().email(),phone:z.string().trim().min(8).max(30).optional(),verificationMethod:z.enum(['sms','email']).default('sms'),phoneVerificationToken:z.string().min(1).optional(),emailVerificationToken:z.string().min(1).optional(),country:z.string().trim().min(2).max(100),state:z.string().trim().min(1).max(100),lga:z.string().trim().min(1).max(150).optional(),postcode:z.string().trim().min(1).max(30).optional(),address:z.string().trim().min(2,'Enter your area or community').max(500),dateOfBirth:z.coerce.date().max(new Date()),password:z.string().min(8).max(200)});
 authRouter.post('/register',asyncHandler(async(req,res)=>{
-  const d=registerSchema.parse(req.body); const pool=await getPool(); const email=d.email.trim().toLowerCase();const phone=normalizePhone(d.phone);
-  const bypass=env.NODE_ENV!=='production'&&env.ALLOW_PHONE_VERIFICATION_BYPASS&&d.phoneVerificationToken==='development-bypass';
-  if(!bypass){let verified:{purpose?:string;phone?:string};try{verified=jwt.verify(d.phoneVerificationToken,env.JWT_ACCESS_SECRET) as typeof verified}catch{throw new AppError(400,'Phone verification has expired. Verify your phone again')}if(verified.purpose!=='phone-verification'||verified.phone!==phone) throw new AppError(400,'Phone verification does not match this phone number')}
+  const d=registerSchema.parse(req.body); const pool=await getPool(); const email=d.email.trim().toLowerCase();const phone=d.phone?normalizePhone(d.phone):null;
+  const verified=verifyRegistrationIdentity({...d,email,phone});
   const exists=await pool.request().input('email',sql.NVarChar(255),email).input('phone',sql.NVarChar(30),phone).query('SELECT TOP 1 Email,Phone FROM Users WHERE Email=@email OR Phone=@phone');
   if(exists.recordset[0]?.Email?.toLowerCase()===email) throw new AppError(409,'This email address is already registered');
   if(exists.recordset[0]?.Phone===phone) throw new AppError(409,'This phone number is already registered');
   const passwordHash=await bcrypt.hash(d.password,12);
   const tx=new sql.Transaction(pool);await tx.begin();
   try{
-    const request=new sql.Request(tx).input('first',sql.NVarChar(100),d.firstName.trim()).input('last',sql.NVarChar(100),d.lastName.trim()).input('email',sql.NVarChar(255),email).input('phone',sql.NVarChar(30),phone).input('country',sql.NVarChar(100),d.country.trim()).input('state',sql.NVarChar(100),d.state.trim()).input('lga',sql.NVarChar(150),d.lga?.trim()??null).input('postcode',sql.NVarChar(30),d.postcode?.trim()??null).input('address',sql.NVarChar(500),d.address.trim()).input('dob',sql.Date,d.dateOfBirth).input('hash',sql.NVarChar(500),passwordHash).input('phoneVerified',sql.Bit,bypass?0:1);
-    const r=await request.query(`INSERT INTO Users(FirstName,LastName,Email,Phone,Country,State,LGA,Postcode,Address,DateOfBirth,PasswordHash,PhoneVerified) OUTPUT INSERTED.Id,INSERTED.FirstName,INSERTED.LastName,INSERTED.Email,INSERTED.Phone,INSERTED.ProfileImage,INSERTED.CoverImage,INSERTED.Country,INSERTED.State,INSERTED.LGA,INSERTED.Postcode,INSERTED.Address,INSERTED.DateOfBirth,INSERTED.CreatedAt VALUES(@first,@last,@email,@phone,@country,@state,@lga,@postcode,@address,@dob,@hash,@phoneVerified)`);
+    const request=new sql.Request(tx).input('first',sql.NVarChar(100),d.firstName.trim()).input('last',sql.NVarChar(100),d.lastName.trim()).input('email',sql.NVarChar(255),email).input('phone',sql.NVarChar(30),phone).input('country',sql.NVarChar(100),d.country.trim()).input('state',sql.NVarChar(100),d.state.trim()).input('lga',sql.NVarChar(150),d.lga?.trim()??null).input('postcode',sql.NVarChar(30),d.postcode?.trim()??null).input('address',sql.NVarChar(500),d.address.trim()).input('dob',sql.Date,d.dateOfBirth).input('hash',sql.NVarChar(500),passwordHash).input('phoneVerified',sql.Bit,verified.phoneVerified?1:0).input('emailVerified',sql.Bit,verified.emailVerified?1:0);
+    const r=await request.query(`INSERT INTO Users(FirstName,LastName,Email,Phone,Country,State,LGA,Postcode,Address,DateOfBirth,PasswordHash,PhoneVerified,EmailVerified) OUTPUT INSERTED.Id,INSERTED.FirstName,INSERTED.LastName,INSERTED.Email,INSERTED.Phone,INSERTED.ProfileImage,INSERTED.CoverImage,INSERTED.Country,INSERTED.State,INSERTED.LGA,INSERTED.Postcode,INSERTED.Address,INSERTED.DateOfBirth,INSERTED.CreatedAt VALUES(@first,@last,@email,@phone,@country,@state,@lga,@postcode,@address,@dob,@hash,@phoneVerified,@emailVerified)`);
     const user={id:r.recordset[0].Id,email:r.recordset[0].Email}; const accessToken=signAccess(user); const refreshToken=signRefresh(user);
     await new sql.Request(tx).input('uid',sql.UniqueIdentifier,user.id).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+env.JWT_REFRESH_EXPIRES_DAYS*86400000)).query('INSERT INTO UserSessions(UserId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@hash,@exp)');
     await tx.commit();res.status(201).json({user:r.recordset[0],accessToken,refreshToken});
@@ -97,8 +99,8 @@ authRouter.post('/password-reset/complete',asyncHandler(async(req,res)=>{
   res.json({success:true});
 }));
 authRouter.post('/refresh',asyncHandler(async(req,res)=>{
-  const token=z.object({refreshToken:z.string()}).parse(req.body).refreshToken; const payload=verifyRefresh(token); const pool=await getPool();
-  const r=await pool.request().input('hash',sql.NVarChar(64),hashToken(token)).query('SELECT Id,RevokedAt,ExpiresAt FROM UserSessions WHERE RefreshTokenHash=@hash');
+  const token=z.object({refreshToken:z.string()}).parse(req.body).refreshToken; let payload; try { payload=verifyRefresh(token); } catch { throw new AppError(401,'Refresh token invalid'); } const pool=await getPool();
+  const r=await pool.request().input('hash',sql.NVarChar(64),hashToken(token)).query("SELECT s.Id,s.RevokedAt,s.ExpiresAt FROM UserSessions s JOIN Users u ON u.Id=s.UserId WHERE s.RefreshTokenHash=@hash AND u.AccountStatus='ACTIVE'");
   const s=r.recordset[0]; if(!s||s.RevokedAt||new Date(s.ExpiresAt)<new Date()) throw new AppError(401,'Refresh token invalid');
   res.json({accessToken:signAccess({id:payload.id,email:payload.email})});
 }));
@@ -161,3 +163,4 @@ authRouter.post('/sign-out-other-sessions',requireAuth,asyncHandler(async(req,re
   const result=await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('current',sql.NVarChar(64),hashToken(refreshToken)).query('UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() OUTPUT INSERTED.Id WHERE UserId=@uid AND RefreshTokenHash<>@current AND RevokedAt IS NULL');
   res.json({success:true,signedOut:result.recordset.length});
 }));
+

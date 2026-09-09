@@ -1,1 +1,0 @@
-{"version":3,"file":"_layout-D5FgozR8.js","names":[],"sources":["../../app/(auth)/_layout.tsx"],"sourcesContent":["import {Stack} from '@/router';export default function L(){return <Stack screenOptions={{headerShown:false}}/>}"],"mappings":"gGAA+B,SAAwB,GAAG,CAAC,OAAO,EAAA,EAAA,IAAA,CAAC,EAAD,CAAO,cAAe,CAAC,YAAY,EAAK,CAAG,CAAA,CAAC"}

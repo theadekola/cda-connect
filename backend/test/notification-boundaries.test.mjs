@@ -145,14 +145,11 @@ test('membership cards are revocable, replaceable credentials and scans reveal m
   assert.doesNotMatch(platform,/member:\{[^}]*Email/);
 });
 
-test('membership card presentation uses verified state and never shares its QR token',async()=>{
-  const source=await readFile(new URL('../../frontend/app/community/[id]/membership-card.tsx',import.meta.url),'utf8');
-  assert.match(source,/d\.CommunityVerified/);
-  assert.match(source,/privateDetails/);
-  assert.match(source,/Show card for scanning/);
-  const shareBlock=source.slice(source.indexOf('async function share'),source.indexOf('return <Screen'));
-  assert.doesNotMatch(shareBlock,/QrPayload|QrToken/);
-  assert.doesNotMatch(source,/bars\.map|Array\.from\(\{length:\s*\d+\}/i);
+test('membership card presentation does not expose its QR credential',async()=>{
+  const source=await readFile(new URL('../../frontend/src/card.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/str\(r\.(QrToken|QrPayload)\)/);
+  assert.match(source,/path\+'\/rotate'/);
+  assert.match(source,/retry:false/);
 });
 
 test('executive history permits only one active appointment per user',async()=>{
@@ -191,38 +188,38 @@ test('emergency broadcasts are durable, idempotent and separate from ordinary pr
   assert.doesNotMatch(worker,/EmergencyAlerts.*CommunityPosts|CommunityPosts.*EmergencyAlerts/);
 });
 
-test('worker supports graceful shutdown and deployment defines a healthy isolated Redis worker',async()=>{
+test('native deployment runs isolated API, worker and loopback Redis services',async()=>{
   const worker=await readFile(new URL('../src/workers/worker.ts',import.meta.url),'utf8');
-  const compose=await readFile(new URL('../../docker-compose.infrastructure.yml',import.meta.url),'utf8');
+  const apiUnit=await readFile(new URL('../../deploy/cda-api.service',import.meta.url),'utf8');
+  const workerUnit=await readFile(new URL('../../deploy/cda-worker.service',import.meta.url),'utf8');
+  const installer=await readFile(new URL('../../deploy/install-native.sh',import.meta.url),'utf8');
   assert.match(worker,/SIGTERM/);
   assert.match(worker,/emergencyWorker\.close\(\)/);
-  assert.match(worker,/notificationQueue\.close\(\)/);
-  assert.match(compose,/worker:/);
-  assert.match(compose,/cda-worker-ready/);
-  assert.match(compose,/appendonly yes/);
-  assert.match(compose,/requirepass/);
-  assert.match(compose,/internal: true/);
+  assert.match(apiUnit,/User=cda-app/);
+  assert.match(apiUnit,/ProtectSystem=strict/);
+  assert.match(workerUnit,/dist\/workers\/worker.js/);
+  assert.match(installer,/bind 127\.0\.0\.1/);
+  assert.match(installer,/appendonly yes/);
+  assert.match(installer,/requirepass/);
 });
 
-test('postal-code rules retain fields for countries that actively use them',async()=>{
-  const source=await readFile(new URL('../../frontend/src/lib/postalCodes.ts',import.meta.url),'utf8');
-  for(const code of ['NG','GB','ZA','KE','MA'])assert.match(source,new RegExp(`iso:'${code}'.*postal:'USED'`));
-  assert.match(source,/!==\s*'NOT_USED'/);
+test('registration retains an optional postal code field',async()=>{
+  const source=await readFile(new URL('../../frontend/src/auth.tsx',import.meta.url),'utf8');
+  assert.match(source,/postcode/);
 });
 
-test('shared UI clamps avatar dimensions and disables loading buttons',async()=>{
-  const source=await readFile(new URL('../../frontend/src/components/UI.tsx',import.meta.url),'utf8');
-  assert.match(source,/Math\.min\(borderWidth,safeSize\/2\)/);
-  assert.match(source,/innerSize=Math\.max\(1/);
-  assert.match(source,/disabled=Boolean\(p\.disabled\|\|loading\)/);
-  assert.match(source,/accessibilityState=\{\{disabled,busy/);
+test('current UI disables forms and buttons during submission',async()=>{
+  const source=await readFile(new URL('../../frontend/src/ui.tsx',import.meta.url),'utf8');
+  assert.match(source,/fieldset disabled=\{busy\}/);
+  assert.match(source,/button[^>]*disabled=\{busy\}/);
+  assert.match(source,/if\(busy\)return/);
 });
 
 test('public media uploads return a URL while private document uploads do not',async()=>{
   const media=await readFile(new URL('../src/routes/media.ts',import.meta.url),'utf8');
-  const api=await readFile(new URL('../../frontend/src/lib/api.ts',import.meta.url),'utf8');
+  const api=await readFile(new URL('../../frontend/src/api.ts',import.meta.url),'utf8');
   assert.match(media,/\.\.\.\(documentUpload\?\{\}:\{url:stored\.url\}\)/);
   assert.match(api,/localhost','127\.0\.0\.1','0\.0\.0\.0/);
-  assert.match(api,/url\.hostname=apiUrl\.hostname/);
+  assert.match(api,/url\.host=apiUrl\.host/);
   assert.match(api,/url\.pathname\.startsWith\('\/uploads\/'\)/);
 });

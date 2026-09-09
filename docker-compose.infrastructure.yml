@@ -1,90 +1,86 @@
+name: cda-connect
 services:
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      CDA_DOMAIN: ${CDA_DOMAIN:?Set CDA_DOMAIN to your real HTTPS hostname}
+    # cloudflared runs on the same Ubuntu host and forwards to localhost:8080.
+    ports: ["127.0.0.1:8080:80"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [app]
+    depends_on:
+      api: { condition: service_healthy }
   api:
     build: ./backend
     restart: unless-stopped
-    env_file: ./backend/.env
+    env_file: ./backend/.env.production
     environment:
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-    command: ["node", "dist/server.js"]
-    ports:
-      - "4000:4000"
+      CORS_ORIGIN: https://${CDA_DOMAIN:?Set CDA_DOMAIN}
+      PUBLIC_BASE_URL: https://${CDA_DOMAIN:?Set CDA_DOMAIN}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}@redis:6379
+    volumes: ["uploads:/app/uploads", "private_uploads:/app/private-uploads"]
+    networks: [app, queue]
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     depends_on:
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_started
-    networks:
-      - default
-      - backend
-
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health',{signal:AbortSignal.timeout(8000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
   worker:
     build: ./backend
-    restart: unless-stopped
-    env_file: ./backend/.env
-    environment:
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     command: ["node", "dist/workers/worker.js"]
-    healthcheck:
-      test: ["CMD-SHELL", "test -f /tmp/cda-worker-ready && kill -0 1"]
-      interval: 15s
-      timeout: 3s
-      retries: 4
+    restart: unless-stopped
+    stop_grace_period: 60s
+    env_file: ./backend/.env.production
+    environment:
+      CORS_ORIGIN: https://${CDA_DOMAIN:?Set CDA_DOMAIN}
+      PUBLIC_BASE_URL: https://${CDA_DOMAIN:?Set CDA_DOMAIN}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}@redis:6379
+    volumes: ["uploads:/app/uploads", "private_uploads:/app/private-uploads"]
+    networks: [app, queue]
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     depends_on:
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_started
-    networks:
-      - default
-      - backend
-
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "const fs=require('fs');process.exit(Date.now()-fs.statSync('/tmp/cda-worker-ready').mtimeMs<90000?0:1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["sh", "-c", "exec redis-server --appendonly yes --appendfsync everysec --requirepass '$${REDIS_PASSWORD}' --maxmemory-policy noeviction"]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD}
-    volumes:
-      - redis-data:/data
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in deploy/.env}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --appendfsync everysec --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
+    volumes: ["redis_data:/data"]
+    networks: [queue]
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a '$${REDIS_PASSWORD}' --no-auth-warning ping | grep PONG"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
-    networks:
-      - backend
-
-  minio:
-    image: minio/minio:latest
-    restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-cda-connect}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-password}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio-data:/data
-
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      - minio
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 $${MINIO_ROOT_USER:-cda-connect} $${MINIO_ROOT_PASSWORD:-change-me-minio-password}; do sleep 2; done;
-      mc mb --ignore-existing local/cda-connect;
-      mc anonymous set download local/cda-connect;
-      exit 0;"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-cda-connect}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-minio-password}
-
-volumes:
-  redis-data:
-  minio-data:
-
 networks:
-  backend:
+  app:
+  queue:
     internal: true
+volumes:
+  uploads:
+  private_uploads:
+  redis_data:
+  caddy_data:
+  caddy_config:

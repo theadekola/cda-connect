@@ -1,3 +1,7 @@
+-- FRESH EMPTY DATABASE ONLY. Use backend/scripts/database.mjs init for transactional installation.
+SET XACT_ABORT ON;
+SET NOCOUNT ON;
+GO
 SET NOCOUNT ON;
 
 CREATE TABLE Users(Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),FirstName NVARCHAR(100) NOT NULL,LastName NVARCHAR(100) NOT NULL,Email NVARCHAR(255) NOT NULL UNIQUE,Phone NVARCHAR(30),Country NVARCHAR(100),State NVARCHAR(100),LGA NVARCHAR(150),Postcode NVARCHAR(30),Address NVARCHAR(500),DateOfBirth DATE,PasswordHash NVARCHAR(500) NOT NULL,ProfileImage NVARCHAR(500),CoverImage NVARCHAR(1000),AccountStatus NVARCHAR(30) NOT NULL DEFAULT 'ACTIVE',EmailVerified BIT NOT NULL DEFAULT 0,PhoneVerified BIT NOT NULL DEFAULT 0,TwoFactorEnabled BIT NOT NULL DEFAULT 0,TwoFactorMethod NVARCHAR(20),TwoFactorSecret NVARCHAR(1000),CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME());
@@ -78,16 +82,27 @@ CREATE INDEX IX_PostComments_Post_Created ON PostComments(PostId,CreatedAt);
 SET NOCOUNT ON;
 
 IF COL_LENGTH('CommunityPosts','PostType') IS NULL ALTER TABLE CommunityPosts ADD PostType NVARCHAR(40) NOT NULL CONSTRAINT DF_CommunityPosts_PostType DEFAULT 'TEXT';
+GO
 IF COL_LENGTH('CommunityPosts','MediaType') IS NULL ALTER TABLE CommunityPosts ADD MediaType NVARCHAR(100) NULL;
+GO
 IF COL_LENGTH('CommunityPosts','DocumentName') IS NULL ALTER TABLE CommunityPosts ADD DocumentName NVARCHAR(500) NULL;
+GO
 IF COL_LENGTH('CommunityPosts','Caption') IS NULL ALTER TABLE CommunityPosts ADD Caption NVARCHAR(1500) NULL;
+GO
 IF COL_LENGTH('CommunityPosts','Transcript') IS NULL ALTER TABLE CommunityPosts ADD Transcript NVARCHAR(MAX) NULL;
+GO
 IF COL_LENGTH('CommunityPosts','OriginalLanguage') IS NULL ALTER TABLE CommunityPosts ADD OriginalLanguage NVARCHAR(20) NULL;
+GO
 IF COL_LENGTH('CommunityPosts','IsPinned') IS NULL ALTER TABLE CommunityPosts ADD IsPinned BIT NOT NULL CONSTRAINT DF_CommunityPosts_IsPinned DEFAULT 0;
+GO
 IF COL_LENGTH('CommunityPosts','IsAnnouncement') IS NULL ALTER TABLE CommunityPosts ADD IsAnnouncement BIT NOT NULL CONSTRAINT DF_CommunityPosts_IsAnnouncement DEFAULT 0;
+GO
 IF COL_LENGTH('PostComments','ParentCommentId') IS NULL ALTER TABLE PostComments ADD ParentCommentId UNIQUEIDENTIFIER NULL;
+GO
 IF COL_LENGTH('PostComments','DeletedBy') IS NULL ALTER TABLE PostComments ADD DeletedBy UNIQUEIDENTIFIER NULL REFERENCES Users(Id);
+GO
 IF COL_LENGTH('PostComments','DeletedAt') IS NULL ALTER TABLE PostComments ADD DeletedAt DATETIME2 NULL;
+GO
 
 IF OBJECT_ID('PostReactions','U') IS NULL CREATE TABLE PostReactions(PostId UNIQUEIDENTIFIER NOT NULL REFERENCES CommunityPosts(Id),UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),ReactionType NVARCHAR(20) NOT NULL,CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),PRIMARY KEY(PostId,UserId));
 IF OBJECT_ID('CommentReactions','U') IS NULL CREATE TABLE CommentReactions(CommentId UNIQUEIDENTIFIER NOT NULL REFERENCES PostComments(Id),UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),ReactionType NVARCHAR(10) NOT NULL CHECK(ReactionType IN('LIKE','DISLIKE')),CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),PRIMARY KEY(CommentId,UserId));
@@ -109,19 +124,33 @@ SET NOCOUNT ON;
 
 -- Discovery / verification
 IF COL_LENGTH('Communities','Postcode') IS NULL ALTER TABLE Communities ADD Postcode NVARCHAR(20) NULL;
+GO
 IF COL_LENGTH('Communities','Category') IS NULL ALTER TABLE Communities ADD Category NVARCHAR(80) NULL;
+GO
 IF COL_LENGTH('Communities','IsVerified') IS NULL ALTER TABLE Communities ADD IsVerified BIT NOT NULL CONSTRAINT DF_Communities_IsVerified DEFAULT 0;
+GO
 IF COL_LENGTH('Communities','VerifiedAt') IS NULL ALTER TABLE Communities ADD VerifiedAt DATETIME2 NULL;
+GO
 IF COL_LENGTH('Communities','State') IS NULL ALTER TABLE Communities ADD State NVARCHAR(100) NULL;
+GO
 IF COL_LENGTH('Communities','LGA') IS NULL ALTER TABLE Communities ADD LGA NVARCHAR(150) NULL;
+GO
 IF COL_LENGTH('Communities','SpecificArea') IS NULL ALTER TABLE Communities ADD SpecificArea NVARCHAR(250) NULL;
+GO
 IF COL_LENGTH('Communities','Latitude') IS NULL ALTER TABLE Communities ADD Latitude DECIMAL(10,7) NULL;
+GO
 IF COL_LENGTH('Communities','Longitude') IS NULL ALTER TABLE Communities ADD Longitude DECIMAL(10,7) NULL;
+GO
 IF COL_LENGTH('Communities','RequireMemberApproval') IS NULL ALTER TABLE Communities ADD RequireMemberApproval BIT NOT NULL CONSTRAINT DF_Communities_RequireMemberApproval DEFAULT 1;
+GO
 IF COL_LENGTH('Communities','AllowMemberEvents') IS NULL ALTER TABLE Communities ADD AllowMemberEvents BIT NOT NULL CONSTRAINT DF_Communities_AllowMemberEvents DEFAULT 1;
+GO
 IF COL_LENGTH('Communities','AllowMemberDiscussions') IS NULL ALTER TABLE Communities ADD AllowMemberDiscussions BIT NOT NULL CONSTRAINT DF_Communities_AllowMemberDiscussions DEFAULT 1;
+GO
 IF COL_LENGTH('Communities','Guidelines') IS NULL ALTER TABLE Communities ADD Guidelines NVARCHAR(2000) NULL;
+GO
 IF COL_LENGTH('Communities','Tags') IS NULL ALTER TABLE Communities ADD Tags NVARCHAR(1000) NULL;
+GO
 
 IF OBJECT_ID('UserDiscoveryPreferences','U') IS NULL
 CREATE TABLE UserDiscoveryPreferences(
@@ -151,9 +180,13 @@ CREATE TABLE CommunityVerificationRequests(
 
 -- Emergency command centre
 IF COL_LENGTH('EmergencyAlerts','AffectedArea') IS NULL ALTER TABLE EmergencyAlerts ADD AffectedArea NVARCHAR(250) NULL;
+GO
 IF COL_LENGTH('EmergencyAlerts','ResolvedAt') IS NULL ALTER TABLE EmergencyAlerts ADD ResolvedAt DATETIME2 NULL;
+GO
 IF COL_LENGTH('EmergencyAlerts','ResolvedBy') IS NULL ALTER TABLE EmergencyAlerts ADD ResolvedBy UNIQUEIDENTIFIER NULL REFERENCES Users(Id);
+GO
 IF COL_LENGTH('EmergencyAlerts','ResolutionNote') IS NULL ALTER TABLE EmergencyAlerts ADD ResolutionNote NVARCHAR(2000) NULL;
+GO
 
 IF OBJECT_ID('EmergencyIncidentUpdates','U') IS NULL
 CREATE TABLE EmergencyIncidentUpdates(
@@ -283,9 +316,7 @@ SELECT r.Id,p.Id FROM Roles r CROSS JOIN Permissions p
 WHERE r.Name IN('Owner','Admin') AND p.Code IN('VERIFICATION_SUBMIT','ISSUE_MANAGE','DIRECTORY_MANAGE','MARKETPLACE_MODERATE','OPPORTUNITY_MANAGE','EVENT_CREATE','EVENT_MANAGE','MEMBERSHIP_SCAN','EMERGENCY_MANAGE')
 AND NOT EXISTS(SELECT 1 FROM RolePermissions rp WHERE rp.RoleId=r.Id AND rp.PermissionId=p.Id);
 
-INSERT INTO RolePermissions(RoleId,PermissionId)
-SELECT r.Id,p.Id FROM Roles r CROSS JOIN Permissions p WHERE r.Name='Moderator' AND p.Code='FINANCE_MANAGE'
-AND NOT EXISTS(SELECT 1 FROM RolePermissions rp WHERE rp.RoleId=r.Id AND rp.PermissionId=p.Id);
+
 
 CREATE INDEX IX_Communities_Discovery ON Communities(Category,City,Postcode,IsVerified);
 CREATE INDEX IX_Issues_Community_Status ON CommunityIssues(CommunityId,Status,CreatedAt DESC);
@@ -380,10 +411,15 @@ CREATE TABLE DataExportRequests(Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name='UserAppPreferences')
 CREATE TABLE UserAppPreferences(UserId UNIQUEIDENTIFIER PRIMARY KEY,DataSaverEnabled BIT NOT NULL DEFAULT 0,OfflineCacheEnabled BIT NOT NULL DEFAULT 1,AutoDownloadImages BIT NOT NULL DEFAULT 1,AutoDownloadVideos BIT NOT NULL DEFAULT 0,UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),FOREIGN KEY(UserId) REFERENCES Users(Id));
 IF COL_LENGTH('UserAppPreferences','TimeZone') IS NULL ALTER TABLE UserAppPreferences ADD TimeZone NVARCHAR(100) NOT NULL CONSTRAINT DF_UserAppPreferences_TimeZone DEFAULT 'UTC';
+GO
 IF COL_LENGTH('UserAppPreferences','NotificationPreviewsEnabled') IS NULL ALTER TABLE UserAppPreferences ADD NotificationPreviewsEnabled BIT NOT NULL CONSTRAINT DF_UserAppPreferences_NotificationPreviews DEFAULT 0;
+GO
 IF COL_LENGTH('ConversationMembers','IsActive') IS NULL ALTER TABLE ConversationMembers ADD IsActive BIT NOT NULL CONSTRAINT DF_ConversationMembers_IsActive DEFAULT 1;
+GO
 IF COL_LENGTH('ConversationMembers','MutedUntil') IS NULL ALTER TABLE ConversationMembers ADD MutedUntil DATETIME2 NULL;
+GO
 IF COL_LENGTH('Messages','ClientMessageId') IS NULL ALTER TABLE Messages ADD ClientMessageId UNIQUEIDENTIFIER NULL;
+GO
 IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='UX_Messages_Sender_ClientMessage' AND object_id=OBJECT_ID('Messages')) EXEC(N'CREATE UNIQUE INDEX UX_Messages_Sender_ClientMessage ON Messages(SenderUserId,ClientMessageId) WHERE ClientMessageId IS NOT NULL');
 IF NOT EXISTS(SELECT 1 FROM sys.tables WHERE name='UserNotifications')
 CREATE TABLE UserNotifications(Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),NotificationId UNIQUEIDENTIFIER NOT NULL,UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),NotificationType NVARCHAR(100) NOT NULL,Title NVARCHAR(180) NOT NULL,Body NVARCHAR(500) NOT NULL,CommunityId UNIQUEIDENTIFIER NOT NULL REFERENCES Communities(Id),EntityId UNIQUEIDENTIFIER NULL,NavigationData NVARCHAR(2000) NULL,CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),ReadAt DATETIME2 NULL,DeliveryStatus NVARCHAR(30) NOT NULL DEFAULT 'PENDING',CONSTRAINT UQ_UserNotifications_Event_User UNIQUE(NotificationId,UserId));
@@ -420,14 +456,16 @@ CREATE INDEX IX_ModerationQueue_CommunityStatus ON ModerationQueue(CommunityId,S
 -- ============================================================
 
 IF COL_LENGTH('EmergencyAlerts','NotificationQueuedAt') IS NULL ALTER TABLE EmergencyAlerts ADD NotificationQueuedAt DATETIME2 NULL;
+GO
 IF COL_LENGTH('EmergencyAlerts','NotificationTargetCount') IS NULL ALTER TABLE EmergencyAlerts ADD NotificationTargetCount INT NULL;
+GO
 
 IF OBJECT_ID('StoredObjects','U') IS NULL
 CREATE TABLE StoredObjects(
   Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
   UploadedBy UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),
   CommunityId UNIQUEIDENTIFIER NULL REFERENCES Communities(Id),
-  StorageKey NVARCHAR(1000) NOT NULL UNIQUE,
+  StorageKey NVARCHAR(800) NOT NULL UNIQUE,
   PublicUrl NVARCHAR(1500) NOT NULL,
   OriginalName NVARCHAR(500) NOT NULL,
   MimeType NVARCHAR(150) NOT NULL,
@@ -458,11 +496,17 @@ CREATE TABLE AsyncJobAudit(
   CompletedAt DATETIME2 NULL
 );
 IF COL_LENGTH('StoredObjects','UploadState') IS NULL ALTER TABLE StoredObjects ADD UploadState NVARCHAR(30) NOT NULL CONSTRAINT DF_StoredObjects_UploadState DEFAULT 'AVAILABLE';
+GO
 IF COL_LENGTH('StoredObjects','IsPrivate') IS NULL ALTER TABLE StoredObjects ADD IsPrivate BIT NOT NULL CONSTRAINT DF_StoredObjects_IsPrivate DEFAULT 0;
+GO
 IF COL_LENGTH('StoredObjects','DeletedAt') IS NULL ALTER TABLE StoredObjects ADD DeletedAt DATETIME2 NULL;
+GO
 IF COL_LENGTH('KnowledgeDocumentVersions','StoredObjectId') IS NULL ALTER TABLE KnowledgeDocumentVersions ADD StoredObjectId UNIQUEIDENTIFIER NULL;
+GO
 IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_KnowledgeDocumentVersions_StoredObject') EXEC(N'ALTER TABLE KnowledgeDocumentVersions ADD CONSTRAINT FK_KnowledgeDocumentVersions_StoredObject FOREIGN KEY(StoredObjectId) REFERENCES StoredObjects(Id)');
-IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='UX_StoredObjects_PublicUrl' AND object_id=OBJECT_ID('StoredObjects')) EXEC(N'CREATE UNIQUE INDEX UX_StoredObjects_PublicUrl ON StoredObjects(PublicUrl)');
+IF COL_LENGTH('StoredObjects','PublicUrlHash') IS NULL ALTER TABLE StoredObjects ADD PublicUrlHash AS CONVERT(binary(32),HASHBYTES('SHA2_256',PublicUrl)) PERSISTED;
+GO
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='UX_StoredObjects_PublicUrl' AND object_id=OBJECT_ID('StoredObjects')) EXEC(N'CREATE UNIQUE INDEX UX_StoredObjects_PublicUrl ON StoredObjects(PublicUrlHash)');
 
 IF OBJECT_ID('SupportTickets','U') IS NULL
 CREATE TABLE SupportTickets(
@@ -495,3 +539,156 @@ IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_StoredObjects_User_Create
   CREATE INDEX IX_StoredObjects_User_Created ON StoredObjects(UploadedBy,CreatedAt DESC);
 IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_AsyncJobAudit_Queue_Status_Created' AND object_id=OBJECT_ID('AsyncJobAudit'))
   CREATE INDEX IX_AsyncJobAudit_Queue_Status_Created ON AsyncJobAudit(QueueName,Status,CreatedAt DESC);
+
+GO
+-- Included migration: marketplace-standard-fields.sql
+SET NOCOUNT ON;
+IF COL_LENGTH('dbo.MarketplaceListings','ItemCondition') IS NULL ALTER TABLE dbo.MarketplaceListings ADD ItemCondition NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH('dbo.MarketplaceListings','DeliveryOption') IS NULL ALTER TABLE dbo.MarketplaceListings ADD DeliveryOption NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH('dbo.MarketplaceListings','ContactPreference') IS NULL ALTER TABLE dbo.MarketplaceListings ADD ContactPreference NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH('dbo.MarketplaceListings','IsNegotiable') IS NULL ALTER TABLE dbo.MarketplaceListings ADD IsNegotiable BIT NOT NULL CONSTRAINT DF_MarketplaceListings_IsNegotiable DEFAULT 0;
+GO
+IF OBJECT_ID('dbo.SavedMarketplaceListings','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.SavedMarketplaceListings(
+  ListingId UNIQUEIDENTIFIER NOT NULL REFERENCES dbo.MarketplaceListings(Id) ON DELETE CASCADE,
+  UserId UNIQUEIDENTIFIER NOT NULL REFERENCES dbo.Users(Id),
+  CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT PK_SavedMarketplaceListings PRIMARY KEY(ListingId,UserId)
+ );
+END;
+IF OBJECT_ID('dbo.MarketplaceListingImages','U') IS NULL
+BEGIN
+ CREATE TABLE dbo.MarketplaceListingImages(
+  Id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWID() PRIMARY KEY,
+  ListingId UNIQUEIDENTIFIER NOT NULL REFERENCES dbo.MarketplaceListings(Id) ON DELETE CASCADE,
+  ImageUrl NVARCHAR(1000) NOT NULL,
+  Position INT NOT NULL,
+  CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+  CONSTRAINT UQ_MarketplaceListingImages_Position UNIQUE(ListingId,Position)
+ );
+END;
+
+GO
+-- Included migration: emergency-delivery-reliability.sql
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+IF OBJECT_ID('dbo.EmergencyNotificationDeliveries','U') IS NULL
+BEGIN
+  CREATE TABLE dbo.EmergencyNotificationDeliveries(
+    Id UNIQUEIDENTIFIER NOT NULL CONSTRAINT PK_EmergencyNotificationDeliveries PRIMARY KEY DEFAULT NEWID(),
+    AlertId UNIQUEIDENTIFIER NOT NULL,
+    UserId UNIQUEIDENTIFIER NOT NULL,
+    Channel NVARCHAR(20) NOT NULL,
+    DestinationHash CHAR(64) NOT NULL,
+    Status NVARCHAR(30) NOT NULL CONSTRAINT DF_EmergencyNotificationDeliveries_Status DEFAULT 'PENDING',
+    AttemptCount INT NOT NULL CONSTRAINT DF_EmergencyNotificationDeliveries_Attempts DEFAULT 0,
+    LastError NVARCHAR(2000) NULL,
+    ProviderMessageId NVARCHAR(250) NULL,
+    CreatedAt DATETIME2 NOT NULL CONSTRAINT DF_EmergencyNotificationDeliveries_Created DEFAULT SYSUTCDATETIME(),
+    SentAt DATETIME2 NULL,
+    CONSTRAINT FK_EmergencyNotificationDeliveries_Alert FOREIGN KEY(AlertId) REFERENCES dbo.EmergencyAlerts(Id),
+    CONSTRAINT FK_EmergencyNotificationDeliveries_User FOREIGN KEY(UserId) REFERENCES dbo.Users(Id),
+    CONSTRAINT CK_EmergencyNotificationDeliveries_Channel CHECK(Channel IN('PUSH','EMAIL')),
+    CONSTRAINT CK_EmergencyNotificationDeliveries_Status CHECK(Status IN('PENDING','PROCESSING','SENT','FAILED')),
+    CONSTRAINT UQ_EmergencyNotificationDeliveries_Target UNIQUE(AlertId,UserId,Channel,DestinationHash)
+  );
+END;
+
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_EmergencyDeliveries_Status' AND object_id=OBJECT_ID('dbo.EmergencyNotificationDeliveries'))
+  CREATE INDEX IX_EmergencyDeliveries_Status ON dbo.EmergencyNotificationDeliveries(Status,CreatedAt) INCLUDE(AlertId,UserId,Channel,AttemptCount);
+
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='UX_AsyncJobAudit_EmergencyJob' AND object_id=OBJECT_ID('dbo.AsyncJobAudit'))
+  CREATE UNIQUE INDEX UX_AsyncJobAudit_EmergencyJob ON dbo.AsyncJobAudit(QueueName,JobKey) WHERE QueueName='emergency-broadcasts';
+
+COMMIT TRANSACTION;
+
+GO
+-- Included migration: membership-card-exco-lifecycle.sql
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+IF EXISTS (SELECT 1 FROM sys.key_constraints WHERE name='UQ_CommunityExecutiveMembers_Community_User' AND parent_object_id=OBJECT_ID('dbo.CommunityExecutiveMembers'))
+  ALTER TABLE dbo.CommunityExecutiveMembers DROP CONSTRAINT UQ_CommunityExecutiveMembers_Community_User;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='UX_CommunityExecutiveMembers_Active_User' AND object_id=OBJECT_ID('dbo.CommunityExecutiveMembers'))
+  CREATE UNIQUE INDEX UX_CommunityExecutiveMembers_Active_User ON dbo.CommunityExecutiveMembers(CommunityId,UserId) WHERE Status='ACTIVE';
+
+DECLARE @membershipConstraint sysname;
+DECLARE @dropConstraintSql nvarchar(max);
+SELECT @membershipConstraint=kc.name
+FROM sys.key_constraints kc
+JOIN sys.index_columns ic ON ic.object_id=kc.parent_object_id AND ic.index_id=kc.unique_index_id
+JOIN sys.columns c ON c.object_id=ic.object_id AND c.column_id=ic.column_id
+WHERE kc.parent_object_id=OBJECT_ID('dbo.MembershipCards') AND kc.type='UQ' AND c.name='MembershipId';
+IF @membershipConstraint IS NOT NULL
+BEGIN
+  SET @dropConstraintSql=N'ALTER TABLE dbo.MembershipCards DROP CONSTRAINT '+QUOTENAME(@membershipConstraint)+N';';
+  EXEC sys.sp_executesql @dropConstraintSql;
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='UX_MembershipCards_Active_Membership' AND object_id=OBJECT_ID('dbo.MembershipCards'))
+  CREATE UNIQUE INDEX UX_MembershipCards_Active_Membership ON dbo.MembershipCards(MembershipId) WHERE IsActive=1;
+
+COMMIT TRANSACTION;
+
+GO
+-- Included migration: add-user-identity-uniqueness.sql
+SET NOCOUNT ON;
+
+IF COL_LENGTH('dbo.Users', 'Country') IS NULL ALTER TABLE dbo.Users ADD Country NVARCHAR(100) NULL;
+GO
+IF COL_LENGTH('dbo.Users', 'State') IS NULL ALTER TABLE dbo.Users ADD State NVARCHAR(100) NULL;
+GO
+IF COL_LENGTH('dbo.Users', 'LGA') IS NULL ALTER TABLE dbo.Users ADD LGA NVARCHAR(150) NULL;
+GO
+IF COL_LENGTH('dbo.Users', 'Postcode') IS NULL ALTER TABLE dbo.Users ADD Postcode NVARCHAR(30) NULL;
+GO
+IF COL_LENGTH('dbo.Users', 'Address') IS NULL ALTER TABLE dbo.Users ADD Address NVARCHAR(500) NULL;
+GO
+IF COL_LENGTH('dbo.Users', 'DateOfBirth') IS NULL ALTER TABLE dbo.Users ADD DateOfBirth DATE NULL;
+GO
+IF COL_LENGTH('dbo.Users', 'PhoneVerified') IS NULL ALTER TABLE dbo.Users ADD PhoneVerified BIT NOT NULL DEFAULT (0);
+GO
+
+IF EXISTS(SELECT LOWER(LTRIM(RTRIM(Email))) FROM dbo.Users GROUP BY LOWER(LTRIM(RTRIM(Email))) HAVING COUNT(*)>1)
+  THROW 51001, 'Duplicate email addresses exist in Users. Resolve them before applying identity uniqueness.', 1;
+
+IF EXISTS(SELECT LTRIM(RTRIM(Phone)) FROM dbo.Users WHERE Phone IS NOT NULL AND LTRIM(RTRIM(Phone))<>'' GROUP BY LTRIM(RTRIM(Phone)) HAVING COUNT(*)>1)
+  THROW 51002, 'Duplicate phone numbers exist in Users. Resolve them before applying identity uniqueness.', 1;
+
+UPDATE dbo.Users SET Email=LOWER(LTRIM(RTRIM(Email))) WHERE Email<>LOWER(LTRIM(RTRIM(Email)));
+UPDATE dbo.Users SET Phone=NULLIF(LTRIM(RTRIM(Phone)), N'') WHERE Phone IS NOT NULL AND Phone<>LTRIM(RTRIM(Phone));
+
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.Users') AND name='UX_Users_Phone')
+  CREATE UNIQUE INDEX UX_Users_Phone ON dbo.Users(Phone) WHERE Phone IS NOT NULL;
+
+GO
+IF COL_LENGTH('dbo.Polls','ImageUrl') IS NULL ALTER TABLE dbo.Polls ADD ImageUrl NVARCHAR(1500) NULL;
+GO
+
+GO
+-- Apply this original role grant after FINANCE_MANAGE has been seeded.
+INSERT INTO RolePermissions(RoleId,PermissionId)
+SELECT r.Id,p.Id FROM Roles r CROSS JOIN Permissions p WHERE r.Name='Moderator' AND p.Code='FINANCE_MANAGE'
+AND NOT EXISTS(SELECT 1 FROM RolePermissions rp WHERE rp.RoleId=r.Id AND rp.PermissionId=p.Id);
+GO
+
+IF OBJECT_ID(N'dbo.WebPushSubscriptions',N'U') IS NULL
+BEGIN
+ CREATE TABLE dbo.WebPushSubscriptions(
+  Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
+  UserId UNIQUEIDENTIFIER NOT NULL REFERENCES dbo.Users(Id),
+  EndpointHash BINARY(32) NOT NULL UNIQUE,
+  Endpoint NVARCHAR(2048) NOT NULL,
+  P256dh VARCHAR(100) NOT NULL,
+  Auth VARCHAR(100) NOT NULL,
+  CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+ );
+ CREATE INDEX IX_WebPushSubscriptions_User ON dbo.WebPushSubscriptions(UserId);
+END;
+GO

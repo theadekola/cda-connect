@@ -1,1 +1,0 @@
-{"version":3,"file":"constants-CGEWb42e.js","names":[],"sources":["../../src/platform/constants.ts"],"sourcesContent":["const Constants={appVersion:'1.0.0',nativeAppVersion:'1.0.0',executionEnvironment:'standalone'};\nexport default Constants;\n"],"mappings":"AAAA,IAAM,EAAU,CAAC,WAAW,QAAQ,iBAAiB,QAAQ,qBAAqB,YAAY"}

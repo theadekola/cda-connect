@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,existsSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('React 19 and required build scripts are configured',()=>{const p=JSON.parse(read('package.json'));assert.match(p.dependencies.react,/19/);assert.ok(p.scripts.build);assert.ok(p.scripts['cap:sync']);});
+test('manifest has real PNG install icons',()=>{const m=JSON.parse(read('public/manifest.webmanifest'));for(const i of m.icons){const p=new URL('../public'+i.src,import.meta.url);assert.ok(existsSync(p));assert.equal(readFileSync(p).subarray(1,4).toString(),'PNG');}});
+test('session layer avoids browser persistent token storage',()=>{const s=read('src/api.ts');assert.doesNotMatch(s,/localStorage\.(setItem|getItem)/);assert.match(s,/cache:'no-store'/);assert.match(s,/refreshPromise/);});
+test('chat retry carries an idempotency identifier',()=>{assert.match(read('src/chat.tsx'),/clientMessageId/);});
+test('public entry and protected application routes exist',()=>{const s=read('src/main.tsx');for(const p of ['/login','/register','/forgot-password','/community/:id/:section','/notifications','/settings'])assert.ok(s.includes(p));assert.match(s,/<Protected\/>/);});

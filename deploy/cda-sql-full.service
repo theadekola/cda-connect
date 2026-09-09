@@ -1,0 +1,8 @@
+[Unit]
+Description=CDA Connect verified full SQL backup
+After=mssql-server.service
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/cda-connect/backup.env
+ExecStart=/usr/local/sbin/cda-sql-backup full
+UMask=0077

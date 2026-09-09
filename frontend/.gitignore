@@ -1,9 +1,10 @@
 node_modules/
-.npm-cache/
-.npm-cache-task/
-.pnpm-store/
-.gradle-user/
-.tools/
-build-vite.log
 dist/
+.npm-cache/
+.env
+.env.*
+!.env.example
+android/
+ios/
 *.log
+.chrome-test/

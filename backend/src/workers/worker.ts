@@ -124,6 +124,7 @@ await recoverPendingEmergencyJobs();
 setInterval(recoverPendingEmergencyJobs,30_000).unref();
 console.log('CDA Connect workers running');
 await writeFile('/tmp/cda-worker-ready',new Date().toISOString());
+setInterval(async()=>{try{await Promise.all([getRedis().ping(),(await getPool()).request().query('SELECT 1 ok')]);await writeFile('/tmp/cda-worker-ready',new Date().toISOString())}catch(error){console.error('Worker health check failed',error)}},30000).unref();
 let shuttingDown=false;
 async function shutdown(signal:string){if(shuttingDown)return;shuttingDown=true;console.log(`Worker shutdown requested: ${signal}`);await Promise.allSettled([emergencyWorker.close(),notificationWorker.close(),backgroundWorker.close(),emergencyQueue.close(),notificationQueue.close(),getRedis().quit()]);process.exit(0)}
 process.once('SIGTERM',()=>{void shutdown('SIGTERM')});

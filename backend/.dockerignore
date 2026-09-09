@@ -4,3 +4,7 @@ dist
 uploads/*
 !uploads/.gitkeep
 npm-debug.log*
+
+.env*
+private-uploads
+work

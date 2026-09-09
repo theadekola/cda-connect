@@ -1,2 +1,0 @@
-import{t as e}from"./jsx-runtime-BqfDQeLH.js";var t=e();function n(e,t){let n={source:e,play(){n.playing=!0},pause(){n.playing=!1},loop:!1,playing:!1,currentTime:0};return t?.(n),n}function r({player:e,style:n,...r}){let i=typeof e?.source==`string`?e.source:e?.source?.uri;return(0,t.jsx)(`video`,{src:i,style:n,controls:!0,playsInline:!0,...r})}export{n,r as t};
-//# sourceMappingURL=video-Bd5Z15uB.js.map

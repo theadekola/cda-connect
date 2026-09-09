@@ -12,9 +12,18 @@ const config: sql.config = {
 };
 
 let pool: sql.ConnectionPool | null = null;
+let connecting: Promise<sql.ConnectionPool> | null = null;
 export async function getPool() {
   if (pool?.connected) return pool;
-  pool = await new sql.ConnectionPool(config).connect();
-  return pool;
+  if (!connecting) {
+    connecting = (async () => {
+      const candidate = new sql.ConnectionPool(config);
+      candidate.on('error', (error: Error) => console.error('SQL pool error', error));
+      try { pool = await candidate.connect(); return pool; }
+      catch (error) { await candidate.close().catch(() => {}); throw error; }
+      finally { connecting = null; }
+    })();
+  }
+  return connecting;
 }
 export { sql };

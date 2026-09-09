@@ -1,20 +1,38 @@
 import type { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import { verifyAccess } from './utils/auth.js';
 import { getPool, sql } from './config/db.js';
 import { getRedis } from './config/redis.js';
 import { enqueueCommunityNotification } from './queues/index.js';
 
 export function configureSocket(io: Server) {
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token as string;
       socket.data.user = verifyAccess(token);
+      const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, socket.data.user.id)
+        .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE'");
+      if (!account.recordset[0]) return next(new Error('unauthorized'));
+      socket.data.tokenExpiresAt = (jwt.decode(token) as jwt.JwtPayload).exp! * 1000;
       next();
     } catch { next(new Error('unauthorized')); }
   });
 
   io.on('connection', async socket => {
     const user = socket.data.user as { id: string };
+    const expiryTimer = setTimeout(() => socket.disconnect(true), Math.max(0, socket.data.tokenExpiresAt - Date.now()));
+    expiryTimer.unref();
+    socket.once('disconnect', () => clearTimeout(expiryTimer));
+    socket.use(async (_packet, next) => {
+      try {
+        if(!_packet[1]||typeof _packet[1]!=='object')throw new Error('Invalid socket payload');
+        verifyAccess(socket.handshake.auth.token);
+        const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, user.id)
+          .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE'");
+        if (!account.recordset[0]) throw new Error('unauthorized');
+        next();
+      } catch { next(new Error('unauthorized')); socket.disconnect(true); }
+    });
     socket.join(`user:${user.id}`);
     const redis = getRedis();
     await redis.sadd(`presence:user:${user.id}:sockets`, socket.id);
@@ -30,8 +48,8 @@ export function configureSocket(io: Server) {
     });
     socket.on('conversation:leave',async({conversationId})=>{socket.leave(`conversation:${conversationId}`);activeConversations.delete(String(conversationId));await redis.srem(`presence:conversation:${conversationId}:user:${user.id}`,socket.id)});
 
-    socket.on('typing:start', ({ conversationId }) => socket.to(`conversation:${conversationId}`).emit('typing:start', { conversationId, userId: user.id }));
-    socket.on('typing:stop', ({ conversationId }) => socket.to(`conversation:${conversationId}`).emit('typing:stop', { conversationId, userId: user.id }));
+    socket.on('typing:start', ({ conversationId }) => { if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:start', { conversationId, userId: user.id }); });
+    socket.on('typing:stop', ({ conversationId }) => { if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:stop', { conversationId, userId: user.id }); });
 
     socket.on('message:send', async (payload, ack) => {
       try {
@@ -58,7 +76,7 @@ export function configureSocket(io: Server) {
       try {
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
-          .query('SELECT 1 ok FROM ConversationMembers WHERE ConversationId=@cv AND UserId=@u');
+          .query("SELECT 1 ok FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId=@u AND cm.IsActive=1 AND membership.Status='ACTIVE'");
         if (!member.recordset[0]) return ack?.({ ok: false, error: 'Forbidden' });
         const room = `call:${conversationId}`;
         const peers = [...(io.sockets.adapter.rooms.get(room) ?? [])];
@@ -67,15 +85,17 @@ export function configureSocket(io: Server) {
         socket.to(room).emit('call:participant-joined', { conversationId, socketId: socket.id, userId: user.id });
         if (peers.length === 0) {
           const members = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
-            .query('SELECT UserId FROM ConversationMembers WHERE ConversationId=@cv AND UserId<>@u');
+            .query("SELECT cm.UserId FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId JOIN Users u ON u.Id=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId<>@u AND cm.IsActive=1 AND membership.Status='ACTIVE' AND u.AccountStatus='ACTIVE'");
           for (const member of members.recordset) io.to(`user:${member.UserId}`).emit('call:incoming', { conversationId, callerUserId: user.id });
         }
         ack?.({ ok: true, socketId: socket.id, peers });
       } catch (e) { console.error(e); ack?.({ ok: false, error: 'Unable to join call' }); }
     });
 
-    socket.on('call:signal', ({ conversationId, targetSocketId, signal }) => {
+    socket.on('call:signal', async ({ conversationId, targetSocketId, signal }) => {
       if (socket.data.callConversationId !== conversationId) return;
+      const peers=await io.in(`call:${conversationId}`).allSockets();
+      if(!peers.has(String(targetSocketId)))return;
       io.to(String(targetSocketId)).emit('call:signal', { conversationId, fromSocketId: socket.id, signal });
     });
 

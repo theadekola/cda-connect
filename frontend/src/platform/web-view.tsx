@@ -1,1 +1,0 @@
-export function WebView({source,style,onError,title='Document',...props}:any){const uri=source?.uri||source;return <iframe src={uri} title={title} style={{border:0,width:'100%',height:'100%',...(Array.isArray(style)?Object.assign({},...style):style)}} onError={onError} {...props}/>}

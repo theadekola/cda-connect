@@ -1,2 +1,0 @@
-import{t as e}from"./jsx-runtime-BqfDQeLH.js";import{t}from"./auth-D5NPIJNy.js";import{R as n}from"./index-DXUBJbxB.js";var r=e();function i(){return(0,r.jsx)(n,{href:t().accessToken?`/(tabs)/home`:`/(auth)/welcome`})}export{i as default};
-//# sourceMappingURL=app-BP9VNLM-.js.map

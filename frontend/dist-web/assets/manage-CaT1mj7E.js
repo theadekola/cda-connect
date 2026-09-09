@@ -1,2 +1,0 @@
-import{t as e}from"./jsx-runtime-BqfDQeLH.js";import{R as t,U as n}from"./index-DXUBJbxB.js";var r=e();function i(){let{id:e}=n();return(0,r.jsx)(t,{href:`/community/${e}`})}export{i as default};
-//# sourceMappingURL=manage-CaT1mj7E.js.map
