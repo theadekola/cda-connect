@@ -8,8 +8,10 @@ export function normalizePhone(value:string){
 }
 
 export async function sendVerificationSms(phone:string,code:string){
+  return sendTransactionalSms(phone,`Your CDA Connect verification code is ${code}. It expires in ${env.SMS_CODE_EXPIRES_MINUTES} minutes.`);
+}
+export async function sendTransactionalSms(phone:string,message:string){
   const to=normalizePhone(phone);
-  const message=`Your CDA Connect verification code is ${code}. It expires in ${env.SMS_CODE_EXPIRES_MINUTES} minutes.`;
   if(env.SMS_PROVIDER==='termii'){
     const key=env.TERMII_API_KEY?.trim(),from=env.TERMII_SENDER_ID?.trim(),base=env.TERMII_BASE_URL?.trim();
     if(!key||!from||!base)throw new AppError(503,'SMS verification is not configured');

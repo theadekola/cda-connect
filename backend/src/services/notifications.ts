@@ -18,8 +18,8 @@ export async function sendPushBatch(messages: unknown[]) {
   const tickets:any[]=new Array(messages.length);
   const native:{index:number;message:unknown}[]=[];
   for(let index=0;index<messages.length;index++){
-    const message=messages[index] as {to?:string};
-    if(typeof message.to==='string'&&message.to.startsWith('webpush:'))tickets[index]=await sendWebPush(message.to);
+    const message=messages[index] as {to?:string;title?:string;body?:string};
+    if(typeof message.to==='string'&&message.to.startsWith('webpush:'))tickets[index]=await sendWebPush(message.to,message);
     else native.push({index,message});
   }
   if(native.length){

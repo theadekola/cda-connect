@@ -41,3 +41,8 @@ test('service worker always displays a notification and opens only the app inbox
  listeners.notificationclick({notification:{data:{url:'https://evil.test'},close:()=>{closed=true}},waitUntil:p=>pending=p});await pending;
  assert.ok(closed);assert.equal(opened,'https://cdaconnect.org/notifications');
 });
+
+test('web push reveals previews only after explicit opt-in',async t=>{
+ t.mock.method(webpush,'sendNotification',async(_sub,payload)=>{assert.equal(JSON.parse(payload).body,'Allowed preview');return{statusCode:201}});
+ row.Previews=1;try{assert.equal((await sendWebPush('webpush:'+id,{title:'New message',body:'Allowed preview'})).status,'ok')}finally{delete row.Previews}
+});

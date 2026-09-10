@@ -110,7 +110,7 @@ authRouter.get('/security',requireAuth,asyncHandler(async(req,res)=>{
   const pool=await getPool();
   const [userResult,sessionsResult]=await Promise.all([
     pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT Email,Phone,EmailVerified,PhoneVerified,CreatedAt FROM Users WHERE Id=@uid'),
-    pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('current',sql.NVarChar(64),hashToken(String(req.headers['x-refresh-token']||''))).query('SELECT Id,CreatedAt,ExpiresAt,CASE WHEN RefreshTokenHash=@current THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END IsCurrent FROM UserSessions WHERE UserId=@uid AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() ORDER BY CreatedAt DESC')
+    pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('current',sql.NVarChar(64),hashToken(String(req.headers['x-refresh-token']||''))).query('SELECT Id,CreatedAt,ExpiresAt,TrustedName,CASE WHEN RefreshTokenHash=@current THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END IsCurrent FROM UserSessions WHERE UserId=@uid AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() ORDER BY CreatedAt DESC')
   ]);
   const user=userResult.recordset[0];if(!user)throw new AppError(404,'Account not found');
   res.json({email:user.Email,phone:user.Phone,emailVerified:Boolean(user.EmailVerified),phoneVerified:Boolean(user.PhoneVerified),accountCreatedAt:user.CreatedAt,activeSessions:sessionsResult.recordset});
@@ -164,3 +164,6 @@ authRouter.post('/sign-out-other-sessions',requireAuth,asyncHandler(async(req,re
   res.json({success:true,signedOut:result.recordset.length});
 }));
 
+
+authRouter.put('/sessions/trust-current',requireAuth,asyncHandler(async(req,res)=>{const d=z.object({refreshToken:z.string().min(1),name:z.string().trim().min(2).max(80)}).parse(req.body),pool=await getPool();const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('hash',sql.NVarChar(64),hashToken(d.refreshToken)).input('name',sql.NVarChar(80),d.name).query(`UPDATE UserSessions SET TrustedName=@name OUTPUT INSERTED.Id WHERE UserId=@u AND RefreshTokenHash=@hash AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME()`);if(!r.recordset[0])throw new AppError(403,'Current session not found');res.json({success:true})}));
+authRouter.delete('/sessions/:sessionId/trust',requireAuth,asyncHandler(async(req,res)=>{const id=z.string().uuid().parse(req.params.sessionId),pool=await getPool();const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('id',sql.UniqueIdentifier,id).query(`UPDATE UserSessions SET TrustedName=NULL,RevokedAt=SYSUTCDATETIME() OUTPUT INSERTED.Id WHERE UserId=@u AND Id=@id AND TrustedName IS NOT NULL`);if(!r.recordset[0])throw new AppError(404,'Trusted session not found');res.json({success:true})}));

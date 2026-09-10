@@ -1,3 +1,5 @@
+import {communicationSettings,allowCall,requireCallParticipants} from './services/communications.js';
+import {requireConversationContact} from './services/privacy.js';
 import type { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { verifyAccess } from './utils/auth.js';
@@ -41,6 +43,7 @@ export function configureSocket(io: Server) {
 
     const activeConversations=new Set<string>();
     socket.on('conversation:join', async ({ conversationId }) => {
+      try{await requireConversationContact(user.id,String(conversationId))}catch{return}
       const pool = await getPool();
       const r = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
         .query(`SELECT 1 ok FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
@@ -48,8 +51,8 @@ export function configureSocket(io: Server) {
     });
     socket.on('conversation:leave',async({conversationId})=>{socket.leave(`conversation:${conversationId}`);activeConversations.delete(String(conversationId));await redis.srem(`presence:conversation:${conversationId}:user:${user.id}`,socket.id)});
 
-    socket.on('typing:start', ({ conversationId }) => { if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:start', { conversationId, userId: user.id }); });
-    socket.on('typing:stop', ({ conversationId }) => { if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:stop', { conversationId, userId: user.id }); });
+    socket.on('typing:start', async ({ conversationId }) => { const preferences=await communicationSettings(user.id);if(preferences.TypingIndicators===false||preferences.TypingIndicators===0)return; try{await requireConversationContact(user.id,String(conversationId))}catch{return} if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:start', { conversationId, userId: user.id }); });
+    socket.on('typing:stop', async ({ conversationId }) => { try{await requireConversationContact(user.id,String(conversationId))}catch{return} if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:stop', { conversationId, userId: user.id }); });
 
     socket.on('message:send', async (payload, ack) => {
       try {
@@ -60,6 +63,7 @@ export function configureSocket(io: Server) {
         const member = await pool.request().input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id)
           .query(`SELECT conversation.CommunityId,conversation.Name FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
         if (!member.recordset[0]) return ack?.({ ok: false, error: 'Forbidden' });
+        await requireConversationContact(user.id,d.conversationId);
         const r = await pool.request().input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id).input('client',sql.UniqueIdentifier,d.clientMessageId)
           .input('type', sql.NVarChar(30), d.messageType).input('text', sql.NVarChar(sql.MAX), d.messageText).input('media', sql.NVarChar(1500), d.mediaUrl)
           .query(`SET XACT_ABORT ON;BEGIN TRANSACTION;IF EXISTS(SELECT 1 FROM Messages WITH(UPDLOCK,HOLDLOCK) WHERE SenderUserId=@u AND ClientMessageId=@client) SELECT *,CAST(1 AS bit) Duplicate FROM Messages WHERE SenderUserId=@u AND ClientMessageId=@client;ELSE INSERT INTO Messages(ConversationId,SenderUserId,ClientMessageId,MessageType,MessageText,MediaUrl) OUTPUT INSERTED.*,CAST(0 AS bit) Duplicate VALUES(@cv,@u,@client,@type,@text,@media);COMMIT TRANSACTION;`);
@@ -74,6 +78,8 @@ export function configureSocket(io: Server) {
 
     socket.on('call:join', async ({ conversationId }, ack) => {
       try {
+        await requireConversationContact(user.id,String(conversationId));
+        await requireCallParticipants(user.id,String(conversationId));
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
           .query("SELECT 1 ok FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId=@u AND cm.IsActive=1 AND membership.Status='ACTIVE'");
@@ -86,7 +92,7 @@ export function configureSocket(io: Server) {
         if (peers.length === 0) {
           const members = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
             .query("SELECT cm.UserId FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId JOIN Users u ON u.Id=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId<>@u AND cm.IsActive=1 AND membership.Status='ACTIVE' AND u.AccountStatus='ACTIVE'");
-          for (const member of members.recordset) io.to(`user:${member.UserId}`).emit('call:incoming', { conversationId, callerUserId: user.id });
+          for (const member of members.recordset) if(await allowCall(member.UserId)) io.to(`user:${member.UserId}`).emit('call:incoming', { conversationId, callerUserId: user.id });
         }
         ack?.({ ok: true, socketId: socket.id, peers });
       } catch (e) { console.error(e); ack?.({ ok: false, error: 'Unable to join call' }); }
@@ -94,8 +100,10 @@ export function configureSocket(io: Server) {
 
     socket.on('call:signal', async ({ conversationId, targetSocketId, signal }) => {
       if (socket.data.callConversationId !== conversationId) return;
+      try{await requireConversationContact(user.id,String(conversationId))}catch{return}
       const peers=await io.in(`call:${conversationId}`).allSockets();
       if(!peers.has(String(targetSocketId)))return;
+      try{await requireCallParticipants(user.id,String(conversationId))}catch{return}
       io.to(String(targetSocketId)).emit('call:signal', { conversationId, fromSocketId: socket.id, signal });
     });
 

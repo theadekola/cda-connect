@@ -1,7 +1,11 @@
-import {useState,type ReactNode,type FormEvent} from 'react';
+import {HeaderTitleContext,duplicatesHeader} from './pageTitle';
+import {useContext,useState,type ReactNode,type FormEvent} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {api,rows,str,type RecordData} from './api';
-export function Page({title,subtitle,action,children}:{title:string;subtitle?:string;action?:ReactNode;children:ReactNode}){return <section className="page"><header className="page-heading"><div><p className="eyebrow">CDA CONNECT</p><h1>{title}</h1>{subtitle&&<p className="muted">{subtitle}</p>}</div>{action}</header>{children}</section>}
+export function Page({title,subtitle,action,children}:{title:string;subtitle?:string;action?:ReactNode;children:ReactNode}){
+ const duplicate=duplicatesHeader(title,useContext(HeaderTitleContext));
+ return <section className="page">{duplicate&&<h1 className="sr-only">{title}</h1>}{(!duplicate||subtitle||action)&&<header className={'page-heading'+(duplicate?' page-heading-deduplicated':'')}>{(!duplicate||subtitle)&&<div>{!duplicate&&<><p className="eyebrow">CDA CONNECT</p><h1>{title}</h1></>}{subtitle&&<p className="muted">{subtitle}</p>}</div>}{action}</header>}{children}</section>
+}
 export function ErrorBox({error}:{error:unknown}){return error?<p className="error" role="alert">{error instanceof Error?error.message:'Something went wrong.'}</p>:null}
 export function Loading(){return <p role="status" className="empty">Loading…</p>}
 export function Empty({text='Nothing here yet.'}:{text?:string}){return <div className="empty"><h3>{text}</h3><p>New information will appear here when it is available.</p></div>}

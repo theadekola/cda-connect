@@ -6,8 +6,9 @@ self.addEventListener('message',event=>{if(event.data==='ACTIVATE_UPDATE')self.s
 self.addEventListener('fetch',event=>{if(event.request.mode==='navigate'&&event.request.method==='GET')event.respondWith(fetch(event.request).catch(()=>caches.match('/offline.html')))});
 
 self.addEventListener('push',event=>{
- event.waitUntil(self.registration.showNotification('CDA Connect',{
-  body:'You have a new notification. Open CDA Connect to read it.',
+ let content={};try{content=event.data?.json()||{}}catch{}
+ event.waitUntil(self.registration.showNotification(typeof content.title==='string'?content.title.slice(0,180):'CDA Connect',{
+  body:typeof content.body==='string'?content.body.slice(0,500):'You have a new notification. Open CDA Connect to read it.',
   icon:'/icon-192.png',badge:'/icon-192.png',tag:'cda-updates',data:{url:'/notifications'}
  }));
 });
