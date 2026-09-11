@@ -1,3 +1,4 @@
+import {Smartphone} from 'lucide-react';
 import {useEffect,useState} from 'react';
 import {Capacitor} from '@capacitor/core';
 import {api} from './api';
@@ -12,7 +13,7 @@ export async function disconnectPush(){
 }
 function applicationKey(value:string){return Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(value.length/4)*4,'=')),c=>c.charCodeAt(0))}
 
-export function PushSettings({home=false}:{home?:boolean}){
+export function PushSettings({home=false,compact=false}:{home?:boolean;compact?:boolean}){
  const[key,setKey]=useState<string|null>(null),[sub,setSub]=useState<PushSubscription|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ready,setReady]=useState(false);
  useEffect(()=>{let active=true;if(!supported()){setReady(true);return}
   Promise.all([api.get<{publicKey:string|null}>('/users/web-push/key'),subscription()]).then(async([config,existing])=>{
@@ -39,6 +40,7 @@ export function PushSettings({home=false}:{home?:boolean}){
  async function disable(){setBusy(true);try{await disconnectPush();setSub(null);setMessage('Notifications disabled on this device.')}catch{setMessage('Unable to disable notifications. Please retry while online.')}finally{setBusy(false)}}
  async function test(){if(!sub)return;setBusy(true);try{await api.send('/users/web-push/test',{endpoint:sub.endpoint});setMessage('Test sent to your device’s notification service.')}catch(e){setMessage(e instanceof Error?e.message:'Unable to send test')}finally{setBusy(false)}}
  if(home&&(!installed()||sub||!supported()))return null;
+ if(compact)return <div className="notification-push"><label className="settings-row account-switch-row"><span className="settings-row-icon"><Smartphone size={21}/></span><span className="settings-row-text"><strong>Push Notifications</strong><small>Receive notifications on this device</small></span><input type="checkbox" role="switch" checked={!!sub} disabled={busy||!ready||!key||!supported()} onChange={()=>void(sub?disable():enable())}/></label>{!supported()?<p className="privacy-note">{Capacitor.isNativePlatform()?'Push registration is not configured in this native build. Use the installed Home Screen web app for device push.':'On iPhone or iPad, open the app from your Home Screen to enable push. This browser must support Web Push.'}</p>:!ready?<p role="status">Checking device…</p>:!key?<p className="privacy-note">Push delivery needs server configuration.</p>:sub?<button className="notification-test" disabled={busy} onClick={()=>void test()}>Send test notification</button>:null}{message&&<p role="status">{message}</p>}</div>;
  if(Capacitor.isNativePlatform())return null;
  return <section className="push-settings" aria-label="Device notifications"><h2>Push notifications</h2>
   {!supported()?<p>For iPhone or iPad, add CDA Connect to your Home Screen from Safari, then open it there to enable notifications. Requires iOS or iPadOS 16.4 or later. Other devices need a browser supporting Web Push.</p>:

@@ -7,7 +7,7 @@ export const emergencyQueue = new Queue('emergency-broadcasts', { connection: cr
 export const notificationQueue = new Queue('notifications', { connection: createRedisConnection() });
 export const backgroundQueue = new Queue('background-jobs', { connection: createRedisConnection() });
 
-export type NotificationPreference='DirectMessages'|'Mentions'|'CommunityPosts'|'Polls'|'Events'|'Marketplace'|'BusinessPromotions';
+export type NotificationPreference='Initiatives'|'DirectMessages'|'Mentions'|'CommunityPosts'|'Polls'|'Events'|'Marketplace'|'BusinessPromotions';
 export type CommunityNotificationRequest={communityId:string;eventId?:string;occurredAt?:string;actorUserId?:string;conversationId?:string;targetUserId?:string;type:string;title:string;body:string;entityId?:string;preference?:NotificationPreference;priority?:'normal'|'high';data?:Record<string,string>};
 export type CommunityNotificationJob=CommunityNotificationRequest&{notificationId:string;eventId:string};
 

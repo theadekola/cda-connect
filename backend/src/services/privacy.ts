@@ -6,7 +6,7 @@ import {AppError} from '../utils/errors.js';
 export function visibleContent(author:string,body:string,viewer='@u'){
  return `(${author}=${viewer} OR (NOT EXISTS(SELECT 1 FROM BlockedUsers b WHERE (b.UserId=${viewer} AND b.BlockedUserId=${author}) OR (b.UserId=${author} AND b.BlockedUserId=${viewer})) AND NOT EXISTS(SELECT 1 FROM HiddenUsers h WHERE h.UserId=${author} AND h.HiddenUserId=${viewer}) AND NOT EXISTS(SELECT 1 FROM RestrictedWords w WHERE w.UserId=${viewer} AND CHARINDEX(LOWER(w.Phrase),LOWER(COALESCE(${body},'')))>0)))`;
 }
-export async function requireAudience(actor:string,owner:string,kind:'comment'|'mention'|'contact'){
+export async function requireAudience(actor:string,owner:string,kind:'comment'|'mention'|'contact'|'call'){
  if(actor===owner)return;
  if(kind==='contact')await allowDirectMessage(actor,owner);
  const pool=await getPool();
@@ -25,7 +25,7 @@ export async function mentionTargets(actor:string,community:string,text:string){
  for(const row of r.recordset)await requireAudience(actor,row.Id,'mention');
  return r.recordset.map(row=>String(row.Id));
 }
-export async function requireConversationContact(actor:string,conversation:string){
+export async function requireConversationContact(actor:string,conversation:string,kind:'contact'|'call'='contact'){
  const pool=await getPool(),r=await pool.request().input('cv',sql.UniqueIdentifier,conversation).input('u',sql.UniqueIdentifier,actor).query(`SELECT cm.UserId FROM Conversations c JOIN ConversationMembers cm ON cm.ConversationId=c.Id AND cm.IsActive=1 WHERE c.Id=@cv AND c.Type='DIRECT' AND cm.UserId<>@u`);
- for(const row of r.recordset)await requireAudience(actor,row.UserId,'contact');
+ for(const row of r.recordset)await requireAudience(actor,row.UserId,kind);
 }

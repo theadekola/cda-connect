@@ -733,3 +733,49 @@ IF OBJECT_ID('CommunicationSettings','U') IS NULL CREATE TABLE CommunicationSett
 IF OBJECT_ID('ConversationReadReceipts','U') IS NULL CREATE TABLE ConversationReadReceipts(ConversationId UNIQUEIDENTIFIER NOT NULL REFERENCES Conversations(Id),UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),LastReadAt DATETIME2 NOT NULL,PRIMARY KEY(ConversationId,UserId));
 IF OBJECT_ID('SyncedContacts','U') IS NULL CREATE TABLE SyncedContacts(UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),ContactUserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),PRIMARY KEY(UserId,ContactUserId),CHECK(UserId<>ContactUserId));
 GO
+
+USE CDAConnect;
+GO
+IF COL_LENGTH('dbo.NotificationPreferences','Enabled') IS NULL
+ ALTER TABLE dbo.NotificationPreferences ADD Enabled bit NOT NULL CONSTRAINT DF_NotificationPreferences_Enabled DEFAULT(1) WITH VALUES;
+GO
+IF COL_LENGTH('dbo.NotificationPreferences','CommunityUpdates') IS NULL
+ ALTER TABLE dbo.NotificationPreferences ADD CommunityUpdates bit NOT NULL CONSTRAINT DF_NotificationPreferences_CommunityUpdates DEFAULT(1) WITH VALUES;
+GO
+IF COL_LENGTH('dbo.NotificationPreferences','Comments') IS NULL
+ ALTER TABLE dbo.NotificationPreferences ADD Comments bit NOT NULL CONSTRAINT DF_NotificationPreferences_Comments DEFAULT(1) WITH VALUES;
+GO
+IF COL_LENGTH('dbo.NotificationPreferences','Invitations') IS NULL
+ ALTER TABLE dbo.NotificationPreferences ADD Invitations bit NOT NULL CONSTRAINT DF_NotificationPreferences_Invitations DEFAULT(1) WITH VALUES;
+GO
+IF COL_LENGTH('dbo.NotificationPreferences','EmergencyEnabled') IS NULL
+ ALTER TABLE dbo.NotificationPreferences ADD EmergencyEnabled bit NOT NULL CONSTRAINT DF_NotificationPreferences_EmergencyEnabled DEFAULT(1) WITH VALUES;
+GO
+
+USE CDAConnect;
+GO
+IF OBJECT_ID('dbo.CommunityPreferences','U') IS NULL
+ CREATE TABLE dbo.CommunityPreferences(UserId uniqueidentifier NOT NULL PRIMARY KEY REFERENCES dbo.Users(Id),Interests nvarchar(2000) NOT NULL DEFAULT '[]',ContentTypes nvarchar(2000) NOT NULL DEFAULT '[]',FollowedTags nvarchar(2000) NOT NULL DEFAULT '[]',MutedTags nvarchar(2000) NOT NULL DEFAULT '[]',HideSensitive bit NOT NULL DEFAULT 1,UpdatedAt datetime2 NOT NULL DEFAULT SYSUTCDATETIME());
+GO
+IF COL_LENGTH('dbo.CommunityPosts','IsSensitive') IS NULL
+ ALTER TABLE dbo.CommunityPosts ADD IsSensitive bit NOT NULL CONSTRAINT DF_CommunityPosts_IsSensitive DEFAULT(0) WITH VALUES;
+GO
+IF COL_LENGTH('dbo.NotificationPreferences','Initiatives') IS NULL
+ ALTER TABLE dbo.NotificationPreferences ADD Initiatives bit NOT NULL CONSTRAINT DF_NotificationPreferences_Initiatives DEFAULT(1) WITH VALUES;
+GO
+
+USE CDAConnect;
+GO
+IF OBJECT_ID('dbo.LanguagePreferences','U') IS NULL
+ CREATE TABLE dbo.LanguagePreferences(UserId uniqueidentifier NOT NULL PRIMARY KEY REFERENCES dbo.Users(Id),AppLanguage nvarchar(20) NOT NULL DEFAULT 'en-GB',TranslationLanguage nvarchar(20) NOT NULL DEFAULT 'en-GB',TranslatePosts bit NOT NULL DEFAULT 0,TranslateMessages bit NOT NULL DEFAULT 0,UpdatedAt datetime2 NOT NULL DEFAULT SYSUTCDATETIME());
+GO
+
+-- Run once on the existing CDAConnect database before deploying this update.
+IF COL_LENGTH('Users','LoginAlerts') IS NULL
+ ALTER TABLE Users ADD LoginAlerts BIT NOT NULL CONSTRAINT DF_Users_LoginAlerts DEFAULT 0;
+IF COL_LENGTH('Users','PasswordChangedAt') IS NULL
+ ALTER TABLE Users ADD PasswordChangedAt DATETIME2 NULL;
+IF COL_LENGTH('Users','LastLoginAlertAt') IS NULL
+ ALTER TABLE Users ADD LastLoginAlertAt DATETIME2 NULL;
+IF COL_LENGTH('Users','LastLoginAlertStatus') IS NULL
+ ALTER TABLE Users ADD LastLoginAlertStatus NVARCHAR(20) NULL;

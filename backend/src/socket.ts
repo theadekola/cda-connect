@@ -51,7 +51,7 @@ export function configureSocket(io: Server) {
     });
     socket.on('conversation:leave',async({conversationId})=>{socket.leave(`conversation:${conversationId}`);activeConversations.delete(String(conversationId));await redis.srem(`presence:conversation:${conversationId}:user:${user.id}`,socket.id)});
 
-    socket.on('typing:start', async ({ conversationId }) => { const preferences=await communicationSettings(user.id);if(preferences.TypingIndicators===false||preferences.TypingIndicators===0)return; try{await requireConversationContact(user.id,String(conversationId))}catch{return} if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:start', { conversationId, userId: user.id }); });
+    socket.on('typing:start', async ({ conversationId }) => { try{const preferences=await communicationSettings(user.id);if(preferences.TypingIndicators===false||preferences.TypingIndicators===0)return;await requireConversationContact(user.id,String(conversationId))}catch{return} if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:start', { conversationId, userId: user.id }); });
     socket.on('typing:stop', async ({ conversationId }) => { try{await requireConversationContact(user.id,String(conversationId))}catch{return} if(activeConversations.has(String(conversationId))) socket.to(`conversation:${conversationId}`).emit('typing:stop', { conversationId, userId: user.id }); });
 
     socket.on('message:send', async (payload, ack) => {
@@ -78,7 +78,7 @@ export function configureSocket(io: Server) {
 
     socket.on('call:join', async ({ conversationId }, ack) => {
       try {
-        await requireConversationContact(user.id,String(conversationId));
+        await requireConversationContact(user.id,String(conversationId),'call');
         await requireCallParticipants(user.id,String(conversationId));
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
@@ -100,7 +100,7 @@ export function configureSocket(io: Server) {
 
     socket.on('call:signal', async ({ conversationId, targetSocketId, signal }) => {
       if (socket.data.callConversationId !== conversationId) return;
-      try{await requireConversationContact(user.id,String(conversationId))}catch{return}
+      try{await requireConversationContact(user.id,String(conversationId),'call')}catch{return}
       const peers=await io.in(`call:${conversationId}`).allSockets();
       if(!peers.has(String(targetSocketId)))return;
       try{await requireCallParticipants(user.id,String(conversationId))}catch{return}

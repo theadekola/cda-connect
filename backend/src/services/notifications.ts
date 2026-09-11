@@ -7,6 +7,7 @@ import {AppError} from '../utils/errors.js';
 async function postJson(url: string, token: string | undefined, body: unknown) {
   const response = await fetch(url, {
     method: 'POST',
+    signal: AbortSignal.timeout(20000),
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify(body)
   });

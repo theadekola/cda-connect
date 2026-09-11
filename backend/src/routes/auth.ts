@@ -1,3 +1,5 @@
+import {securitySettingsRouter} from './securitySettings.js';
+import {notifyNewLogin} from '../services/securitySettings.js';
 import {emailVerificationRouter} from './emailVerification.js';
 import {verifyRegistrationIdentity} from '../utils/registration.js';
 import { Router } from 'express';
@@ -26,7 +28,7 @@ const encryptSecret=(value:string)=>{const iv=crypto.randomBytes(12),cipher=cryp
 const decryptSecret=(value:string)=>{const[iv,tag,data]=value.split('.');const decipher=crypto.createDecipheriv('aes-256-gcm',secretKey(),Buffer.from(iv,'base64url'));decipher.setAuthTag(Buffer.from(tag,'base64url'));return Buffer.concat([decipher.update(Buffer.from(data,'base64url')),decipher.final()]).toString('utf8')};
 async function createSmsChallenge(pool:any,userId:string,phone:string,purpose:string){const code=crypto.randomInt(100000,1000000).toString(),expires=new Date(Date.now()+env.SMS_CODE_EXPIRES_MINUTES*60000);const result=await pool.request().input('uid',sql.UniqueIdentifier,userId).input('purpose',sql.NVarChar(30),purpose).input('hash',sql.NVarChar(64),verificationHash(userId,code)).input('expires',sql.DateTime2,expires).query('INSERT INTO TwoFactorChallenges(UserId,Purpose,CodeHash,ExpiresAt) OUTPUT INSERTED.Id VALUES(@uid,@purpose,@hash,@expires)');const challengeId=result.recordset[0].Id as string;try{await sendVerificationSms(phone,code)}catch(error){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('DELETE FROM TwoFactorChallenges WHERE Id=@id');throw error}return challengeId}
 async function verifySmsChallenge(pool:any,userId:string,challengeId:string,purpose:string,code:string){const result=await pool.request().input('id',sql.UniqueIdentifier,challengeId).input('uid',sql.UniqueIdentifier,userId).input('purpose',sql.NVarChar(30),purpose).query('SELECT CodeHash,Attempts,ExpiresAt,ConsumedAt FROM TwoFactorChallenges WHERE Id=@id AND UserId=@uid AND Purpose=@purpose');const row=result.recordset[0];if(!row||row.ConsumedAt||new Date(row.ExpiresAt)<=new Date())throw new AppError(400,'Verification code is invalid or expired');if(row.Attempts>=5)throw new AppError(429,'Too many incorrect attempts');const actual=Buffer.from(verificationHash(userId,code),'hex'),expected=Buffer.from(row.CodeHash,'hex');if(actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected)){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('UPDATE TwoFactorChallenges SET Attempts=Attempts+1 WHERE Id=@id');throw new AppError(400,'Verification code is incorrect')}await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('UPDATE TwoFactorChallenges SET ConsumedAt=SYSUTCDATETIME() WHERE Id=@id')}
-async function issueSession(pool:any,row:any){if(row.AccountStatus!=='ACTIVE')throw new AppError(403,'Account is not active');const user={id:row.Id,email:row.Email},accessToken=signAccess(user),refreshToken=signRefresh(user);await pool.request().input('uid',sql.UniqueIdentifier,user.id).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+env.JWT_REFRESH_EXPIRES_DAYS*86400000)).query('INSERT INTO UserSessions(UserId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@hash,@exp)');delete row.PasswordHash;delete row.TwoFactorSecret;return{user:row,accessToken,refreshToken}}
+async function issueSession(pool:any,row:any){if(row.AccountStatus!=='ACTIVE')throw new AppError(403,'Account is not active');const user={id:row.Id,email:row.Email},accessToken=signAccess(user),refreshToken=signRefresh(user);await pool.request().input('uid',sql.UniqueIdentifier,user.id).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+env.JWT_REFRESH_EXPIRES_DAYS*86400000)).query('INSERT INTO UserSessions(UserId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@hash,@exp)');void notifyNewLogin(pool,user.id).catch(()=>undefined);delete row.PasswordHash;delete row.TwoFactorSecret;return{user:row,accessToken,refreshToken}}
 
 authRouter.post('/phone-verification/request',asyncHandler(async(req,res)=>{
   const phone=normalizePhone(z.object({phone:z.string().min(8).max(30)}).parse(req.body).phone);const pool=await getPool();
@@ -95,7 +97,7 @@ authRouter.post('/password-reset/complete',asyncHandler(async(req,res)=>{
   if(challenge.purpose!=='password-reset'||!challenge.id||!challenge.challengeId)throw new AppError(400,'Reset code is invalid or expired');
   const pool=await getPool();await verifySmsChallenge(pool,challenge.id,challenge.challengeId,'password-reset',d.code);
   const passwordHash=await bcrypt.hash(d.newPassword,12);
-  await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).input('hash',sql.NVarChar(500),passwordHash).query("UPDATE Users SET PasswordHash=@hash,UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid AND AccountStatus='ACTIVE'; UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RevokedAt IS NULL");
+  await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).input('hash',sql.NVarChar(500),passwordHash).query("UPDATE Users SET PasswordHash=@hash,PasswordChangedAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid AND AccountStatus='ACTIVE'; UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RevokedAt IS NULL");
   res.json({success:true});
 }));
 authRouter.post('/refresh',asyncHandler(async(req,res)=>{
@@ -149,12 +151,13 @@ authRouter.post('/two-factor/sms-code',requireAuth,asyncHandler(async(req,res)=>
 
 authRouter.put('/password',requireAuth,asyncHandler(async(req,res)=>{
   const d=z.object({currentPassword:z.string().min(1),newPassword:z.string().min(8).max(200),refreshToken:z.string().min(1)}).parse(req.body);
-  if(!/[A-Z]/.test(d.newPassword)||!/\d/.test(d.newPassword)||!/[^A-Za-z0-9]/.test(d.newPassword))throw new AppError(400,'New password must include an uppercase letter, number and special character');
+  if(!/[A-Z]/.test(d.newPassword)||!/[a-z]/.test(d.newPassword)||!/\d/.test(d.newPassword)||!/[^A-Za-z0-9\s]/.test(d.newPassword))throw new AppError(400,'New password must include uppercase and lowercase letters, a number and a special character');
+  if(Buffer.byteLength(d.newPassword,'utf8')>72)throw new AppError(400,'Password is too long. Use fewer characters.');
   const pool=await getPool();const result=await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).query('SELECT PasswordHash FROM Users WHERE Id=@uid');const user=result.recordset[0];
   if(!user||!(await bcrypt.compare(d.currentPassword,user.PasswordHash)))throw new AppError(400,'Current password is incorrect');
+  if(await bcrypt.compare(d.newPassword,user.PasswordHash))throw new AppError(400,'Choose a different password from your current password');
   const nextHash=await bcrypt.hash(d.newPassword,12);const currentHash=hashToken(d.refreshToken);
-  await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('password',sql.NVarChar(500),nextHash).query('UPDATE Users SET PasswordHash=@password,UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid');
-  await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('current',sql.NVarChar(64),currentHash).query('UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RefreshTokenHash<>@current AND RevokedAt IS NULL');
+  await pool.request().input('uid',sql.UniqueIdentifier,req.user!.id).input('password',sql.NVarChar(500),nextHash).input('current',sql.NVarChar(64),currentHash).query('SET XACT_ABORT ON; BEGIN TRANSACTION; UPDATE Users SET PasswordHash=@password,PasswordChangedAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid; UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RefreshTokenHash<>@current AND RevokedAt IS NULL; COMMIT;');
   res.json({success:true});
 }));
 
@@ -167,3 +170,6 @@ authRouter.post('/sign-out-other-sessions',requireAuth,asyncHandler(async(req,re
 
 authRouter.put('/sessions/trust-current',requireAuth,asyncHandler(async(req,res)=>{const d=z.object({refreshToken:z.string().min(1),name:z.string().trim().min(2).max(80)}).parse(req.body),pool=await getPool();const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('hash',sql.NVarChar(64),hashToken(d.refreshToken)).input('name',sql.NVarChar(80),d.name).query(`UPDATE UserSessions SET TrustedName=@name OUTPUT INSERTED.Id WHERE UserId=@u AND RefreshTokenHash=@hash AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME()`);if(!r.recordset[0])throw new AppError(403,'Current session not found');res.json({success:true})}));
 authRouter.delete('/sessions/:sessionId/trust',requireAuth,asyncHandler(async(req,res)=>{const id=z.string().uuid().parse(req.params.sessionId),pool=await getPool();const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('id',sql.UniqueIdentifier,id).query(`UPDATE UserSessions SET TrustedName=NULL,RevokedAt=SYSUTCDATETIME() OUTPUT INSERTED.Id WHERE UserId=@u AND Id=@id AND TrustedName IS NOT NULL`);if(!r.recordset[0])throw new AppError(404,'Trusted session not found');res.json({success:true})}));
+
+authRouter.use(['/security-settings','/login-activity'],requireAuth);
+authRouter.use(securitySettingsRouter);

@@ -58,7 +58,14 @@ JS
 release_id="$(date -u +%Y%m%dT%H%M%S)-$$"
 release="/opt/cda-connect/releases/$release_id"
 install -d -m 755 "$release/backend" "$release/frontend"
-rsync -a "$source_dir/backend/dist" "$source_dir/backend/node_modules" "$source_dir/backend/package.json" "$release/backend/"
+rsync -a "$source_dir/backend/dist" "$source_dir/backend/node_modules" "$source_dir/backend/package.json" "$source_dir/backend/data" "$release/backend/"
+# Verify packaged location data before activating this release.
+/usr/bin/node --input-type=module - "$release" <<'JS'
+import {pathToFileURL} from 'node:url';
+const {locations}=await import(pathToFileURL(process.argv[2]+'/backend/dist/services/communityLocations.js'));
+const countries=await locations();
+if(Object.keys(countries).length<200 || !countries.NG)throw Error('Incomplete community location data');
+JS
 rsync -a "$source_dir/frontend/dist" "$release/frontend/"
 chown -R root:root "$release"
 chmod -R u=rwX,go=rX "$release"

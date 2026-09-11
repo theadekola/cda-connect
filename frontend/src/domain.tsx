@@ -1,3 +1,4 @@
+import {getLocale} from './i18n';
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {api,str,rows,type RecordData} from './api';
@@ -18,7 +19,7 @@ export function Finance({id}:{id:string}){
  const path='/communities/'+id+'/finance/me',q=useQuery({queryKey:[path],queryFn:()=>api.get<RecordData>(path)});
  if(q.isPending)return <Loading/>;if(q.error)return <ErrorBox error={q.error}/>;
  const dues=rows(q.data.dues),receipts=rows(q.data.receipts);
- return <><h2>My financial record</h2><h3>Community dues</h3>{!dues.length&&<p>No dues assigned.</p>}{dues.map(r=><article className="card" key={str(r.Id)}><h3>{str(r.PlanName)}</h3><p>{str(r.CurrencyCode)} {Number(r.AmountDue).toFixed(2)} due · {Number(r.AmountPaid).toFixed(2)} paid</p><p className="badge">{str(r.SubmissionStatus||r.Status)}</p>{r.Status!=='PAID'&&r.SubmissionStatus!=='PENDING'&&<PaymentEvidence communityId={id} ledger={r}/>}</article>)}<h3>Receipts</h3>{!receipts.length&&<p>No confirmed payments yet.</p>}{receipts.map(r=><article className="card" key={str(r.Id)}><h3>{str(r.Description)}</h3><p>{str(r.CurrencyCode)} {Number(r.Amount).toFixed(2)}</p><p>Reference: {str(r.Reference)||'Not provided'}</p><small>{r.TransactionDate?new Date(str(r.TransactionDate)).toLocaleDateString():''}</small></article>)}</>
+ return <><h2>My financial record</h2><h3>Community dues</h3>{!dues.length&&<p>No dues assigned.</p>}{dues.map(r=><article className="card" key={str(r.Id)}><h3>{str(r.PlanName)}</h3><p>{str(r.CurrencyCode)} {Number(r.AmountDue).toFixed(2)} due · {Number(r.AmountPaid).toFixed(2)} paid</p><p className="badge">{str(r.SubmissionStatus||r.Status)}</p>{r.Status!=='PAID'&&r.SubmissionStatus!=='PENDING'&&<PaymentEvidence communityId={id} ledger={r}/>}</article>)}<h3>Receipts</h3>{!receipts.length&&<p>No confirmed payments yet.</p>}{receipts.map(r=><article className="card" key={str(r.Id)}><h3>{str(r.Description)}</h3><p>{str(r.CurrencyCode)} {Number(r.Amount).toFixed(2)}</p><p>Reference: {str(r.Reference)||'Not provided'}</p><small>{r.TransactionDate?new Date(str(r.TransactionDate)).toLocaleDateString(getLocale()):''}</small></article>)}</>
 }
 function PaymentEvidence({communityId,ledger}:{communityId:string;ledger:RecordData}){
  const[open,setOpen]=useState(false);

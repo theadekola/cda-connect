@@ -1,0 +1,14 @@
+import {readFile} from 'node:fs/promises';
+import {AppError} from '../utils/errors.js';
+type Country={name:string;states:Record<string,{name:string;areas:string[]}>};
+let data:Promise<Record<string,Country>>|undefined;
+export function locations():Promise<Record<string,Country>>{return data??=readFile(new URL('../../data/community-locations.json',import.meta.url),'utf8').then(text=>JSON.parse(text) as Record<string,Country>).catch(e=>{data=undefined;throw e})}
+export async function selectedLocation(countryCode:string,stateId:string,area:string){
+ const c=(await locations())[countryCode];if(!c)throw new AppError(400,'Select a valid country');
+ const states=Object.keys(c.states),s=c.states[stateId];
+ if((states.length||stateId)&&!s)throw new AppError(400,'Select a state or region in your country');
+ if(s?.areas.length&&!s.areas.includes(area))throw new AppError(400,'Select a local area in your state or region');
+ if(!s?.areas.length&&area)throw new AppError(400,'No local area is available for this region');
+ return{country:c.name,state:s?.name??'',lga:countryCode==='NG'?area:'',city:area||s?.name||c.name};
+}
+

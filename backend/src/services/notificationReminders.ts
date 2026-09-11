@@ -1,0 +1,12 @@
+import crypto from 'node:crypto';
+import {getPool,sql} from '../config/db.js';
+// Stable per occurrence, allowing multiple workers/restarts without duplicate reminders.
+export function reminderEventId(kind:string,id:string,start:string){const h=crypto.createHash('sha256').update([kind,id,start].join('|')).digest('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20,32)}`}
+export async function queueDueReminders(){
+ const pool=await getPool(),due=await pool.request().query(`SELECT * FROM (
+ SELECT 'EVENT' Kind,Id,CommunityId,Title,StartDateTime FROM CommunityEvents WHERE StartDateTime>SYSUTCDATETIME() AND DATEADD(minute,-CASE WHEN ReminderMinutes BETWEEN 1 AND 10080 THEN ReminderMinutes ELSE 15 END,StartDateTime)<=SYSUTCDATETIME() AND (ReminderMinutes IS NULL OR ReminderMinutes>0)
+ UNION ALL SELECT 'MEETING' Kind,Id,CommunityId,Title,StartDateTime FROM Meetings WHERE StartDateTime>SYSUTCDATETIME() AND StartDateTime<=DATEADD(minute,15,SYSUTCDATETIME())) due ORDER BY StartDateTime`);
+ for(const row of due.recordset){const eventId=reminderEventId(row.Kind,row.Id,new Date(row.StartDateTime).toISOString()),notificationId=crypto.randomUUID(),payload={notificationId,eventId,communityId:row.CommunityId,type:'EVENT_REMINDER',title:row.Kind==='MEETING'?'Meeting reminder':'Event reminder',body:`${row.Title} starts soon. Open your community for the details.`,entityId:row.Id,preference:'Events',data:{type:row.Kind,communityId:row.CommunityId,entityId:row.Id}};
+ await pool.request().input('event',sql.UniqueIdentifier,eventId).input('id',sql.UniqueIdentifier,notificationId).input('c',sql.UniqueIdentifier,row.CommunityId).input('payload',sql.NVarChar(sql.MAX),JSON.stringify(payload)).query(`SET XACT_ABORT ON;BEGIN TRANSACTION;IF NOT EXISTS(SELECT 1 FROM NotificationOutbox WITH(UPDLOCK,HOLDLOCK) WHERE EventId=@event) INSERT INTO NotificationOutbox(NotificationId,EventId,CommunityId,NotificationType,Payload,Status) VALUES(@id,@event,@c,'EVENT_REMINDER',@payload,'PENDING');COMMIT;`);
+ }
+}

@@ -77,7 +77,7 @@ IF OBJECT_ID('EventAttendees','U') IS NOT NULL DELETE FROM EventAttendees WHERE 
 IF OBJECT_ID('PostLikes','U') IS NOT NULL DELETE FROM PostLikes WHERE UserId=@u;
 IF OBJECT_ID('PostReactions','U') IS NOT NULL DELETE FROM PostReactions WHERE UserId=@u;
 IF OBJECT_ID('PostSaves','U') IS NOT NULL DELETE FROM PostSaves WHERE UserId=@u;
-DELETE FROM CommunicationSettings WHERE UserId=@u;DELETE FROM SyncedContacts WHERE UserId=@u OR ContactUserId=@u;DELETE FROM ConversationReadReceipts WHERE UserId=@u;DELETE FROM ProfileTags WHERE UserId=@u; DELETE FROM PrivacySafetySettings WHERE UserId=@u; DELETE FROM HiddenUsers WHERE UserId=@u OR HiddenUserId=@u; DELETE FROM RestrictedWords WHERE UserId=@u;
+DELETE FROM LanguagePreferences WHERE UserId=@u;DELETE FROM CommunityPreferences WHERE UserId=@u;DELETE FROM CommunicationSettings WHERE UserId=@u;DELETE FROM SyncedContacts WHERE UserId=@u OR ContactUserId=@u;DELETE FROM ConversationReadReceipts WHERE UserId=@u;DELETE FROM ProfileTags WHERE UserId=@u; DELETE FROM PrivacySafetySettings WHERE UserId=@u; DELETE FROM HiddenUsers WHERE UserId=@u OR HiddenUserId=@u; DELETE FROM RestrictedWords WHERE UserId=@u;
 IF OBJECT_ID('TrustedContacts','U') IS NOT NULL DELETE FROM TrustedContacts WHERE UserId=@u;
 IF OBJECT_ID('UserDiscoveryPreferences','U') IS NOT NULL DELETE FROM UserDiscoveryPreferences WHERE UserId=@u;
 UPDATE MembershipCards SET IsActive=0 WHERE MembershipId IN(SELECT Id FROM CommunityMembers WHERE UserId=@u);DELETE FROM CommunityMemberRoles WHERE CommunityMemberId IN(SELECT Id FROM CommunityMembers WHERE UserId=@u);UPDATE CommunityMembers SET Status='LEFT' WHERE UserId=@u;
