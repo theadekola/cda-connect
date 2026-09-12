@@ -1,8 +1,9 @@
+import {currentPosition} from './location';
 import {getLocale} from './i18n';
 import {useState} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
-import {UserRound,Users,Mail,Phone,MessageCircle,AtSign,Tag,Download,ShieldCheck,UserX,EyeOff,LockKeyhole,Monitor,ChevronRight,ArrowLeft} from 'lucide-react';
+import {MapPin,UserRound,Users,Mail,Phone,MessageCircle,AtSign,Tag,Download,ShieldCheck,UserX,EyeOff,LockKeyhole,Monitor,ChevronRight,ArrowLeft} from 'lucide-react';
 import {api,session,str,rows,type RecordData} from './api';
 import {Loading,ErrorBox,Records,Action,MutationForm,Field} from './ui';
 import {Security} from './security';
@@ -13,7 +14,7 @@ const audienceLabel=(value:unknown)=>value==='NOBODY'?'Nobody':value==='COMMUNIT
 export function PrivacySettings(){
  const field=useLocation().pathname.split('/')[3]||'',qc=useQueryClient(),[busy,setBusy]=useState(''),[error,setError]=useState<unknown>(),[notice,setNotice]=useState('');
  const q=useQuery({queryKey:['/users/privacy'],queryFn:({signal})=>api.get<RecordData>('/users/privacy',signal)});
- async function save(key:string,value:boolean|string){setBusy(key);setError(undefined);setNotice('');try{await api.send('/users/privacy',{key,value},'PATCH');await qc.invalidateQueries();setNotice('Privacy preference saved.')}catch(e){setError(e)}finally{setBusy('')}}
+ async function save(key:string,value:boolean|string){setBusy(key);setError(undefined);setNotice('');try{if(key==='shareLocation'&&value===true)await currentPosition();await api.send('/users/privacy',{key,value},'PATCH');await qc.invalidateQueries();setNotice('Privacy preference saved.')}catch(e){setError(e)}finally{setBusy('')}}
  if(q.isPending)return <Loading/>;if(q.error)return <ErrorBox error={q.error}/>;const p=q.data;
  const toggle=(key:string,title:string,description:string,checked:boolean,Icon:typeof UserRound)=><label className="settings-row account-switch-row"><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{title}</strong><small>{description}</small></span><input type="checkbox" role="switch" checked={checked} disabled={!!busy} onChange={e=>save(key,e.target.checked)}/></label>;
  if(field)return <><Link className="settings-back" to="/settings/privacy"><ArrowLeft size={17}/>Privacy & safety</Link><h2 className="privacy-detail-title">{titles[field]||'Privacy & safety'}</h2><PrivacyDetail key={field} field={field} preferences={p}/></>;
@@ -22,6 +23,7 @@ export function PrivacySettings(){
  <Row field="visibility" title="Profile visibility" description="Control who can see your member profile" value={p.PrivateAccount?'My communities':'Everyone'} Icon={UserRound}/>
  <Row field="followers" title="Who can follow you" description="Choose who can follow your activities" value={p.AllowFollowers?'Eligible members':'Nobody'} Icon={Users}/>
  {toggle('showEmail','Show email','Show your email to community members',p.EmailVisibility==='MEMBERS',Mail)}
+ {toggle('shareLocation','Share location','Use your device location to find nearby communities. Your position is not shown to other members.',!!p.ShareLocation,MapPin)}
  {toggle('showPhone','Show phone number','Show your number to community members',p.PhoneVisibility==='MEMBERS',Phone)}
  </div><p className="privacy-note">Community administrators retain access to contact details for community administration.</p></section>
  <section className="settings-group"><h2>Activity & content</h2><div className="settings-list">

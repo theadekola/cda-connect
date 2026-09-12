@@ -51,6 +51,27 @@ feedRouter.post('/communities/:communityId/feed',asyncHandler(async(req,res)=>{
 }));
 
 feedRouter.use('/posts/:postId',asyncHandler(async(req,res,next)=>{const pool=await getPool(),r=await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT Id FROM CommunityPosts p WHERE p.Id=@p AND p.IsDeleted=0 AND ${visibleContent("p.CreatedBy","p.Body")}`);if(!r.recordset[0])throw new AppError(404,'Post not available');next()}));
+feedRouter.get('/posts/:postId',asyncHandler(async(req,res)=>{
+ const pool=await getPool();
+ const target=await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).query('SELECT CommunityId FROM CommunityPosts WHERE Id=@p AND IsDeleted=0');
+ if(!target.recordset[0])throw new AppError(404,'Post not available');
+ await requireCommunityMember(req.user!.id,target.recordset[0].CommunityId);
+ const r=await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT p.Id,p.CommunityId,p.CreatedBy,p.Body,p.PostType,p.IsSensitive,p.MediaUrl,p.MediaType,COALESCE((SELECT AllowDownloads FROM PrivacySafetySettings WHERE UserId=p.CreatedBy),0) AllowDownloads,p.DocumentName,p.Caption,p.Transcript,p.OriginalLanguage,p.IsPinned,p.IsAnnouncement,p.CreatedAt,p.UpdatedAt,u.FirstName,u.LastName,u.ProfileImage,(SELECT TOP 1 cm.Id FROM CommunityMembers cm WHERE cm.CommunityId=p.CommunityId AND cm.UserId=p.CreatedBy AND cm.Status='ACTIVE') MembershipId,
+ (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id) ReactionCount,
+ (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='LIKE') LikeCount,
+ (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='CELEBRATE') CelebrateCount,
+ (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='SUPPORT') SupportCount,
+ (SELECT TOP 1 ReactionType FROM PostReactions r WHERE r.PostId=p.Id AND r.UserId=@u) MyReaction,
+ (SELECT COUNT(*) FROM PostComments pc WHERE pc.PostId=p.Id AND pc.IsDeleted=0) CommentCount,
+ (SELECT COUNT(*) FROM PostSaves s WHERE s.PostId=p.Id AND s.UserId=@u) MySaved,
+ (SELECT COUNT(*) FROM PostShares sh WHERE sh.PostId=p.Id) ShareCount,
+ (SELECT STRING_AGG(h.Tag,',') FROM PostHashtags h WHERE h.PostId=p.Id) Hashtags
+ FROM CommunityPosts p JOIN Users u ON u.Id=p.CreatedBy WHERE p.Id=@p AND p.IsDeleted=0 AND ${visibleContent("p.CreatedBy","p.Body")} ORDER BY p.IsPinned DESC,p.CreatedAt DESC`);
+ const post=applyCommunityPreferences(r.recordset,await readCommunityPreferences(req.user!.id))[0];
+ if(!post)throw new AppError(404,'Post not available');
+ res.set('Cache-Control','no-store').json({...post,MySaved:!!post.MySaved});
+}));
+
 feedRouter.get('/posts/:postId/download',asyncHandler(async(req,res)=>{const pool=await getPool(),p=(await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT p.CommunityId,p.MediaUrl,p.DocumentName FROM CommunityPosts p LEFT JOIN PrivacySafetySettings s ON s.UserId=p.CreatedBy WHERE p.Id=@p AND p.IsDeleted=0 AND (p.CreatedBy=@u OR s.AllowDownloads=1)`)).recordset[0];if(!p?.MediaUrl)throw new AppError(403,'Downloads are not available for this post');await requireCommunityMember(req.user!.id,p.CommunityId);res.set('Cache-Control','no-store').json({url:p.MediaUrl,name:p.DocumentName||new URL(p.MediaUrl).pathname.split('/').pop()||'community-media'})}));
 feedRouter.post('/posts/:postId/reaction',asyncHandler(async(req,res)=>{const d=z.object({reaction:z.enum(reactionTypes).nullable()}).parse(req.body);const pool=await getPool();const p=await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).query('SELECT CommunityId FROM CommunityPosts WHERE Id=@p AND IsDeleted=0');if(!p.recordset[0])throw new AppError(404,'Post not found');await requireCommunityMember(req.user!.id,p.recordset[0].CommunityId);await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query('DELETE FROM PostReactions WHERE PostId=@p AND UserId=@u');if(d.reaction)await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).input('r',sql.NVarChar(20),d.reaction).query('INSERT INTO PostReactions(PostId,UserId,ReactionType) VALUES(@p,@u,@r)');res.json({reaction:d.reaction});}));
 feedRouter.post('/posts/:postId/like',asyncHandler(async(req,res)=>{req.body={reaction:'LIKE'};const pool=await getPool();const p=await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).query('SELECT CommunityId FROM CommunityPosts WHERE Id=@p AND IsDeleted=0');if(!p.recordset[0])throw new AppError(404,'Post not found');await requireCommunityMember(req.user!.id,p.recordset[0].CommunityId);const old=await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query('SELECT ReactionType FROM PostReactions WHERE PostId=@p AND UserId=@u');await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query('DELETE FROM PostReactions WHERE PostId=@p AND UserId=@u');if(old.recordset[0]?.ReactionType!=='LIKE')await pool.request().input('p',sql.UniqueIdentifier,req.params.postId).input('u',sql.UniqueIdentifier,req.user!.id).query("INSERT INTO PostReactions(PostId,UserId,ReactionType) VALUES(@p,@u,'LIKE')");res.json({liked:old.recordset[0]?.ReactionType!=='LIKE'});}));

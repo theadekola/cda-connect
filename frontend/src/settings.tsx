@@ -59,7 +59,7 @@ function SettingsDetail({section}:{section:string}){
  return <p>This settings page does not exist. Use the header back button to return.</p>;
 }
 
-function ContactDetails(){const q=useQuery({queryKey:['/users/me'],queryFn:()=>api.get<RecordData>('/users/me')});return <section className="card"><h2>Contact details</h2>{q.isPending?<Loading/>:q.error?<ErrorBox error={q.error}/>:<><p>Email: {str(q.data.Email)}</p><p>Phone: {str(q.data.Phone)||'Not provided'}</p><Link className="button" to="/profile?edit=1">Edit contact details</Link><p className="muted">Email changes require assistance from support. Account verification and security messages are sent when needed.</p></>}</section>}
+function ContactDetails(){const q=useQuery({queryKey:['/users/me'],queryFn:()=>api.get<RecordData>('/users/me')});return <section className="card"><h2>Contact details</h2>{q.isPending?<Loading/>:q.error?<ErrorBox error={q.error}/>:<><p>Email: {str(q.data.Email)}</p><p>Phone: {str(q.data.Phone)||'Not provided'}</p><Link className="button" to="/profile/account">Edit contact details</Link><p className="muted">Email changes require assistance from support. Account verification and security messages are sent when needed.</p></>}</section>}
 
 const privacyFields=[['phoneVisibility','Phone number visibility'],['emailVisibility','Email address visibility'],['whoCanMessage','Who can message you'],['whoCanAddToGroups','Who can add you to groups']] as const;
 const notificationFields=[['directMessages','Direct messages'],['mentions','Mentions'],['communityPosts','Community posts'],['polls','Polls'],['events','Events'],['marketplace','Marketplace'],['businessPromotions','Business promotions']] as const;

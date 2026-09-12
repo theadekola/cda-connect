@@ -5,14 +5,14 @@ import {getPool,sql} from '../config/db.js';
 import {asyncHandler,AppError} from '../utils/errors.js';
 export const privacyRouter=Router();
 privacyRouter.get('/privacy',asyncHandler(async(req,res)=>{
- const pool=await getPool(),r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT COALESCE(a.PrivateAccount,1) PrivateAccount,COALESCE(a.AllowFollowers,0) AllowFollowers,COALESCE(p.EmailVisibility,'ADMINS') EmailVisibility,COALESCE(p.PhoneVisibility,'ADMINS') PhoneVisibility,COALESCE(s.CommentAudience,'EVERYONE') CommentAudience,COALESCE(s.MentionAudience,'EVERYONE') MentionAudience,COALESCE(s.TagApproval,1) TagApproval,COALESCE(s.AllowDownloads,0) AllowDownloads,u.TwoFactorEnabled FROM Users u LEFT JOIN AccountSettings a ON a.UserId=u.Id LEFT JOIN PrivacyPreferences p ON p.UserId=u.Id LEFT JOIN PrivacySafetySettings s ON s.UserId=u.Id WHERE u.Id=@u`);
+ const pool=await getPool(),r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT COALESCE(a.PrivateAccount,1) PrivateAccount,COALESCE(a.AllowFollowers,0) AllowFollowers,COALESCE(p.EmailVisibility,'ADMINS') EmailVisibility,COALESCE(p.PhoneVisibility,'ADMINS') PhoneVisibility,COALESCE(s.CommentAudience,'EVERYONE') CommentAudience,COALESCE(s.MentionAudience,'EVERYONE') MentionAudience,COALESCE(s.TagApproval,1) TagApproval,COALESCE(s.AllowDownloads,0) AllowDownloads,COALESCE(s.ShareLocation,0) ShareLocation,u.TwoFactorEnabled FROM Users u LEFT JOIN AccountSettings a ON a.UserId=u.Id LEFT JOIN PrivacyPreferences p ON p.UserId=u.Id LEFT JOIN PrivacySafetySettings s ON s.UserId=u.Id WHERE u.Id=@u`);
  res.set('Cache-Control','no-store').json(r.recordset[0]);
 }));
 privacyRouter.patch('/privacy',asyncHandler(async(req,res)=>{
  const d=z.discriminatedUnion('key',[
- z.object({key:z.enum(['showEmail','showPhone','tagApproval','allowDownloads']),value:z.boolean()}),
+ z.object({key:z.enum(['showEmail','showPhone','tagApproval','allowDownloads','shareLocation']),value:z.boolean()}),
  z.object({key:z.enum(['commentAudience','mentionAudience']),value:z.enum(['EVERYONE','COMMUNITIES','NOBODY'])})]).parse(req.body);
- const contact=d.key==='showEmail'||d.key==='showPhone',column={showEmail:'EmailVisibility',showPhone:'PhoneVisibility',tagApproval:'TagApproval',allowDownloads:'AllowDownloads',commentAudience:'CommentAudience',mentionAudience:'MentionAudience'}[d.key],table=contact?'PrivacyPreferences':'PrivacySafetySettings';
+ const contact=d.key==='showEmail'||d.key==='showPhone',column={showEmail:'EmailVisibility',showPhone:'PhoneVisibility',tagApproval:'TagApproval',allowDownloads:'AllowDownloads',shareLocation:'ShareLocation',commentAudience:'CommentAudience',mentionAudience:'MentionAudience'}[d.key],table=contact?'PrivacyPreferences':'PrivacySafetySettings';
  const value=contact?(d.value?'MEMBERS':'NOBODY'):d.value,pool=await getPool();
  await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('v',typeof value==='boolean'?sql.Bit:sql.NVarChar(20),value).query(`MERGE ${table} WITH(HOLDLOCK) t USING(SELECT @u UserId)s ON t.UserId=s.UserId WHEN MATCHED THEN UPDATE SET ${column}=@v,UpdatedAt=SYSUTCDATETIME() WHEN NOT MATCHED THEN INSERT(UserId,${column}) VALUES(@u,@v);`);
  res.json({success:true});
