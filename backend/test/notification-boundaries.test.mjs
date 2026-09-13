@@ -163,7 +163,7 @@ test('executive history permits only one active appointment per user',async()=>{
 test('poll and meeting creation each enqueue one bounded navigation event',async()=>{
   const source=await readFile(new URL('../src/routes/content.ts',import.meta.url),'utf8');
   const meeting=source.slice(source.indexOf("contentRouter.post('/communities/:communityId/meetings'"),source.indexOf("contentRouter.post('/meetings/:meetingId/rsvp'"));
-  const poll=source.slice(source.indexOf("contentRouter.post('/communities/:communityId/polls'"),source.indexOf("contentRouter.get('/polls/:pollId'"));
+  const poll=source.slice(source.indexOf("contentRouter.post('/communities/:communityId/polls'"),source.indexOf("\n",source.indexOf("contentRouter.post('/communities/:communityId/polls'")));
   assert.equal((meeting.match(/enqueueCommunityNotification/g)||[]).length,1);
   assert.match(meeting,/meetingId:r\.recordset\[0\]\.Id/);
   assert.doesNotMatch(meeting,/body:d\.description/);

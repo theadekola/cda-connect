@@ -67,6 +67,11 @@ const countries=await locations();
 if(Object.keys(countries).length<200 || !countries.NG)throw Error('Incomplete community location data');
 JS
 rsync -a "$source_dir/frontend/dist" "$release/frontend/"
+# Keep content-versioned chunks available to tabs opened before this deployment.
+# Legacy unversioned files must not be reused across releases.
+if [ -d /opt/cda-connect/current/frontend/dist/assets ]; then
+  rsync -a --ignore-existing --include='*-????????.*' --exclude='*' /opt/cda-connect/current/frontend/dist/assets/ "$release/frontend/dist/assets/"
+fi
 chown -R root:root "$release"
 chmod -R u=rwX,go=rX "$release"
 for unit in cda-api.service cda-worker.service cda-redis.service; do
@@ -92,6 +97,9 @@ if ! nginx -t; then
   echo 'Nginx validation failed. Application release was not switched.' >&2
   exit 1
 fi
+# Apply the additive meeting migration before switching the running release.
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateMeetings.js"
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateMarketplace.js"
 previous="$(readlink -f /opt/cda-connect/current || true)"
 ln -s "$release" /opt/cda-connect/current.next
 mv -Tf /opt/cda-connect/current.next /opt/cda-connect/current
