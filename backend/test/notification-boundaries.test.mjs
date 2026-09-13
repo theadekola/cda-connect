@@ -215,10 +215,10 @@ test('current UI disables forms and buttons during submission',async()=>{
   assert.match(source,/if\(busy\)return/);
 });
 
-test('public media uploads return a URL while private document uploads do not',async()=>{
+test('public media uploads return a URL while private document and chat uploads do not',async()=>{
   const media=await readFile(new URL('../src/routes/media.ts',import.meta.url),'utf8');
   const api=await readFile(new URL('../../frontend/src/api.ts',import.meta.url),'utf8');
-  assert.match(media,/\.\.\.\(documentUpload\?\{\}:\{url:stored\.url\}\)/);
+  assert.match(media,/\.\.\.\(documentUpload\|\|chatUpload\?\{\}:\{url:stored\.url\}\)/);
   assert.match(api,/localhost','127\.0\.0\.1','0\.0\.0\.0/);
   assert.match(api,/url\.host=apiUrl\.host/);
   assert.match(api,/url\.pathname\.startsWith\('\/uploads\/'\)/);

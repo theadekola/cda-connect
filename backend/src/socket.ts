@@ -64,6 +64,12 @@ export function configureSocket(io: Server) {
           .query(`SELECT conversation.CommunityId,conversation.Name FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
         if (!member.recordset[0]) return ack?.({ ok: false, error: 'Forbidden' });
         await requireConversationContact(user.id,d.conversationId);
+        if(d.mediaUrl){
+          const objectId=d.mediaUrl.startsWith('chat-attachment:')?d.mediaUrl.slice(16):'';
+          if(!/^[0-9a-f-]{36}$/i.test(objectId))return ack?.({ok:false,error:'Upload a chat attachment first'});
+          const file=(await pool.request().input('o',sql.UniqueIdentifier,objectId).input('u',sql.UniqueIdentifier,user.id).input('c',sql.UniqueIdentifier,member.recordset[0].CommunityId).query(`SELECT Id FROM StoredObjects WHERE Id=@o AND UploadedBy=@u AND CommunityId=@c AND IsPrivate=1 AND UploadState='AVAILABLE' AND DeletedAt IS NULL`)).recordset[0];
+          if(!file)return ack?.({ok:false,error:'Attachment is unavailable'});
+        }
         const r = await pool.request().input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id).input('client',sql.UniqueIdentifier,d.clientMessageId)
           .input('type', sql.NVarChar(30), d.messageType).input('text', sql.NVarChar(sql.MAX), d.messageText).input('media', sql.NVarChar(1500), d.mediaUrl)
           .query(`SET XACT_ABORT ON;BEGIN TRANSACTION;IF EXISTS(SELECT 1 FROM Messages WITH(UPDLOCK,HOLDLOCK) WHERE SenderUserId=@u AND ClientMessageId=@client) SELECT *,CAST(1 AS bit) Duplicate FROM Messages WHERE SenderUserId=@u AND ClientMessageId=@client;ELSE INSERT INTO Messages(ConversationId,SenderUserId,ClientMessageId,MessageType,MessageText,MediaUrl) OUTPUT INSERTED.*,CAST(0 AS bit) Duplicate VALUES(@cv,@u,@client,@type,@text,@media);COMMIT TRANSACTION;`);
@@ -115,6 +121,7 @@ export function configureSocket(io: Server) {
     });
 
     socket.on('disconnect', async () => {
+      if(socket.data.callConversationId)socket.to(`call:${socket.data.callConversationId}`).emit('call:participant-left',{conversationId:socket.data.callConversationId,socketId:socket.id});
       for(const conversationId of activeConversations)await redis.srem(`presence:conversation:${conversationId}:user:${user.id}`,socket.id);
       await redis.srem(`presence:user:${user.id}:sockets`, socket.id);
       const count = await redis.scard(`presence:user:${user.id}:sockets`);

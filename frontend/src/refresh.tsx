@@ -5,6 +5,7 @@ import {useQueryClient} from '@tanstack/react-query';
 export function useAppRefresh(route:string){
  const queryClient=useQueryClient(),surface=useRef<HTMLElement>(null),running=useRef(false);
  const[refreshing,setRefreshing]=useState(false),[distance,setDistance]=useState(0),[message,setMessage]=useState('');
+ useEffect(()=>{if(message!=='Up to date.')return;const timer=setTimeout(()=>setMessage(''),2000);return()=>clearTimeout(timer)},[message]);
  const refresh=useCallback(async()=>{
   if(running.current)return;
   if(!navigator.onLine){setMessage('You are offline. Reconnect and try refreshing again.');return}
