@@ -1,3 +1,5 @@
+import {expireExecutiveTerms} from '../services/executiveTerms.js';
+import {queuePollReminders} from '../services/pollNotifications.js';
 import {meetingSettings} from '../services/meetingSettings.js';
 import {queueDueReminders} from '../services/notificationReminders.js';
 import {categoryColumn,deliveryAllowed} from '../services/notificationSettings.js';
@@ -152,3 +154,8 @@ let shuttingDown=false;
 async function shutdown(signal:string){if(shuttingDown)return;shuttingDown=true;console.log(`Worker shutdown requested: ${signal}`);await Promise.allSettled([emergencyWorker.close(),notificationWorker.close(),backgroundWorker.close(),emergencyQueue.close(),notificationQueue.close(),getRedis().quit()]);process.exit(0)}
 process.once('SIGTERM',()=>{void shutdown('SIGTERM')});
 process.once('SIGINT',()=>{void shutdown('SIGINT')});
+
+await queuePollReminders().catch(console.error);setInterval(()=>void queuePollReminders().catch(console.error),60000).unref();
+
+await expireExecutiveTerms().catch(error=>console.error('Executive term expiry failed',error));
+setInterval(()=>void expireExecutiveTerms().catch(error=>console.error('Executive term expiry failed',error)),60_000).unref();

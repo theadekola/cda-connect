@@ -45,10 +45,11 @@ export async function storeObject(input: { buffer: Buffer; originalName: string;
 
 export async function readObject(key:string):Promise<Buffer>{
  if(env.STORAGE_DRIVER==='s3'){const result=await client().send(new GetObjectCommand({Bucket:env.STORAGE_BUCKET,Key:key}));if(!result.Body)throw new Error('Stored object is empty');return Buffer.from(await result.Body.transformToByteArray())}
- return fs.readFile(path.join(path.resolve((key.startsWith('private-documents/')||key.startsWith('private-chat/'))?'private-uploads':'uploads'),key));
+ return fs.readFile(path.join(path.resolve((key.startsWith('private-documents/')||key.startsWith('private-chat/')||key.startsWith('private-issues/')||key.startsWith('private-levies/'))?'private-uploads':'uploads'),key));
 }
 
 export async function deleteObject(key:string){
  if(env.STORAGE_DRIVER==='s3'){await client().send(new DeleteObjectCommand({Bucket:env.STORAGE_BUCKET,Key:key}));return}
- await fs.unlink(path.join(path.resolve((key.startsWith('private-documents/')||key.startsWith('private-chat/'))?'private-uploads':'uploads'),key)).catch(error=>{if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error});
+ await fs.unlink(path.join(path.resolve((key.startsWith('private-documents/')||key.startsWith('private-chat/')||key.startsWith('private-issues/')||key.startsWith('private-levies/'))?'private-uploads':'uploads'),key)).catch(error=>{if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error});
 }
+

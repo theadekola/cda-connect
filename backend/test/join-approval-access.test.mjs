@@ -1,0 +1,7 @@
+import test,{after} from 'node:test';import assert from 'node:assert/strict';import sql from 'mssql';
+Object.assign(process.env,{NODE_ENV:'test',DB_SERVER:'localhost',DB_NAME:'test',DB_USER:'test',DB_PASSWORD:'test',JWT_ACCESS_SECRET:'a'.repeat(64),JWT_REFRESH_SECRET:'b'.repeat(64)});
+const {hasPermission,requirePermission}=await import('../dist/services/permissions.js');const connect=sql.ConnectionPool.prototype.connect,query=sql.Request.prototype.query;let allowed=false,last;
+sql.ConnectionPool.prototype.connect=async()=>({connected:true,config:{},request:()=>new sql.Request()});sql.Request.prototype.query=async function(text){last={text,p:this.parameters};return{recordset:allowed?[{ok:1}]:[]}};
+after(()=>{sql.ConnectionPool.prototype.connect=connect;sql.Request.prototype.query=query});
+test('join review rejects users without active leadership eligibility',async()=>{await assert.rejects(requirePermission('user','community','MEMBER_APPROVE'),e=>e.status===403);assert.equal(last.p.u.value,'user');assert.equal(last.p.c.value,'community');assert.match(last.text,/cm.Status='ACTIVE'/);assert.match(last.text,/r.Name IN \('Owner','Admin','Moderator'\)/);assert.match(last.text,/ex.Status='ACTIVE'/);assert.match(last.text,/ex.AppointedDate<=/);assert.match(last.text,/ex.TenureEndDate>=/)});
+test('eligible leaders receive the approval capability',async()=>{allowed=true;assert.equal(await hasPermission('user','community','MEMBER_APPROVE'),true);await requirePermission('user','community','MEMBER_APPROVE')});

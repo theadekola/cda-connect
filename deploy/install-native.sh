@@ -100,6 +100,10 @@ fi
 # Apply the additive meeting migration before switching the running release.
 /usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateMeetings.js"
 /usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateMarketplace.js"
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateIssues.js"
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migratePolls.js"
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateLevies.js"
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateExecutiveTerms.js"
 previous="$(readlink -f /opt/cda-connect/current || true)"
 ln -s "$release" /opt/cda-connect/current.next
 mv -Tf /opt/cda-connect/current.next /opt/cda-connect/current

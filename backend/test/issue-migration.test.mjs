@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+Object.assign(process.env,{NODE_ENV:'test',DB_SERVER:'localhost',DB_NAME:'test',DB_USER:'test',DB_PASSWORD:'test',JWT_ACCESS_SECRET:'a'.repeat(64),JWT_REFRESH_SECRET:'b'.repeat(64)});
+const {ensureIssueSchema}=await import('../dist/migrateIssues.js');
+test('installed issue schema skips DDL for runtime accounts',async()=>{const queries=[];const pool={request:()=>({query:async q=>{queries.push(q);return{recordset:[{IssuesTable:1,UpdatesTable:2,DetailsColumn:-1,CanMigrate:0}]}}})};await ensureIssueSchema(pool,async()=>{throw Error('Must not load DDL')});assert.equal(queries.length,2);assert.match(queries[1],/SELECT TOP 0/)});
+test('missing issue schema reports context without attempting DDL',async()=>{let calls=0;const pool={request:()=>({query:async()=>{calls++;return{recordset:[{DatabaseName:'AppDb',DatabaseUser:'runtime',IssuesTable:1,UpdatesTable:2,DetailsColumn:null,CanMigrate:0}]}}})};await assert.rejects(ensureIssueSchema(pool,async()=>{throw Error('Must not load DDL')}),/AppDb.*runtime.*issue-report-details.sql/);assert.equal(calls,1)});

@@ -147,8 +147,10 @@ test('membership cards are revocable, replaceable credentials and scans reveal m
 
 test('membership card presentation does not expose its QR credential',async()=>{
   const source=await readFile(new URL('../../frontend/src/card.tsx',import.meta.url),'utf8');
-  assert.doesNotMatch(source,/str\(r\.(QrToken|QrPayload)\)/);
-  assert.match(source,/path\+'\/rotate'/);
+  assert.doesNotMatch(source,/>\s*\{str\(r\.(QrToken|QrPayload)\)\}/);
+  assert.match(source,/<QRCodeSVG value=\{qr\}/);
+  assert.match(source,/gcTime:0/);
+  assert.doesNotMatch(source,/Replace card<|Edit profile</);
   assert.match(source,/retry:false/);
 });
 
@@ -163,12 +165,16 @@ test('executive history permits only one active appointment per user',async()=>{
 test('poll and meeting creation each enqueue one bounded navigation event',async()=>{
   const source=await readFile(new URL('../src/routes/content.ts',import.meta.url),'utf8');
   const meeting=source.slice(source.indexOf("contentRouter.post('/communities/:communityId/meetings'"),source.indexOf("contentRouter.post('/meetings/:meetingId/rsvp'"));
-  const poll=source.slice(source.indexOf("contentRouter.post('/communities/:communityId/polls'"),source.indexOf("\n",source.indexOf("contentRouter.post('/communities/:communityId/polls'")));
+  const poll=await readFile(new URL('../src/routes/polls.ts',import.meta.url),'utf8');
+  const dispatch=await readFile(new URL('../src/services/pollNotifications.ts',import.meta.url),'utf8');
   assert.equal((meeting.match(/enqueueCommunityNotification/g)||[]).length,1);
   assert.match(meeting,/meetingId:r\.recordset\[0\]\.Id/);
   assert.doesNotMatch(meeting,/body:d\.description/);
-  assert.equal((poll.match(/enqueueCommunityNotification/g)||[]).length,1);
-  assert.match(poll,/pollId:r\.recordset\[0\]\.Id/);
+  assert.equal(poll.split('await pollNotifications(tx,poll)').length-1,1);
+  assert.match(dispatch,/targetUserId:member.UserId/);
+  assert.ok(dispatch.includes('if(!reminder&&!settings.notify)return'));
+  assert.ok(dispatch.includes('WITH(UPDLOCK,HOLDLOCK)'));
+  assert.match(dispatch,/pollId:poll.Id/);
   assert.match(poll,/Poll options must be unique/);
 });
 
@@ -215,11 +221,13 @@ test('current UI disables forms and buttons during submission',async()=>{
   assert.match(source,/if\(busy\)return/);
 });
 
-test('public media uploads return a URL while private document and chat uploads do not',async()=>{
+test('public media uploads return a URL while private document, chat, issue and levy uploads do not',async()=>{
   const media=await readFile(new URL('../src/routes/media.ts',import.meta.url),'utf8');
   const api=await readFile(new URL('../../frontend/src/api.ts',import.meta.url),'utf8');
-  assert.match(media,/\.\.\.\(documentUpload\|\|chatUpload\?\{\}:\{url:stored\.url\}\)/);
+  assert.match(media,/\.\.\.\(documentUpload\|\|chatUpload\|\|issueUpload\|\|levyUpload\?\{\}:\{url:stored\.url\}\)/);
   assert.match(api,/localhost','127\.0\.0\.1','0\.0\.0\.0/);
   assert.match(api,/url\.host=apiUrl\.host/);
   assert.match(api,/url\.pathname\.startsWith\('\/uploads\/'\)/);
 });
+
+

@@ -1,0 +1,143 @@
+.membership-page{max-width:960px;margin:0 auto;color:var(--text,#182337);font-size:14px}.membership-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0}.membership-heading h1{font-size:22px}.membership-heading a{font-size:13px}.membership-page h2{font-size:17px;margin:0 0 16px}.identity-card{border:1px solid #dce5df;border-radius:22px;background:#fff;overflow:hidden;box-shadow:0 5px 16px #102b4810}.identity-card header{min-height:112px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:24px;color:white}.identity-card header>div{display:flex;align-items:center;gap:12px}.identity-card header img,.identity-card header>div>svg{width:44px;height:44px;object-fit:contain}.identity-card header strong{font-size:20px}.identity-card header small{display:block;font-weight:400;font-size:12px;margin-top:4px}.identity-card header>span{display:flex;gap:5px;align-items:center;background:#ffffff22;border:1px solid #ffffff44;padding:6px 10px;border-radius:12px;font-size:12px}.identity-body{display:flex;align-items:center;gap:25px;padding:12px 32px 20px}.identity-portrait{position:relative;flex-shrink:0;width:150px;height:150px;border:4px solid white;outline:1px solid #126b38;border-radius:50%;background:#eaf3ed;display:grid;place-items:center}.identity-portrait>img{width:100%;height:100%;border-radius:50%;object-fit:cover}.identity-portrait>span{font-size:40px;color:#0d6737}.identity-seal{position:absolute;bottom:0;right:0;width:36px;height:36px;fill:#067337;stroke:white;background:#067337;border:3px solid white;border-radius:50%}.identity-person{padding:30px 0 0;min-width:0}.identity-person h2{font-size:clamp(20px,3.4vw,34px);margin:0 0 8px;overflow-wrap:anywhere}.identity-status{color:#086b30;text-transform:uppercase;letter-spacing:1px;font-weight:600;font-size:13px}.identity-number{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.identity-number button{padding:5px;min-height:32px;background:transparent;color:#0c6635;border:0}.identity-details{padding:12px 32px 22px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.identity-details>a,.identity-details>span{display:flex;align-items:center;gap:10px;overflow-wrap:anywhere;min-width:0;color:inherit;font-size:13px}.identity-details svg{width:18px;height:18px;color:#06662e;flex-shrink:0}.identity-card footer{margin:0 32px;padding:18px 0;border-top:1px solid #b6cdbc;display:flex;align-items:center;gap:24px}.identity-qr{padding:0;background:#fff;border:1px solid #b6cdbc;border-radius:10px;color:#145331;display:flex;align-items:center;flex-direction:column}.identity-qr svg{display:block}.identity-qr span{font-size:10px;padding-bottom:5px}.identity-card footer strong{color:#086b30}.identity-card footer p{margin:6px 0}.identity-card footer small{color:#607166}.membership-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:18px 0;background:white;border:1px solid #e2e7ef;border-radius:14px;padding:18px 0}.membership-stats a{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;border-right:1px solid #e2e7ef;color:#125d34}.membership-stats a:last-child{border:0}.membership-stats strong{font-size:20px}.membership-stats svg{width:20px}.membership-stats span{width:100%;text-align:center;font-size:12px;color:#41506a}.membership-panel{padding:22px;background:white;border:1px solid #e2e7ef;border-radius:14px;margin:16px 0}.membership-community{display:flex;align-items:center;gap:16px}.membership-community>svg{width:48px;height:48px;padding:10px;border-radius:10px;background:#edf6ef;color:#087133}.membership-community>div{flex:1}.membership-community p{margin:6px 0;color:#64748b}.membership-community .button{font-size:12px;padding:10px}.membership-roles{display:grid;grid-template-columns:1fr 1fr;gap:12px}.membership-roles>div{padding:14px;border:1px solid #e2e7ef;border-radius:10px;display:flex;gap:12px;align-items:center}.membership-roles svg{color:#087133}.membership-roles small{display:block;margin-top:5px;color:#64748b}.membership-activity{display:flex;gap:12px;align-items:center;border-bottom:1px solid #edf0f3;padding:15px 0}.membership-activity:last-child{border:0}.membership-activity svg{width:18px;color:#087133}.membership-activity span{flex:1}.membership-activity strong{font-weight:400;font-size:13px}.membership-actions{display:flex;gap:12px;margin-bottom:20px}.membership-actions button,.membership-actions .button{min-height:44px;font-size:13px}.membership-dialog{width:min(90vw,400px);border:0;border-radius:18px;padding:28px;text-align:center;color:#172337}.membership-dialog::backdrop{background:#07152999}.membership-dialog>svg{display:block;width:100%;height:auto;max-width:300px;margin:10px auto}.qr-close{margin-left:auto;background:transparent;border:0;padding:5px;display:block}.identity-verified{display:flex;align-items:center;gap:8px;padding:20px;color:#086b30}@media(max-width:540px){.membership-page{font-size:13px}.identity-card header{padding:18px 16px;min-height:105px}.identity-card header strong{font-size:15px}.identity-card header img,.identity-card header>div>svg{width:30px;height:30px}.identity-card header>span{font-size:10px;padding:5px}.identity-body{padding:0 16px 12px;gap:14px;align-items:flex-start}.identity-portrait{width:84px;height:84px}.identity-person{padding-top:20px}.identity-person h2{font-size:20px}.identity-status{font-size:10px}.identity-number{font-size:11px}.identity-details{padding:12px 18px;grid-template-columns:1fr;gap:12px}.identity-card footer{margin:10px 18px 0;gap:15px}.identity-card footer p{font-size:12px}.membership-panel{padding:16px}.membership-community{flex-wrap:wrap}.membership-community .button{margin-left:auto}.membership-roles{grid-template-columns:1fr}.membership-stats{padding:14px 0}.membership-stats strong{font-size:18px}.membership-stats svg{width:17px}.membership-stats span{font-size:11px}.membership-activity strong{max-width:45%;text-align:right}.membership-heading h1{font-size:20px}} 
+
+.membership-page .identity-card{background-size:100% 300px}.membership-page .identity-card header small{color:#fff}.membership-page .identity-person{color:#122137}.membership-page .identity-status{color:#086b30}@media(max-width:540px){.membership-page .identity-card{background-size:100% 220px}.membership-page .identity-person{padding-top:35px}}
+/* Compact identity layout: portrait beside the name and two detail columns. */
+.membership-page .identity-card{margin-top:12px;background-size:100% 430px}
+.membership-page .identity-card header{min-height:125px;padding:25px 32px 15px}
+.membership-page .identity-body{display:grid;grid-template-columns:25% minmax(0,1fr);column-gap:28px;row-gap:16px;padding:0 32px 24px;align-items:start}
+.membership-page .identity-portrait{grid-column:1;grid-row:1 / span 2;width:100%;height:auto;aspect-ratio:1;align-self:center}
+.membership-page .identity-person{grid-column:2;padding:28px 0 0}
+.membership-page .identity-person h2{font-size:clamp(19px,3.5vw,38px);line-height:1.18;margin:0 0 10px}
+.membership-page .identity-status{margin:0 0 9px;padding-bottom:9px;border-bottom:1px solid #80ad8b;width:fit-content;font-size:14px}
+.membership-page .identity-number{font-size:15px;gap:5px}
+.membership-page .identity-number strong{color:#075e2c}
+.membership-page .identity-details{grid-column:2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:0;gap:18px}
+.membership-page .identity-details>div{display:flex;flex-direction:column;gap:14px;min-width:0}
+.membership-page .identity-details a,.membership-page .identity-details span{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5;color:inherit;overflow-wrap:anywhere;min-width:0}
+.membership-page .identity-details svg{width:18px;height:18px;flex:none;margin-top:1px}
+.membership-page .membership-roles{display:flex;flex-wrap:nowrap;gap:10px;overflow-x:auto;padding-bottom:3px}
+.membership-page .membership-roles>div{flex:1 0 0;min-width:120px;padding:12px 10px;gap:8px}
+.membership-page .membership-roles>div>div{min-width:0;overflow-wrap:anywhere}
+.membership-page .membership-roles svg{width:22px;flex:none}
+@media(max-width:600px){
+ .membership-page .identity-card{border-radius:18px;background-size:100% 280px}
+ .membership-page .identity-card header{min-height:95px;padding:18px 15px 12px;gap:8px}
+ .membership-page .identity-card header strong{font-size:14px;line-height:1.3}
+ .membership-page .identity-card header small{font-size:10px}
+ .membership-page .identity-card header>span{font-size:10px;padding:5px 7px;white-space:nowrap}
+ .membership-page .identity-card header>div{gap:8px}
+ .membership-page .identity-body{grid-template-columns:26% minmax(0,1fr);gap:12px;padding:0 15px 16px}
+ .membership-page .identity-portrait{grid-row:1;align-self:center;border-width:2px}
+ .membership-page .identity-portrait>span{font-size:28px}
+ .membership-page .identity-seal{width:27px;height:27px;border-width:2px}
+ .membership-page .identity-person{padding:15px 0 0}
+ .membership-page .identity-person h2{font-size:19px;margin-bottom:7px}
+ .membership-page .identity-status{font-size:10px;padding-bottom:5px;margin-bottom:5px}
+ .membership-page .identity-number{font-size:11px;gap:3px}
+ .membership-page .identity-number button{padding:4px;min-height:28px}
+ .membership-page .identity-details{grid-column:1 / -1;gap:12px;margin-top:5px}
+ .membership-page .identity-details>div{gap:10px}
+ .membership-page .identity-details a,.membership-page .identity-details span{font-size:11px;gap:6px}
+ .membership-page .identity-details svg{width:15px;height:15px}
+ .membership-page .identity-card footer{padding:12px 0;margin:0 15px;gap:14px}
+ .membership-page .identity-qr svg{width:82px;height:82px}
+ .membership-page .identity-card footer strong{font-size:12px}
+ .membership-page .identity-card footer p,.membership-page .identity-card footer small{font-size:11px}
+ .membership-page .membership-roles strong{font-size:13px}
+ .membership-page .membership-roles small{font-size:11px}
+}
+/* Responsive card surfaces use the app palette without a raster background. */
+.membership-page .identity-card{background:#fff;border:1px solid #dce5ed;box-shadow:0 8px 28px #0b3b7110}
+.membership-page .identity-card header{min-height:100px;align-items:center;padding:24px 30px;background:radial-gradient(ellipse at 100% 0%,#ffffff16 0 28%,transparent 29%),linear-gradient(115deg,#0b3b71,#104b79);border-bottom:4px solid #108043}
+.membership-page .identity-card header>div{min-width:0}
+.membership-page .identity-card header strong{overflow-wrap:anywhere;line-height:1.35}
+.membership-page .identity-card header img{background:white;padding:3px;border-radius:8px;flex:none}
+.membership-page .identity-card header>span{flex:none;border-radius:30px;background:#ffffff18;color:white}
+.membership-page .identity-card header small{color:#dceafa;font-size:12px}
+.membership-page .identity-body{padding:28px 30px;grid-template-columns:minmax(100px,22%) minmax(0,1fr);gap:18px 28px;background:linear-gradient(135deg,#f5faf8 0%,#fff 48%)}
+.membership-page .identity-portrait{max-width:185px;outline:1px solid #c7dfd0;box-shadow:0 3px 12px #0b3b710c}
+.membership-page .identity-person{padding:0;align-self:center}
+.membership-page .identity-person h2{font-size:clamp(22px,2.8vw,32px);font-weight:650;letter-spacing:-.4px}
+.membership-page .identity-status{border:0;border-radius:5px;background:#eaf6ee;padding:5px 8px;font-size:11px;letter-spacing:.7px;margin:0 0 12px}
+.membership-page .identity-number{font-size:13px;line-height:1.5;gap:5px}
+.membership-page .identity-number button{min-width:44px;min-height:44px;display:grid;place-items:center;border-radius:8px;background:#f1f6f8}
+.membership-page .identity-details{gap:20px}
+.membership-page .identity-details a,.membership-page .identity-details span{font-size:13px;line-height:1.6}
+.membership-page .identity-card footer{margin:0;padding:18px 30px;border-top:1px solid #e0ebe5;gap:20px;background:#f7faf9}
+.membership-page .identity-qr{flex:none;background:white;border:1px solid #ccdfd3;border-radius:12px}
+.membership-page .identity-qr svg{width:108px;height:108px}
+.membership-page .identity-qr span{font-size:11px;padding:0 8px 8px}
+.membership-page .identity-card footer p{font-size:14px;line-height:1.5}
+.membership-page .identity-card footer small{font-size:12px;line-height:1.5}
+@media(max-width:600px){
+ .membership-page .identity-card{border-radius:16px;margin-top:8px}
+ .membership-page .identity-card header{min-height:88px;padding:16px;gap:10px;align-items:flex-start}
+ .membership-page .identity-card header strong{font-size:14px;line-height:1.4}
+ .membership-page .identity-card header small{font-size:11px;line-height:1.4;margin-top:4px}
+ .membership-page .identity-card header>div{gap:9px;align-items:flex-start}
+ .membership-page .identity-card header img,.membership-page .identity-card header>div>svg{width:32px;height:32px;flex:none}
+ .membership-page .identity-card header>span{font-size:11px;padding:5px 7px;gap:4px}
+ .membership-page .identity-card header>span svg{width:14px;height:14px}
+ .membership-page .identity-body{grid-template-columns:72px minmax(0,1fr);padding:20px 16px 16px;gap:16px 14px}
+ .membership-page .identity-portrait{width:72px;grid-row:1;align-self:start;margin-top:2px}
+ .membership-page .identity-person h2{font-size:20px;line-height:1.3;margin:0 0 8px;letter-spacing:-.2px}
+ .membership-page .identity-status{font-size:10px;margin-bottom:8px;padding:4px 6px}
+ .membership-page .identity-number{font-size:12px;gap:3px;align-items:center}
+ .membership-page .identity-number strong{overflow-wrap:anywhere}
+ .membership-page .identity-number button{margin-left:2px}
+ .membership-page .identity-details{grid-column:1 / -1;grid-template-columns:1fr;gap:0;border-top:1px solid #e3ebe7;padding-top:5px}
+ .membership-page .identity-details>div{gap:0}
+ .membership-page .identity-details a,.membership-page .identity-details span{font-size:13px;gap:10px;padding:8px 0;line-height:1.5}
+ .membership-page .identity-details svg{width:17px;height:17px;margin-top:2px}
+ .membership-page .identity-card footer{padding:16px;gap:14px;align-items:center}
+ .membership-page .identity-qr svg{width:100px;height:100px}
+ .membership-page .identity-card footer strong{font-size:12px;letter-spacing:.5px}
+ .membership-page .identity-card footer p{font-size:13px;margin:6px 0}
+ .membership-page .identity-card footer small{font-size:11px}
+}
+/* Small screens retain the horizontal identity-card composition. */
+@media(max-width:600px){
+ .membership-page{container-type:inline-size}
+ .membership-page .identity-card{aspect-ratio:1.586;border-radius:3.8cqw;display:flex;flex-direction:column}
+ .membership-page .identity-card header{min-height:0;padding:3cqw 3.5cqw;gap:2cqw;align-items:center;border-bottom-width:2px}
+ .membership-page .identity-card header>div{gap:2cqw;align-items:center}
+ .membership-page .identity-card header strong{font-size:3.5cqw;line-height:1.2}
+ .membership-page .identity-card header small{font-size:2.5cqw;margin-top:1cqw;line-height:1.2}
+ .membership-page .identity-card header img,.membership-page .identity-card header>div>svg{width:7cqw;height:7cqw}
+ .membership-page .identity-card header>span{font-size:2.5cqw;padding:1cqw 1.6cqw;gap:1cqw}
+ .membership-page .identity-card header>span svg{width:3cqw;height:3cqw}
+ .membership-page .identity-body{flex:1;grid-template-columns:22% minmax(0,1fr);padding:3.5cqw;gap:2cqw 3cqw;align-content:center}
+ .membership-page .identity-portrait{width:100%;grid-column:1;grid-row:1 / span 2;align-self:center;margin:0;border-width:2px}
+ .membership-page .identity-portrait>span{font-size:7cqw}
+ .membership-page .identity-person{grid-column:2;padding:0}
+ .membership-page .identity-person h2{font-size:4cqw;line-height:1.2;margin:0 0 1.2cqw;letter-spacing:-.1px}
+ .membership-page .identity-status{font-size:2.2cqw;padding:.7cqw 1.2cqw;margin:0 0 1.2cqw;letter-spacing:.3px}
+ .membership-page .identity-number{font-size:2.55cqw;line-height:1.3;gap:1cqw}
+ .membership-page .identity-details{grid-column:2;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2cqw;border:0;margin:0;padding:0}
+ .membership-page .identity-details>div{gap:1.3cqw}
+ .membership-page .identity-details a,.membership-page .identity-details span{font-size:2.35cqw;line-height:1.4;gap:1cqw;padding:0}
+ .membership-page .identity-details svg{width:2.8cqw;height:2.8cqw;margin-top:.2cqw}
+ .membership-page .identity-card footer{padding:2cqw 3.5cqw;gap:3cqw}
+ .membership-page .identity-qr{border-radius:2cqw}
+ .membership-page .identity-qr svg{width:14cqw;height:14cqw}
+ .membership-page .identity-qr span{font-size:2cqw;padding:0 1cqw 1cqw}
+ .membership-page .identity-card footer strong{font-size:2.6cqw;letter-spacing:.3px}
+ .membership-page .identity-card footer p{font-size:2.8cqw;line-height:1.3;margin:1cqw 0}
+ .membership-page .identity-card footer small{font-size:2.3cqw;line-height:1.3}
+}
+@media(max-width:600px){
+ .membership-page .identity-card{display:block;min-height:63cqw;height:auto;aspect-ratio:auto}
+ .membership-page .identity-card header{min-height:13cqw;height:auto;flex-shrink:0}
+ .membership-page .identity-card footer{min-height:0;height:auto}
+}
+@media(max-width:600px){
+ .membership-page .identity-card header{padding:2cqw 3cqw;min-height:12cqw}
+ .membership-page .identity-body{padding:2.5cqw 3cqw;gap:1.5cqw 3cqw}
+ .membership-page .identity-status{line-height:1.2}
+ .membership-page .identity-card .identity-qr{padding:0;min-height:0;min-width:0;line-height:1;box-shadow:none}
+ .membership-page .identity-card .identity-qr span{line-height:1.2}
+ .membership-page .identity-card footer{padding:1.5cqw 3cqw}
+}
+/* Bare QR with its caption; preserve the keyboard focus indicator. */
+.membership-page .identity-card .identity-qr{background:transparent;border:0;border-radius:0;box-shadow:none;padding:0}
+.membership-page .identity-card .identity-qr:hover{background:transparent}

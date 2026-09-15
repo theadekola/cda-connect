@@ -12,5 +12,5 @@ export async function currentNamedPosition(precise=false){
  const data=await response.json();
  const label=[data.locality||data.city,data.city,data.principalSubdivision,data.countryName].filter((v,i,a)=>typeof v==='string'&&v&&a.indexOf(v)===i).join(', ');
  if(!label)throw Error('No place name was found for your position. Enter your city instead.');
- return {...position,label};
+ return {...position,label,city:String(data.city||data.locality||'')};
 }
