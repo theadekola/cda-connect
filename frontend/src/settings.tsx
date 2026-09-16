@@ -34,7 +34,7 @@ export function SettingsPage(){
  if(section==='account')return <Navigate to={location.pathname.replace('/settings/account','/profile/account')+location.search} replace/>;
  if(section==='appearance')return <Navigate to="/settings" replace/>;
  if(section)return <Page title={settingsTitles[section]||'Settings'}><div className="settings-detail"><SettingsDetail key={section} section={section}/></div></Page>;
- return <Page title="Settings" subtitle="Manage your account, preferences and community experience."><div className="settings-dashboard">
+ return <Page title="Settings"><div className="settings-dashboard">
 
   {groups.map(group=><section className="settings-group" key={group.name}><h2>{group.name}</h2><div className="settings-list">{group.items.map(([id,description,Icon])=><SettingsLink key={id} id={id} description={description} Icon={Icon}/>)}</div></section>)}
  </div></Page>;

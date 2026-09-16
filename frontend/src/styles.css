@@ -1281,3 +1281,160 @@ body a,body a:hover,body a:focus,body a:active,body button,body button:hover,bod
 .app #main :is(.profile-cover,.community-hero-cover){margin:0;border-radius:0}
 .app #main :is(.profile-cover,.community-hero-cover)>img{border-radius:0}
 .app #main .profile-tab-content{padding:16px}
+
+/* Compact personal profile identity, shared by Activity and Account settings. */
+.app #main .profile-summary .profile-compact-banner{display:flex;align-items:center;gap:14px;padding:22px 20px;background:linear-gradient(115deg,#073b78,#087240);color:white;min-width:0}
+.app #main .profile-compact-banner .profile-avatar{position:static;flex:0 0 88px;width:88px;height:88px;min-width:88px;margin:0;border:3px solid white;border-radius:50%;box-sizing:border-box;aspect-ratio:1;font-size:22px}
+.app #main .profile-compact-banner>div{min-width:0}
+.app #main .profile-compact-banner h2{margin:0 0 6px;color:white;font-size:18px!important;line-height:1.35;overflow-wrap:anywhere}
+.app #main .profile-compact-banner p{margin:0;color:#e6f1f2;font-size:12px;line-height:1.5}
+.app #main .profile-summary .profile-actions{padding-top:14px}
+.profile-photo-settings{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;color:var(--cda-navy);font-size:14px}
+.profile-photo-settings .profile-camera-control{position:relative;inset:auto}
+@media(min-width:768px){.app #main .profile-summary .profile-compact-banner{padding:24px 28px}.app #main .profile-compact-banner .profile-avatar{flex-basis:104px;width:104px;height:104px}.app #main .profile-compact-banner h2{font-size:21px!important}}
+
+.app #main .profile-summary .profile-compact-banner{position:relative;padding-right:66px}
+.profile-photo-menu{position:absolute;right:14px;top:14px;z-index:5;color:var(--cda-navy)}
+.profile-photo-menu>summary{display:grid;place-items:center;list-style:none;width:40px;height:40px;border:1px solid #dce5ee;border-radius:50%;background:#eef0f2;cursor:pointer}
+.profile-photo-menu>summary::-webkit-details-marker{display:none}
+.profile-photo-dropdown{position:absolute;right:0;top:48px;width:144px;max-width:calc(100vw - 40px);background:white;border:1px solid #dce5ee;border-radius:12px;padding:0;box-shadow:0 6px 24px #073b7826}
+.profile-photo-dropdown .photo-menu-option{position:static;inset:auto}
+.profile-photo-dropdown .photo-menu-option>button{width:100%;border:0;background:transparent;filter:none;justify-content:flex-start;padding:6px 8px;font-size:13px;min-height:44px;color:var(--cda-navy)}
+.profile-photo-dropdown .profile-upload-status{position:static;display:block;width:auto;box-shadow:none;font-size:12px;overflow-wrap:anywhere}
+
+/* Show the saved cover behind the compact profile identity. */
+.app #main .profile-compact-banner>.profile-banner-cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none}
+.app #main .profile-compact-banner>.profile-banner-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,59,120,.78),rgba(7,59,120,.28));pointer-events:none}
+.app #main .profile-compact-banner>div{position:relative;z-index:1}
+
+/* Profile shortcuts sit below the camera without covering the identity. */
+.app #main .profile-summary .profile-compact-banner{min-height:164px}
+.app #main .profile-compact-banner>.profile-banner-actions{position:absolute;right:14px;top:62px;display:flex;flex-direction:column;gap:8px;z-index:2}
+.app #main .profile-banner-actions>.button,.app #main .profile-banner-actions>button{display:grid;place-items:center;width:40px;height:40px;min-height:40px;padding:0;border:1px solid #dce5ee;border-radius:50%;background:#eef0f2;color:var(--cda-navy);margin:0}
+.profile-photo-menu .profile-photo-dropdown{right:48px;top:0}
+
+/* Four equal profile totals stay inside narrow phone screens. */
+.app #main .profile-summary .profile-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:calc(100% - 20px);margin:12px 10px 4px;box-sizing:border-box}
+.app #main .profile-summary .profile-stats>div{min-width:0;padding:8px 2px}
+.app #main .profile-summary .profile-stats span{font-size:clamp(10px,2.7vw,12px);overflow-wrap:anywhere}
+
+/* Compact spacing for both profile tabs. */
+.app #main .profile-summary .profile-tabs{margin-bottom:0}
+.app #main .profile-tab-content{padding:12px}
+.app #main .profile-account .account-dashboard{padding:0;margin:0}
+.app #main .profile-account .settings-group{margin:0 0 16px;padding:0}
+.app #main .profile-account .settings-group>h2:not(.sr-only){font-size:16px;margin:0 0 8px}
+.app #main .profile-account .settings-row{padding:10px 12px;min-height:56px}
+.app #main .activity-filter select{width:100%;min-height:44px;padding:10px 12px;border:1px solid #dbe4ed;border-radius:9px;background:white;color:var(--cda-navy);font-size:14px;margin:0}
+.app #main .member-activity .activity-period{margin-top:14px}
+.app #main .member-activity .activity-period>h2{font-size:16px;margin-bottom:8px}
+.app #main .member-activity .activity-timeline article{padding:10px 0;gap:8px}
+.app #main .member-activity .activity-timeline article:not(:last-child):before{bottom:-10px}
+
+/* White cover controls and a collapsible statistics row. */
+.app #main .profile-summary .profile-compact-banner{min-height:212px}
+.app #main .profile-banner-actions>.button,.app #main .profile-banner-actions>button,.app #main .profile-photo-menu>summary{background:transparent;border-color:transparent;color:white;box-shadow:none}
+.app #main .profile-summary .profile-stats[hidden]{display:none}
+
+/* Brand-coloured feedback for cover controls on mouse, keyboard and touch. */
+.app #main .profile-banner-actions>:is(button,a),.app #main .profile-photo-menu>summary{transition:background-color .15s ease,color .15s ease}
+.app #main .profile-banner-actions>:is(button,a):is(:hover,:focus-visible,:active),.app #main .profile-photo-menu>summary:is(:hover,:focus-visible,:active){background:white;color:var(--cda-navy);filter:none}
+.app #main .registered-email{cursor:default}
+.app #main .profile-account .phone-field{min-width:0}
+.app #main .profile-account .phone-control{width:100%}
+.app #main .profile-account .phone-control input{width:0;padding:10px}
+
+/* Mobile profile: full-width cover with an overlapping portrait and identity panel. */
+@media(max-width:767px){
+ .app #main .profile-summary .profile-compact-banner{--mobile-cover-height:220px;display:grid;grid-template-columns:104px minmax(0,1fr);align-items:start;gap:12px;padding:var(--mobile-cover-height) 16px 18px;min-height:0;background:linear-gradient(115deg,#073b78,#087240)}
+ .app #main .profile-compact-banner::before{content:"";position:absolute;inset:var(--mobile-cover-height) 0 0;background:white;border-radius:20px 20px 0 0;z-index:1}
+ .app #main .profile-compact-banner>.profile-banner-cover{height:calc(var(--mobile-cover-height) + 20px);object-fit:cover;object-position:center}
+ .app #main .profile-compact-banner>.profile-banner-shade{height:var(--mobile-cover-height);background:linear-gradient(90deg,rgba(7,59,120,.12),rgba(7,59,120,.25));bottom:auto}
+ .app #main .profile-compact-banner .profile-avatar{position:relative;z-index:2;width:104px;height:104px;min-width:104px;flex-basis:auto;margin:-26px 0 0;border:4px solid white;border-radius:50%;overflow:hidden}
+ .app #main .profile-compact-banner>.profile-banner-identity{padding-top:16px;z-index:2}
+ .app #main .profile-compact-banner h2{font-size:18px!important;color:var(--cda-navy);line-height:1.3;margin:0 0 6px}
+ .app #main .profile-compact-banner p{color:var(--muted);font-size:12px;line-height:1.45}
+}
+
+/* One continuous mobile cover includes the app header and safe-area inset. */
+@media(max-width:767px){
+ .profile-cover-workspace{position:relative;isolation:isolate}
+ .profile-cover-workspace::before{content:"";position:absolute;z-index:-1;top:0;left:0;right:0;height:calc(var(--profile-header-height,64px) + 240px);background-image:linear-gradient(180deg,rgba(7,59,120,.35),rgba(7,59,120,.08)),var(--profile-cover-image);background-size:cover;background-position:center;pointer-events:none}
+ .app .profile-cover-workspace>.topbar{position:relative;background:transparent;border-bottom-color:transparent;color:white}
+ .app .profile-cover-workspace #main .profile-summary{background:transparent;overflow:visible}
+ .app .profile-cover-workspace #main .profile-compact-banner{background:transparent}
+ .app .profile-cover-workspace #main .profile-banner-cover,.app .profile-cover-workspace #main .profile-banner-shade{visibility:hidden}
+ .app .profile-cover-workspace #main .profile-compact-banner::before{background:var(--background)}
+ .app .profile-cover-workspace #main .profile-tabs,.app .profile-cover-workspace #main .profile-stats{background:var(--background)}
+ .app .profile-cover-workspace #main .profile-avatar{border-color:var(--background)}
+}
+
+/* Shorter mobile cover, including native and installed-web-app safe areas. */
+@media(max-width:767px){
+ .app #main .profile-summary .profile-compact-banner{--mobile-cover-height:180px}
+ .profile-cover-workspace::before{height:calc(var(--profile-header-height,64px) + 200px)}
+ .app .profile-cover-workspace>.topbar{padding-top:calc(8px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+ .app #main .profile-compact-banner>.profile-photo-menu{top:0}
+ .app #main .profile-compact-banner>.profile-banner-actions{top:44px;gap:4px}
+}
+
+/* Keep the mobile status-area backdrop opaque and the profile cover compact. */
+@media(max-width:767px){
+ html:has(.app){background:var(--cda-navy)}
+ body:has(.app){background:var(--background)}
+ .app #main .profile-summary .profile-compact-banner{--mobile-cover-height:164px}
+ .profile-cover-workspace::before{height:calc(var(--profile-header-height,64px) + 184px);background-image:var(--profile-cover-image)}
+ .app #main .profile-compact-banner>.profile-photo-menu>summary,.app #main .profile-banner-actions>:is(a,button){width:36px;height:36px;min-height:36px}
+ .app #main .profile-compact-banner>.profile-banner-actions{top:40px;gap:4px}
+}
+
+/* Rounded account groups with clear, neutral text on every screen size. */
+.app #main .account-dashboard .settings-list{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);min-width:0}
+.app #main .profile-account h2,.app #main .account-dashboard .settings-row-text strong{color:#0f172a}
+.app #main .account-dashboard .settings-row-text small{color:var(--text-secondary);overflow-wrap:anywhere}
+.app #main .account-dashboard .settings-row-text strong{font-size:14px;line-height:1.4}
+.app #main .account-dashboard .settings-row-text small{font-size:12px;line-height:1.5}
+
+/* Community menu and profile share the personal profile's mobile cover design. */
+@media(max-width:767px){
+ .community-cover-workspace{position:relative;isolation:isolate}
+ .community-cover-workspace::before{content:"";position:absolute;z-index:-1;inset:0 0 auto;height:calc(var(--community-header-height,64px) + 184px);background-image:var(--community-cover-image);background-size:cover;background-position:center;pointer-events:none}
+ .app .community-cover-workspace>.topbar{position:relative;background:transparent;border-bottom-color:transparent;color:white;padding-top:calc(8px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+ .app #main .community-hero{background:transparent;overflow:visible}
+ .app #main .community-hero-cover{height:164px;background:transparent}
+ .app #main .community-hero-cover>img,.app #main .community-hero-cover>.community-cover-fallback{visibility:hidden}
+ .app #main .community-hero-info{position:relative;display:grid;grid-template-columns:104px minmax(0,1fr);column-gap:12px;row-gap:6px;padding:16px 16px 18px;max-width:none;border-radius:20px 20px 0 0;background:var(--background)}
+ .app #main .community-hero-logo{grid-column:1;grid-row:1/span 3;width:104px;height:104px;min-width:104px;aspect-ratio:1;border:4px solid var(--background);border-radius:50%;margin:-42px 0 0}
+ .app #main .community-hero-info>h2{grid-column:2;font-size:18px!important;line-height:1.3;margin:0;overflow-wrap:anywhere}
+ .app #main .community-hero-info>p,.app #main .community-member-count{grid-column:2;margin:0;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+ .app #main .community-hero-info>p{color:var(--text-secondary)}
+ .app #main .community-hero-info>.error,.app #main .community-hero-info>[role=status]{grid-column:1/-1}
+ .app #main .community-hero-tools{top:0;right:14px;gap:4px}
+ .app #main .community-hero-tools>button,.app #main .community-hero-tools>a{width:40px;height:40px;min-height:40px;background:transparent;border-color:transparent;color:white;box-shadow:none}
+ .app #main .community-hero-tools>:is(button,a):is(:hover,:focus-visible,:active){background:white;color:var(--cda-navy);filter:none}
+ .app #main .community-image-menu{top:0;right:48px}
+}
+
+/* Settings overview follows the rounded account-settings cards. */
+.app #main .settings-dashboard .settings-list{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);min-width:0}
+.app #main .settings-dashboard .settings-group>h2{color:var(--text-primary);font-size:16px;line-height:1.4;margin:0 8px 8px}
+.app #main .settings-dashboard .settings-row-text strong{color:var(--text-primary);font-size:14px;line-height:1.4}
+.app #main .settings-dashboard .settings-row-text small{color:var(--text-secondary);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.app #main .settings-dashboard .settings-row{min-height:56px;padding:12px}
+
+/* Mobile cover actions join the notification row. */
+@media(max-width:767px){
+ .app .topbar .top-actions{gap:2px;flex-shrink:0;align-items:center}
+ .app .topbar .cover-header-actions{display:flex;align-items:center;gap:2px;order:-1}
+ .app .cover-header-actions .profile-photo-menu,.app .cover-header-actions .community-hero-tools{position:relative;inset:auto;display:flex;flex-direction:row;align-items:center;gap:2px}
+ .app .cover-header-actions>.button,.app .cover-header-actions>button,.app .cover-header-actions .profile-photo-menu>summary,.app .cover-header-actions .community-hero-tools>button,.app .cover-header-actions .community-hero-tools>a{display:grid;place-items:center;width:34px;height:40px;min-width:34px;min-height:40px;padding:0;margin:0;border:0;border-radius:50%;background:transparent;color:white;box-shadow:none}
+ .app .cover-header-actions :is(button,a,summary):is(:hover,:focus-visible){background:white;color:var(--cda-navy)}
+ .app .cover-header-actions .profile-photo-dropdown,.app .cover-header-actions .community-image-menu{top:44px;right:0;z-index:30}
+ .app .topbar .community-header-text{flex:1;min-width:0}
+ .app .topbar .community-header-text :is(strong,small){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+ .app #main .profile-summary .profile-compact-banner{--mobile-cover-height:120px}
+ .profile-cover-workspace::before{height:calc(var(--profile-header-height,64px) + 140px)}
+ .app #main .profile-compact-banner>.profile-banner-actions{top:auto;bottom:calc(100% - 116px)}
+ .app #main .community-hero-cover{height:120px}
+ .community-cover-workspace::before{height:calc(var(--community-header-height,64px) + 140px)}
+}

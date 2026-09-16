@@ -7,8 +7,8 @@ function flag(code:string){return flags['../node_modules/flag-icons/flags/4x3/'+
 const names=new Intl.DisplayNames(['en'],{type:'region'});
 const countries=getCountries().map(code=>({code,name:names.of(code)||code,dial:getCountryCallingCode(code)})).sort((a,b)=>a.name.localeCompare(b.name));
 
-export function PhoneField({name='phone',label='Phone number'}:{name?:string;label?:string}){
-  const [country,setCountry]=useState<CountryCode>('NG'),[value,setValue]=useState(''),[search,setSearch]=useState(''),[open,setOpen]=useState(false);
+export function PhoneField({name='phone',label='Phone number',defaultValue=''}:{name?:string;label?:string;defaultValue?:string}){
+  const [country,setCountry]=useState<CountryCode>(()=>parsePhoneNumberFromString(defaultValue)?.country||'NG'),[value,setValue]=useState(()=>parsePhoneNumberFromString(defaultValue)?.nationalNumber||defaultValue),[search,setSearch]=useState(''),[open,setOpen]=useState(false);
   const dialog=useRef<HTMLDialogElement>(null),input=useRef<HTMLInputElement>(null),trigger=useRef<HTMLButtonElement>(null),searchInput=useRef<HTMLInputElement>(null),id=useId();
   const selected=countries.find(c=>c.code===country)!;
   const parsed=parsePhoneNumberFromString(value,{defaultCountry:country,extract:false});

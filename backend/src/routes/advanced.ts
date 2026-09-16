@@ -1,3 +1,4 @@
+import {personalActivity} from '../services/personalActivity.js';
 import {levyRouter} from './levies.js';
 import { Router } from 'express';
 import crypto from 'node:crypto';
@@ -122,3 +123,5 @@ advancedRouter.post('/communities/:communityId/assistant/ask',asyncHandler(async
   if(!rr.ok)throw new AppError(502,'AI provider failed'); const data:any=await rr.json();
   res.json({answer:data.answer??data.output??String(data),providerConfigured:true});
 }));
+
+advancedRouter.get('/me/personal-activity',asyncHandler(async(req,res)=>{const q=z.object({kind:z.enum(['ALL','POST','COMMENT','REACTION','GROUP','MEETING','EVENT']).default('ALL'),offset:z.coerce.number().int().min(0).max(100000).default(0)}).parse(req.query);res.json(await personalActivity(req.user!.id,q.kind,q.offset));}));

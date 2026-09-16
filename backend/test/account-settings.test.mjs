@@ -28,11 +28,20 @@ test('unavailable profiles fail before posts are loaded; follow opt-out is enfor
  mode='default';queries=[];assert.equal((await call('/members/'+target+'/follow','PUT',{following:true})).status,403);assert.ok(!queries.some(q=>q.query.includes('MERGE UserFollows')));
  assert.equal((await call('/members/'+viewer+'/follow','PUT',{following:true})).status,400);
 });
-test('email change requires a matching verification proof and correct current password',async()=>{
+test('registered email stays locked even with valid verification proof and password',async()=>{
  const proof=email=>jwt.sign({purpose:'email-verification',email},process.env.JWT_ACCESS_SECRET,{expiresIn:'15m'});
- queries=[];assert.equal((await call('/account/email','PUT',{email:'new@example.com',emailVerificationToken:proof('different@example.com'),password:'CorrectPassword1!'})).status,400);assert.equal(queries.length,0);
- assert.equal((await call('/account/email','PUT',{email:'new@example.com',emailVerificationToken:proof('new@example.com'),password:'wrong'})).status,400);assert.ok(!queries.some(q=>q.query.includes('UPDATE Users')));
- assert.equal((await call('/account/email','PUT',{email:'new@example.com',emailVerificationToken:proof('new@example.com'),password:'CorrectPassword1!'})).status,200);assert.ok(queries.at(-1).query.includes('DELETE FROM UserSessions'));
+ for(const data of [
+  {},
+  {email:'new@example.com',emailVerificationToken:proof('different@example.com'),password:'CorrectPassword1!'},
+  {email:'new@example.com',emailVerificationToken:proof('new@example.com'),password:'wrong'},
+  {email:'new@example.com',emailVerificationToken:proof('new@example.com'),password:'CorrectPassword1!'}
+ ]){
+  queries=[];
+  const response=await call('/account/email','PUT',data);
+  assert.equal(response.status,403);
+  assert.match((await response.json()).error,/registered email address is locked/i);
+  assert.equal(queries.length,0,'Locked email must not access the database or revoke sessions');
+ }
 });
 test('deactivation checks password before revoking devices and sessions',async()=>{
  queries=[];assert.equal((await call('/account/deactivate','POST',{password:'wrong'})).status,400);assert.equal(queries.length,1);
