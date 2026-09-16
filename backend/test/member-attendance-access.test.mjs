@@ -1,0 +1,7 @@
+import test,{after} from 'node:test';import assert from 'node:assert/strict';import sql from 'mssql';
+Object.assign(process.env,{NODE_ENV:'test',DB_SERVER:'localhost',DB_NAME:'test',DB_USER:'test',DB_PASSWORD:'test',JWT_ACCESS_SECRET:'a'.repeat(64),JWT_REFRESH_SECRET:'b'.repeat(64)});
+const {hasPermission,requirePermission}=await import('../dist/services/permissions.js');const connect=sql.ConnectionPool.prototype.connect,query=sql.Request.prototype.query;let active=true,last;
+sql.ConnectionPool.prototype.connect=async()=>({connected:true,config:{},request:()=>new sql.Request()});sql.Request.prototype.query=async function(text){last={text,p:this.parameters};return{recordset:active?[{ok:1}]:[]}};
+after(()=>{sql.ConnectionPool.prototype.connect=connect;sql.Request.prototype.query=query});
+test('attendance access requires active membership without a role assignment',async()=>{assert.equal(await hasPermission('user','community','ATTENDANCE_MANAGE'),true);await requirePermission('user','community','ATTENDANCE_MANAGE');assert.equal(last.p.u.value,'user');assert.equal(last.p.c.value,'community');assert.match(last.text,/Status='ACTIVE'/);assert.doesNotMatch(last.text,/JOIN Roles|CommunityMemberRoles|CommunityExecutiveMembers/)});
+test('non-members and inactive members cannot manage attendance',async()=>{active=false;assert.equal(await hasPermission('outsider','community','ATTENDANCE_MANAGE'),false);await assert.rejects(requirePermission('outsider','community','ATTENDANCE_MANAGE'),e=>e.status===403)});

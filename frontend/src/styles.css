@@ -1251,3 +1251,33 @@ body a,body a:hover,body a:focus,body a:active,body button,body button:hover,bod
 .member-menu a,.member-menu button{font-weight:400!important;font-size:13px!important}.member-menu>div{z-index:150;width:170px;max-height:240px;overflow-y:auto}.member-dialog{border:0;padding:0;border-radius:14px;width:min(480px,calc(100vw - 28px));max-height:calc(100dvh - 48px);overflow:auto;color:var(--text-primary);background:white}.member-dialog::backdrop{background:#102b4770}.member-dialog .member-editor{margin:0;border:0;padding:20px}.member-dialog h3{font-size:17px}.member-dialog label{font-size:14px;font-weight:400}.member-dialog input:not([type=checkbox]){font-size:16px;min-height:44px}.member-dialog button{font-size:14px;min-height:44px}.member-dialog fieldset{min-width:0}.member-dialog .member-role-options{gap:12px}.member-dialog .member-role-options label{min-height:44px}
 .app .topbar{flex-wrap:wrap}.app .topbar #page-search-actions{display:flex}.app .topbar #page-header-search,.app .topbar #community-chat-header-search{flex:0 0 100%;min-width:0}.page-header-search-content:not([hidden]){display:flex;align-items:center;gap:8px;padding:8px 0}.page-header-search-content> :first-child{flex:1;min-width:0;margin:0!important}.page-header-search-content input{width:100%;min-width:0;font-size:16px!important;background:white!important;color:var(--text-primary)!important}.page-header-search-content .header-search-close{border:0;background:transparent;color:inherit;min-width:40px;min-height:44px}.page-header-search-content label{color:inherit}.page-header-search-content .directory-search,.page-header-search-content .members-search{display:flex;align-items:center;gap:8px}.page-header-search-content .members-search input{border:0}.page-header-search-content .home-search{padding:4px}.member-row:has(.member-menu){flex-wrap:wrap}.member-row .member-menu{display:contents}.member-row .member-menu>summary{margin-left:auto}.member-row .member-menu>div{position:static!important;display:flex;width:100%;max-height:none;box-shadow:none;padding:10px 0 0;border:0;border-top:1px solid var(--border);gap:6px;overflow:visible}.member-row .member-menu:not([open])>div{display:none}.member-row .member-menu>div>a,.member-row .member-menu>div button{flex:1;min-width:0;text-align:center;justify-content:center;padding:8px 4px;border:1px solid var(--border);border-radius:8px;font-size:12px!important;min-height:44px}.app .topbar #community-event-header-actions{display:flex}@media(max-width:400px){.app .topbar .top-actions{gap:0}.app .topbar .topbar-icon,.app .topbar .top-actions>.topbar-icon:not(.header-signout){min-width:34px;width:34px;flex-basis:34px;padding:5px}.app .topbar .community-header-text{min-width:0;flex:1}.app .topbar .topbar-title{font-size:14px}}
 .page-header-search-content>label{display:flex;align-items:center;gap:8px;font-size:13px;min-width:0}.page-header-search-content>label>svg{flex-shrink:0}.page-header-search-content input{flex:1;border:1px solid var(--border);border-radius:8px;min-height:44px;padding:10px 12px;box-sizing:border-box}.page-header-search-content .help-search,.page-header-search-content .events-search{background:transparent;padding:0}.page-header-search-content>form{min-width:0}.page-header-search-content button{min-height:44px}.page-header-search-content .form{color:inherit}
+
+/* Meeting banner joins the app header; other content keeps readable gutters. */
+.app #main:has(.published-meeting){padding:0}
+.app #main .page.community-workspace:has(.published-meeting){padding:0!important;margin:0;max-width:none;width:100%}
+.app .published-meeting{max-width:none;margin:0;padding:0 0 24px}
+.app .published-meeting>.published-hero{border-radius:0;margin:0;width:100%;box-sizing:border-box}
+.app .published-meeting>:not(.published-hero){max-width:1040px;width:calc(100% - 32px);margin-left:auto;margin-right:auto;box-sizing:border-box}
+.app .published-hero .meeting-emblem{box-sizing:border-box;flex:0 0 140px;width:140px;height:140px;min-width:140px;min-height:140px;aspect-ratio:1;border-radius:50%;overflow:hidden}
+.app .meeting-emblem img{flex-shrink:0}.app .meeting-emblem strong{max-width:100%;overflow-wrap:anywhere}
+@media(max-width:600px){.app .published-hero .meeting-emblem{flex-basis:104px;width:104px;height:104px;min-width:104px;min-height:104px;padding:10px;gap:5px}.app .meeting-emblem strong{font-size:10px}.app .published-hero h2{font-size:22px}.app .published-meeting>:not(.published-hero){width:calc(100% - 24px)}}
+
+/* Profile cover with left-overlapping portrait and stacked image controls. */
+.app .profile-summary .profile-cover{height:clamp(170px,36vw,260px);border-radius:0;overflow:visible}
+.app .profile-summary .profile-cover>img,.app .profile-summary .profile-cover-placeholder{border-radius:0}
+.app .profile-summary .profile-avatar-wrap{width:clamp(104px,24vw,144px);margin:-58px 0 12px;z-index:1}
+.app .profile-summary .profile-avatar{width:100%;height:auto;aspect-ratio:1;border-radius:50%;margin:0;box-sizing:border-box;border:5px solid white}
+.app .profile-summary .profile-identity{text-align:left;padding:0 20px 12px}
+.app .profile-summary .profile-cover .profile-camera-control{right:14px;top:70px;bottom:auto}
+.app .profile-summary .profile-cover .profile-camera-control.is-cover{top:14px}
+.app .profile-summary .profile-camera{width:46px;height:46px;color:var(--cda-navy)}
+
+/* Full-width personal and community cover sections, flush with the header. */
+.app #main:has(:is(.profile-summary,.community-hero)){padding:0}
+.app #main>.page:has(:is(.profile-summary,.community-hero)){padding:0!important;margin:0;max-width:none}
+.app #main :is(.profile-layout,.community-menu,.community-profile):has(:is(.profile-summary,.community-hero)){padding:0!important;margin:0;max-width:none;width:100%}
+.app #main .profile-layout:has(.profile-summary){display:block}
+.app #main :is(.profile-summary,.community-hero){padding:0!important;margin-top:0!important;border:0;border-radius:0;box-shadow:none;width:100%}
+.app #main :is(.profile-cover,.community-hero-cover){margin:0;border-radius:0}
+.app #main :is(.profile-cover,.community-hero-cover)>img{border-radius:0}
+.app #main .profile-tab-content{padding:16px}

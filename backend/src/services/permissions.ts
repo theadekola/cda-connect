@@ -11,7 +11,11 @@ export async function requireCommunityMember(userId: string, communityId: string
 }
 export async function hasPermission(userId: string, communityId: string, permission: string) {
   const pool=await getCommunityPool(communityId);
-  if(permission==='ATTENDANCE_MANAGE'||permission==='MEMBER_APPROVE'){
+  if(permission==='ATTENDANCE_MANAGE'){
+    const result=await pool.request().input('u',sql.UniqueIdentifier,userId).input('c',sql.UniqueIdentifier,communityId).query("SELECT TOP 1 1 ok FROM CommunityMembers WHERE UserId=@u AND CommunityId=@c AND Status='ACTIVE'");
+    return !!result.recordset[0];
+  }
+  if(permission==='MEMBER_APPROVE'){
     const result=await pool.request().input('u',sql.UniqueIdentifier,userId).input('c',sql.UniqueIdentifier,communityId).query(`SELECT TOP 1 1 ok FROM CommunityMembers cm JOIN Communities c ON c.Id=cm.CommunityId WHERE cm.UserId=@u AND cm.CommunityId=@c AND cm.Status='ACTIVE' AND (c.OwnerUserId=@u OR EXISTS(SELECT 1 FROM CommunityMemberRoles mr JOIN Roles r ON r.Id=mr.RoleId WHERE mr.CommunityMemberId=cm.Id AND r.Name IN ('Owner','Admin','Moderator')) OR EXISTS(SELECT 1 FROM CommunityExecutiveMembers ex WHERE ex.CommunityId=@c AND ex.UserId=@u AND ex.Status='ACTIVE' AND ex.AppointedDate<=CONVERT(date,SYSUTCDATETIME()) AND (ex.TenureEndDate IS NULL OR ex.TenureEndDate>=CONVERT(date,SYSUTCDATETIME()))))`);
     return !!result.recordset[0];
   }

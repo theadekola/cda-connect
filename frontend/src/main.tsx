@@ -15,6 +15,7 @@ import {ApiError,session} from './api';
 import {Loading} from './ui';
 import './styles.css';
 import './responsive.css';
+import './tab-controls.css';
 import './marketplace.css';
 type PageName='Home'|'Communities'|'Join'|'CreateCommunity'|'Community'|'Comments'|'Poll'|'Notifications'|'Profile'|'SettingsPage'|'AiAssistant';
 const page=(key:PageName)=>lazy(()=>import('./pages').then(m=>({default:m[key]})));

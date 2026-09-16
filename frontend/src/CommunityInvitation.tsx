@@ -6,7 +6,7 @@ import {api,str,type RecordData} from './api';
 import {AuthLayout,useSession} from './auth';
 import {ErrorBox,Loading} from './ui';
 export function inviteCode(){const code=new URLSearchParams(window.location.search).get('invite')||'';return /^[A-Z0-9]{6,20}$/i.test(code)?code.toUpperCase():''}
-function cardReturn(){const current=window.location.pathname+window.location.hash;const candidate=new URLSearchParams(window.location.search).get('returnTo')||current;return /^\/community\/[a-f0-9-]{36}\/membership-card#member=[A-Za-z0-9_-]{32}$/.test(candidate)?candidate:''}
+function cardReturn(){const current=window.location.pathname+window.location.hash;const candidate=new URLSearchParams(window.location.search).get('returnTo')||current;return /^\/community\/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\/membership-card#member=[A-Za-z0-9_-]{32}$/.test(candidate)?candidate:''}
 export function authDestination(){const card=cardReturn();if(card)return card;const code=inviteCode();return code?'/invite/'+code:'/home'}
 export function authLink(path:string){const card=cardReturn();if(card)return path+'?returnTo='+encodeURIComponent(card);const code=inviteCode();return path+(code?'?invite='+encodeURIComponent(code):'')}
 export function CommunityCreated({community}:{community:RecordData}){
