@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
+exec 9>/var/lock/cda-connect-deploy.lock
+flock -n 9 || { echo "Another deployment is running." >&2; exit 1; }
 [ "$(id -u)" = 0 ] || { echo 'Run through start-ubuntu.sh or sudo.' >&2; exit 1; }
 source_dir="$(realpath "${1:?Provide the built source release directory}")"
 [ -f "$source_dir/backend/dist/server.js" ] && [ -f "$source_dir/frontend/dist/index.html" ]
@@ -88,6 +90,7 @@ if [ -e "$nginx_file" ]; then
   cp -p "$nginx_file" "$release/nginx.previous.conf"
   had_nginx=true
 fi
+install -m 644 "$source_dir/deploy/security-headers.conf" /etc/cda-connect/security-headers.conf
 install -m 644 "$source_dir/deploy/nginx-cda-connect.conf" "$nginx_file"
 if [ ! -e /etc/nginx/sites-enabled/cda-connect ]; then
   ln -s /etc/nginx/sites-available/cda-connect /etc/nginx/sites-enabled/cda-connect
@@ -97,23 +100,21 @@ if ! nginx -t; then
   echo 'Nginx validation failed. Application release was not switched.' >&2
   exit 1
 fi
-# Apply the additive meeting migration before switching the running release.
-/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateMeetings.js"
-/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateMarketplace.js"
-/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateIssues.js"
-/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migratePolls.js"
-/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateLevies.js"
-/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/dist/migrateExecutiveTerms.js"
+# Administrator secrets are never loaded into the API/worker environment.
+[ -f /etc/cda-connect/migrations.env ] || { echo 'Configure root-owned /etc/cda-connect/migrations.env with deployment-only DB_ADMIN_USER and DB_ADMIN_PASSWORD.' >&2; exit 1; }
+[ "$(stat -c %a /etc/cda-connect/migrations.env)" = 600 ] && [ "$(stat -c %U /etc/cda-connect/migrations.env)" = root ] || { echo 'migrations.env must be root-owned with mode 600.' >&2; exit 1; }
+/usr/bin/node --env-file=/etc/cda-connect/backend.env --env-file=/etc/cda-connect/migrations.env "$source_dir/backend/scripts/migrate.mjs" apply
+/usr/bin/node --env-file=/etc/cda-connect/backend.env "$source_dir/backend/scripts/migrate.mjs" verify
 previous="$(readlink -f /opt/cda-connect/current || true)"
 ln -s "$release" /opt/cda-connect/current.next
 mv -Tf /opt/cda-connect/current.next /opt/cda-connect/current
 systemctl daemon-reload
 systemctl enable --now cda-redis.service
 systemctl enable cda-api.service cda-worker.service
-systemctl restart cda-api.service
+systemctl restart cda-api.service cda-worker.service
 healthy=false
 for attempt in $(seq 1 45); do
-  if curl --silent --fail http://127.0.0.1:4000/health >/dev/null; then healthy=true; break; fi
+  if curl --connect-timeout 2 --max-time 10 --silent --fail http://127.0.0.1:4000/health >/dev/null; then healthy=true; break; fi
   sleep 2
 done
 if ! $healthy; then
@@ -121,13 +122,12 @@ if ! $healthy; then
     ln -s "$previous" /opt/cda-connect/current.rollback
     mv -Tf /opt/cda-connect/current.rollback /opt/cda-connect/current
     systemctl restart cda-api.service cda-worker.service
-  else systemctl stop cda-api.service; fi
+  else systemctl stop cda-api.service cda-worker.service; fi
   echo 'API health check failed. Inspect journalctl -u cda-api. Previous code restored when available.' >&2
   exit 1
 fi
-systemctl restart cda-worker.service
 systemctl enable --now nginx
 systemctl reload nginx
-curl --fail http://127.0.0.1:8080/health
+curl --connect-timeout 2 --max-time 10 --fail http://127.0.0.1:8080/health
 systemctl --no-pager --full status cda-api cda-worker cda-redis
 echo "Installed native release $release. Cloudflare Tunnel origin: http://127.0.0.1:8080"

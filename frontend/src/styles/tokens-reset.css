@@ -1,0 +1,21 @@
+/* tokens-reset: component styles and scoped responsive rules. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{font-family:'DM Sans',system-ui,sans-serif;color:#0F172A;background:#F8FAFC;font-synthesis:none;font-size:16px;--cda-navy:#073B78;--cda-blue:#075AAA;--cda-connect-blue:#0B9BE8;--cda-cyan:#12A8E8;--cda-green-dark:#036E2F;--cda-green:#078A3A;--cda-success:#16A34A;--cda-leaf:#36B83E;--background:#F8FAFC;--surface:#FFFFFF;--text-primary:#0F172A;--text-secondary:#64748B;--text-muted:#94A3B8;--border:#E2E8F0;--success:#16A34A;--warning:#F59E0B;--danger:#DC2626;--info:#0B9BE8;--success-light:#F0FDF4;--warning-light:#FFFBEB;--danger-light:#FEF2F2;--info-light:#EFF6FF;--green:var(--cda-green);--navy:var(--cda-navy);--muted:var(--text-secondary)}
+*{box-sizing:border-box}body{margin:0}
+html,body{background:var(--background);color:var(--text-primary)}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+
+html.app-pull-refresh,html.app-pull-refresh body{overscroll-behavior-y:contain}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
+html.cda-large-text{font-size:18px}
+html.cda-large-text input:not([type=checkbox]):not([type=radio]),html.cda-large-text textarea,html.cda-large-text select{font-size:18px!important}
+html.cda-reduce-motion *,html.cda-reduce-motion *::before,html.cda-reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}@keyframes creation-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes creation-confetti{from{opacity:0;transform:rotate(calc(var(--i)*30deg)) translateY(-20px)}to{opacity:1;transform:rotate(calc(var(--i)*30deg)) translateY(-70px)}}
+body a,body a:hover,body a:focus,body a:active,body button,body button:hover,body [role=button],body summary{text-decoration:none!important}
+@media(max-width:767px){
+ html:has(.app){background:var(--cda-navy)}
+}
+@media(max-width:767px){
+ body:has(.app){background:var(--background)}
+}
+:root{--mobile-cover-height:120px}

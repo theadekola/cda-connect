@@ -65,7 +65,7 @@ test('chat eligibility includes active memberships, mute, blocks and active-view
   const worker=await readFile(new URL('../src/workers/worker.ts',import.meta.url),'utf8');
   assert.match(socket,/member\.IsActive=1/);
   assert.match(socket,/communityMember\.Status='ACTIVE'/);
-  assert.match(worker,/recipient\.MutedUntil/);
+  assert.match(worker,/cv\.MutedUntil/);
   assert.match(worker,/BlockedUsers/);
   assert.match(worker,/presence:conversation:/);
 });
@@ -91,11 +91,12 @@ test('persisted notification history and server read state are used',async()=>{
 
 test('document reads share authoritative visibility and role access checks',async()=>{
   const source=await readFile(new URL('../src/routes/advanced.ts',import.meta.url),'utf8');
-  assert.match(source,/function requireDocumentView|async function requireDocumentView|const requireDocumentView/);
-  assert.match(source,/document\.Visibility==='ADMINS'/);
-  assert.match(source,/DOCUMENT_MANAGE/);
-  assert.match(source,/KnowledgeDocumentAccess/);
-  assert.match(source,/AccountStatus='ACTIVE'/);
+  const access=await readFile(new URL('../src/services/documentAccess.ts',import.meta.url),'utf8');
+  assert.match(source,/documentVisibility/);
+  assert.match(access,/d\.Visibility='ADMINS'/);
+  assert.match(access,/DOCUMENT_MANAGE/);
+  assert.match(access,/KnowledgeDocumentAccess/);
+  assert.match(access,/AccountStatus='ACTIVE'/);
   assert.match(source,/get\('\/documents\/:documentId\/history'/);
 });
 

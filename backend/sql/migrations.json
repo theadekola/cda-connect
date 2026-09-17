@@ -1,0 +1,203 @@
+[
+  {
+    "version": "0001",
+    "file": "schema.sql",
+    "sha256": "f803c0896f867f279d4c2926cbf4d891eaf31e1493cbf4ca69afac5c2c5fc6f3"
+  },
+  {
+    "version": "0002",
+    "file": "add-user-registration-details.sql",
+    "sha256": "d7d33da6b64c91d3bdc496b9e18c169c3430885eed7c5e77e38c986385a7d9c8"
+  },
+  {
+    "version": "0003",
+    "file": "add-user-identity-uniqueness.sql",
+    "sha256": "3a0920a903b22afa8a189c7c93b8615c3726d1f7cd79ab1679b40109017c5711"
+  },
+  {
+    "version": "0004",
+    "file": "add-phone-verification.sql",
+    "sha256": "00401f907d6faa390f18cf1abf3da297a887c4488466e62ac7bb61bdc92672ef"
+  },
+  {
+    "version": "0005",
+    "file": "add-two-factor-auth.sql",
+    "sha256": "ef6cc19bd7a77c0bee9344b65738973098ec3ebc3e193b4c0bfaaa4a963f3c13"
+  },
+  {
+    "version": "0006",
+    "file": "add-user-cover-image.sql",
+    "sha256": "e89747e248de442eeb35d6a351a4244c5da1c1fe3d74102a8cdebc8f5508c6f3"
+  },
+  {
+    "version": "0007",
+    "file": "add-community-creation-settings.sql",
+    "sha256": "a9a7c2730c8d4c2dc7f5aa3c41a52d945d2074bfb07d40b5f07874b434bbafec"
+  },
+  {
+    "version": "0008",
+    "file": "add-community-excos.sql",
+    "sha256": "67449ec84a7efabea8dc04f68ca2dffda9f35c60ca55dc7df1e6549a7eb01181"
+  },
+  {
+    "version": "0009",
+    "file": "add-meeting-settings.sql",
+    "sha256": "0ee23b08ed51d1244249f4978a852ec07830666a17ab2ed8c195d2be2e9807cb"
+  },
+  {
+    "version": "0010",
+    "file": "add-meeting-attendance.sql",
+    "sha256": "eb17541bf4f5f79dd71f67d0b0ed3c32d392df9adf903591a83adce8c733e850"
+  },
+  {
+    "version": "0011",
+    "file": "add-poll-option-images.sql",
+    "sha256": "7b88bbad40f7da539d8eca004db896ab20f9af4628ace1732a069b2b602f9ab5"
+  },
+  {
+    "version": "0012",
+    "file": "add-support-tickets.sql",
+    "sha256": "c8ac04e97e3a11c90f6295bfa89f00bba9ccdb3ea4fc995fc5b10666c88916cd"
+  },
+  {
+    "version": "0013",
+    "file": "add-user-notifications-and-chat-controls.sql",
+    "sha256": "31c019ef228453b353e3719a2bb857cb2918ceae12c85c8807ad05c319e91dc1"
+  },
+  {
+    "version": "0014",
+    "file": "account-settings.sql",
+    "sha256": "c2345144c872c6a4c21741aa302dfb5d15da2c3094524da9ed40e66ae6701c83"
+  },
+  {
+    "version": "0015",
+    "file": "privacy-safety.sql",
+    "sha256": "c1cf346a55ce1ad01134e50707172d49e1f6fbfa0cac3f1e493cca7465c5deba"
+  },
+  {
+    "version": "0016",
+    "file": "communications.sql",
+    "sha256": "e383d7883b8f2de51a4569dca65948c7d080be2503c9a11d5c1cf9c1c8d12816"
+  },
+  {
+    "version": "0017",
+    "file": "community-preferences.sql",
+    "sha256": "a55e7a2ad433970aa9772eefc322e70e8631e8e36b1a7c7a287767248e20ef73"
+  },
+  {
+    "version": "0018",
+    "file": "language-preferences.sql",
+    "sha256": "579e6ef66f8b8bb8940b3a9da7458b8c664a43d3ca1a2acf97faef8101334c04"
+  },
+  {
+    "version": "0019",
+    "file": "notification-settings.sql",
+    "sha256": "4204de5806949e4568d68009f67cdf479ae864472ef933de016bde68bd7437ee"
+  },
+  {
+    "version": "0020",
+    "file": "add-notification-outbox.sql",
+    "sha256": "57be938d536972db37826f0813497ee2a7042b2185634be98ec302138859c4e2"
+  },
+  {
+    "version": "0021",
+    "file": "secure-document-storage.sql",
+    "sha256": "80ed3d423ac99aa1fb69a583ab9f48a0cd4623fb120592bc34923baa4c681a75"
+  },
+  {
+    "version": "0022",
+    "file": "membership-card-exco-lifecycle.sql",
+    "sha256": "fd0c7eb08747a392cb1e16420d285969fb25677250f7908798991e61c7209062"
+  },
+  {
+    "version": "0023",
+    "file": "web-push.sql",
+    "sha256": "e22e16b5aacd4b5e0409ba4d2649e82114f00cc600bde118a98a7ee29c59895b"
+  },
+  {
+    "version": "0024",
+    "file": "security-settings.sql",
+    "sha256": "92b33b719d7fc3aa496631ee6e9a5ba2e2afe012f333447794623b30b5a9b379"
+  },
+  {
+    "version": "0025",
+    "file": "community-discovery.sql",
+    "sha256": "2307f6fc948b9f6771b189dfd2a401336e0670922e6848435a42eb1d511e9d4a"
+  },
+  {
+    "version": "0026",
+    "file": "comment-reactions.sql",
+    "sha256": "226c81582ffb170fcc72daea92c2f802665d871e4aea5cc899195fca1a291e05"
+  },
+  {
+    "version": "0027",
+    "file": "marketplace-standard-fields.sql",
+    "sha256": "22ae0dde8f63c8d95711ce582847b182e29a2911a6691da1923d1922af687462"
+  },
+  {
+    "version": "0028",
+    "file": "marketplace-design.sql",
+    "sha256": "15638929cbc9275214a01d00e7ed8bd0283b6759e2f4b3e9f92d440765fb69a3"
+  },
+  {
+    "version": "0029",
+    "file": "issue-report-details.sql",
+    "sha256": "da0ea8525bc17484e104d295c8b8b5b4c324ead6af1a15d828f13d9688d78a40"
+  },
+  {
+    "version": "0030",
+    "file": "meeting-wizard.sql",
+    "sha256": "f52448e95f5fa5a87ef7e3d3cf3ed2c388b527c730d826b4da2e83958932e964"
+  },
+  {
+    "version": "0031",
+    "file": "poll-wizard.sql",
+    "sha256": "796be275d6df37d6cd86e754bafec4298810196fe953e30ad5c8fa64cca584ac"
+  },
+  {
+    "version": "0032",
+    "file": "add-levy-payment-workflow.sql",
+    "sha256": "8394fd33f21d99648f1339d03a3e64ff0f210f3b6de19186ecbe9d5740fb5f8b"
+  },
+  {
+    "version": "0033",
+    "file": "levy-flow.sql",
+    "sha256": "83e2f9f666e5f9936dd5948f7ff8995c205b97fa4e2588739edb54d253dc7afa"
+  },
+  {
+    "version": "0034",
+    "file": "executive-term-history.sql",
+    "sha256": "5d6351a009622fd725f1ff4f7f6f2c583bf0fdd5187f4e052d7a893ab7d4880a"
+  },
+  {
+    "version": "0035",
+    "file": "emergency-delivery-reliability.sql",
+    "sha256": "7794ac9fd43be4cdcc45915f02da8ce3c43bb480e72f2e29b53d90d19f0832e9"
+  },
+  {
+    "version": "0036",
+    "file": "migrate-opportunities-to-feed.sql",
+    "sha256": "15b08861cb65d1c0f9ce2654830cd6a5179100dcd4f728c5b12881717fa462af"
+  },
+  {
+    "version": "0037",
+    "file": "performance-indexes.sql",
+    "sha256": "f9076003ed9060461b8d2a8eed02f653e57b926ff1533be30d7211981a460936"
+  },
+  {
+    "version": "0038",
+    "file": "delivery-integrity.sql",
+    "sha256": "73a053b9eb50b1210373cf533c1b4930deb7e255cd7872c3d8787edb065dc075"
+  },
+  {
+    "version": "0039",
+    "file": "session-security.sql",
+    "sha256": "26a3fcf128db51f42baef438920c693284403ac849c8627f8de1eb13a2fb8d5b"
+  },
+  {
+    "version": "0040",
+    "file": "protect-database.sql",
+    "sha256": "5bc4c4a6b1e13ea95b3b9eb88ceb4fcad1e704428b7dea175ee4597dc6d9667b",
+    "scope": "server"
+  }
+]

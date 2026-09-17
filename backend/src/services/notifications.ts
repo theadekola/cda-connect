@@ -52,3 +52,19 @@ export async function sendEmailBatch(messages: unknown[]) {
   await postJson(env.EMAIL_PROVIDER_URL, env.EMAIL_PROVIDER_TOKEN, { messages });
   return { skipped: false, count: messages.length };
 }
+
+export type EmailOutcome={status:'SENT'|'FAILED'|'UNKNOWN'|'SKIPPED';providerId?:string;reason?:string};
+export async function sendEmailRecipient(message:{to:string;subject:string;text:string},key:string):Promise<EmailOutcome>{
+ if(env.EMAIL_PROVIDER==='smtp'){
+  if(!env.SMTP_USER||!env.SMTP_PASSWORD)return {status:'SKIPPED',reason:'Email provider not configured'};
+  const transporter=nodemailer.createTransport({host:env.SMTP_HOST,port:env.SMTP_PORT,secure:env.SMTP_PORT===465,requireTLS:true,auth:{user:env.SMTP_USER,pass:env.SMTP_PASSWORD},connectionTimeout:15000,greetingTimeout:15000,socketTimeout:20000,tls:{minVersion:'TLSv1.2'}});
+  try{const result=await transporter.sendMail({...message,from:{name:'CDA Connect',address:env.SMTP_FROM},messageId:`<${key}@${new URL(env.PUBLIC_BASE_URL).hostname}>`,disableFileAccess:true,disableUrlAccess:true});
+   return result.accepted.length?{status:'SENT',providerId:result.messageId}:{status:'FAILED',reason:'Recipient rejected'};
+  }catch(e:any){return {status:e.responseCode>=400&&e.responseCode<600?'FAILED':'UNKNOWN',reason:e.responseCode?'SMTP rejection '+e.responseCode:'Provider acceptance could not be confirmed'}}finally{transporter.close()}
+ }
+ if(!env.EMAIL_PROVIDER_URL)return {status:'SKIPPED',reason:'Email provider not configured'};
+ try{const response=await fetch(env.EMAIL_PROVIDER_URL,{method:'POST',signal:AbortSignal.timeout(20000),headers:{'content-type':'application/json','idempotency-key':key,...(env.EMAIL_PROVIDER_TOKEN?{authorization:`Bearer ${env.EMAIL_PROVIDER_TOKEN}`}:{})},body:JSON.stringify({messages:[message]})});
+ if(!response.ok)return {status:response.status>=400&&response.status<500?'FAILED':'UNKNOWN',reason:'Email provider HTTP '+response.status};
+ const body:any=await response.json().catch(()=>null);return {status:'SENT',providerId:body?.messageId||body?.id||body?.messages?.[0]?.id};
+ }catch{return {status:'UNKNOWN',reason:'Provider acceptance could not be confirmed'}}
+}

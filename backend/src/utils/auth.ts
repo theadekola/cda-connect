@@ -2,7 +2,7 @@ import jwt, { type SignOptions } from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { env } from '../config/env.js';
 
-export type TokenUser = { id: string; email: string };
+export type TokenUser = { id: string; email: string; sessionId?:string };
 export function signAccess(user: TokenUser) {
   return jwt.sign({ ...user, purpose: 'access' }, env.JWT_ACCESS_SECRET, { algorithm: 'HS256', expiresIn: env.JWT_ACCESS_EXPIRES as SignOptions['expiresIn'] });
 }
@@ -14,7 +14,7 @@ function verifySessionToken(token: string, secret: string, purpose: 'access' | '
   if (typeof payload === 'string' || payload.purpose !== purpose || typeof payload.exp !== 'number' || typeof payload.id !== 'string' || typeof payload.email !== 'string') {
     throw new Error('Invalid session token');
   }
-  return { id: payload.id, email: payload.email };
+  return { id: payload.id, email: payload.email,...(typeof payload.sessionId==='string'?{sessionId:payload.sessionId}:{}) };
 }
 export function verifyAccess(token: string) { return verifySessionToken(token, env.JWT_ACCESS_SECRET, 'access'); }
 export function verifyRefresh(token: string) { return verifySessionToken(token, env.JWT_REFRESH_SECRET, 'refresh'); }

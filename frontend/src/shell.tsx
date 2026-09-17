@@ -46,7 +46,7 @@ export function Shell(){
  useEffect(()=>setOpen(false),[location.pathname]);
  useEffect(()=>{const beat=()=>{if(document.visibilityState==='visible'&&navigator.onLine)void api.send('/users/account/presence').catch(()=>{})};beat();const timer=setInterval(beat,30000);document.addEventListener('visibilitychange',beat);return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',beat)}},[]);
  useEffect(()=>{const online=()=>setOffline(!navigator.onLine);window.addEventListener('online',online);window.addEventListener('offline',online);return()=>{window.removeEventListener('online',online);window.removeEventListener('offline',online)}},[]);
- async function logout(){if(!s)return;try{await disconnectPush();await api.send('/auth/logout',{refreshToken:s.refreshToken})}catch{setLogoutError('Server sign-out failed. Retry while online to revoke your session.');return}await qc.cancelQueries();session.set(null);qc.clear();nav('/login',{replace:true})}
+ async function logout(){if(!s)return;try{await disconnectPush();await api.send('/auth/logout',{})}catch{setLogoutError('Server sign-out failed. Retry while online to revoke your session.');return}await qc.cancelQueries();session.set(null);qc.clear();nav('/login',{replace:true})}
  const memberReturnParams=new URLSearchParams(location.search);
  const memberReturnId=location.pathname.startsWith('/member/')?memberReturnParams.get('community'):null;
  const memberReturnTo=memberReturnId?'/community/'+encodeURIComponent(memberReturnId)+'/members?tab='+encodeURIComponent(memberReturnParams.get('tab')||'all'):null;

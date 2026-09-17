@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import sql from 'mssql';
 import webpush from 'web-push';
@@ -32,14 +33,18 @@ test('expired subscriptions are removed; transient errors retry without exposing
  t.mock.method(webpush,'sendNotification',async()=>{throw Error(row.Endpoint)});
  await assert.rejects(sendWebPush('webpush:'+id),{message:'Web push delivery failed; retry required'});
 });
-test('service worker always displays a notification and opens only the app inbox',async()=>{
+test('service worker always displays a notification and opens a safe same-origin destination',async()=>{
  const listeners={};let shown,opened,closed=false,pending;
  const self={location:{origin:'https://cdaconnect.org'},addEventListener:(name,fn)=>listeners[name]=fn,registration:{showNotification:async(...args)=>{shown=args}},clients:{matchAll:async()=>[],openWindow:async url=>{opened=url}}};
- vm.runInNewContext(fs.readFileSync(new URL('../../frontend/public/sw.js',import.meta.url),'utf8'),{self,URL});
+ vm.runInNewContext(fs.readFileSync(new URL('../../frontend/public/sw.js',import.meta.url),'utf8'),{self,URL,crypto});
  listeners.push({data:{json:()=>({url:'https://evil.test'})},waitUntil:p=>pending=p});await pending;
  assert.equal(shown[0],'CDA Connect');
  listeners.notificationclick({notification:{data:{url:'https://evil.test'},close:()=>{closed=true}},waitUntil:p=>pending=p});await pending;
  assert.ok(closed);assert.equal(opened,'https://cdaconnect.org/notifications');
+ for(const url of ['//evil.test','/\\evil.test','https://cdaconnect.org/post/x','javascript:alert(1)']){
+ listeners.notificationclick({notification:{data:{url},close(){}},waitUntil:p=>pending=p});await pending;assert.equal(opened,'https://cdaconnect.org/notifications');}
+ listeners.notificationclick({notification:{data:{url:'/post/123#comments'},close(){}},waitUntil:p=>pending=p});await pending;assert.equal(opened,'https://cdaconnect.org/post/123#comments');
+ const first=shown[1].tag;listeners.push({data:{json:()=>({})},waitUntil:p=>pending=p});await pending;assert.notEqual(first,shown[1].tag);
 });
 
 test('web push reveals previews only after explicit opt-in',async t=>{

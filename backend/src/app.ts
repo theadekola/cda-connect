@@ -1,3 +1,5 @@
+import {operationalHealth} from './services/operationalHealth.js';
+import {protectCookieMutation} from './services/sessionCookies.js';
 import express from 'express';
 import path from 'node:path';
 import cors from 'cors';
@@ -21,8 +23,10 @@ import { getPool } from './config/db.js';
 export const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(',') }));
+app.use(cors({ origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),credentials:true }));
 app.use(express.json({ limit: '2mb' }));
+app.use('/api/',protectCookieMutation);
+app.use((_req,res,next)=>{res.set('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()');next()});
 if (env.STORAGE_DRIVER === 'local') app.use('/uploads', express.static(path.resolve('uploads')));
 app.use('/api/', distributedRateLimit);
 
@@ -30,8 +34,9 @@ app.get('/health', async (_req, res) => {
   const checks: Record<string, string> = { api: 'ok' };
   try { await (await getPool()).request().query('SELECT 1 ok'); checks.mssql = 'ok'; } catch { checks.mssql = 'error'; }
   try { checks.redis = (await getRedis().ping()) === 'PONG' ? 'ok' : 'error'; } catch { checks.redis = 'error'; }
+  let operations;try{operations=await operationalHealth();checks.worker=operations.workerOk?'ok':'stale'}catch{checks.worker='error'}
   const ok = Object.values(checks).every(v => v === 'ok');
-  res.status(ok ? 200 : 503).json({ ok, service: 'cda-connect-api', checks });
+  res.status(ok ? 200 : 503).json({ ok, service: 'cda-connect-api', checks,operations });
 });
 
 app.use('/api/v1/auth', authRouter);

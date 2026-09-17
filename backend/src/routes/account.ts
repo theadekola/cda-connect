@@ -1,3 +1,4 @@
+import {emailChangeRouter} from './emailChange.js';
 import {visibleContent} from '../services/privacy.js';
 import {getRedis} from '../config/redis.js';
 import {Router} from 'express';
@@ -18,7 +19,7 @@ accountRouter.put('/account/username',asyncHandler(async(req,res)=>{
  try{await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('name',sql.NVarChar(30),username).query(`MERGE AccountSettings WITH(HOLDLOCK) t USING(SELECT @u UserId)s ON t.UserId=s.UserId WHEN MATCHED THEN UPDATE SET Username=@name,UpdatedAt=SYSUTCDATETIME() WHEN NOT MATCHED THEN INSERT(UserId,Username) VALUES(@u,@name);`)}catch(error:any){const number=error?.number??error?.originalError?.info?.number;if(number===2601||number===2627)throw new AppError(409,'This username is already in use');throw error}
  res.json({success:true,username});
 }));
-accountRouter.put('/account/email',asyncHandler(async()=>{throw new AppError(403,'Your registered email address is locked and cannot be changed.')}));
+accountRouter.use(emailChangeRouter);
 accountRouter.get('/account/export',asyncHandler(async(req,res)=>{
  const pool=await getPool();
  const queries:Record<string,string>={securityPreferences:'SELECT LoginAlerts,PasswordChangedAt,LastLoginAlertAt,LastLoginAlertStatus FROM Users WHERE Id=@u',languagePreferences:'SELECT * FROM LanguagePreferences WHERE UserId=@u',communityPreferences:'SELECT * FROM CommunityPreferences WHERE UserId=@u',profile:'SELECT Id,FirstName,LastName,Email,Phone,Address,Country,State,LGA,Postcode,DateOfBirth,CreatedAt FROM Users WHERE Id=@u',account:'SELECT * FROM AccountSettings WHERE UserId=@u',privacy:'SELECT * FROM PrivacyPreferences WHERE UserId=@u',communications:'SELECT * FROM CommunicationSettings WHERE UserId=@u',syncedContacts:'SELECT ContactUserId FROM SyncedContacts WHERE UserId=@u',privacySafety:'SELECT * FROM PrivacySafetySettings WHERE UserId=@u',hiddenUsers:'SELECT HiddenUserId FROM HiddenUsers WHERE UserId=@u',restrictedWords:'SELECT Phrase FROM RestrictedWords WHERE UserId=@u',notifications:'SELECT * FROM NotificationPreferences WHERE UserId=@u',memberships:'SELECT CommunityId,Status,JoinedAt FROM CommunityMembers WHERE UserId=@u',posts:'SELECT Id,CommunityId,Body,CreatedAt FROM CommunityPosts WHERE CreatedBy=@u',comments:'SELECT Id,PostId,Body,CreatedAt FROM PostComments WHERE UserId=@u',messages:'SELECT Id,ConversationId,MessageText,CreatedAt FROM Messages WHERE SenderUserId=@u'};

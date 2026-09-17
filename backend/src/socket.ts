@@ -12,8 +12,8 @@ export function configureSocket(io: Server) {
     try {
       const token = socket.handshake.auth?.token as string;
       socket.data.user = verifyAccess(token);
-      const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, socket.data.user.id)
-        .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE'");
+      const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, socket.data.user.id).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
+        .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME())");
       if (!account.recordset[0]) return next(new Error('unauthorized'));
       socket.data.tokenExpiresAt = (jwt.decode(token) as jwt.JwtPayload).exp! * 1000;
       next();
@@ -24,13 +24,14 @@ export function configureSocket(io: Server) {
     const user = socket.data.user as { id: string };
     const expiryTimer = setTimeout(() => socket.disconnect(true), Math.max(0, socket.data.tokenExpiresAt - Date.now()));
     expiryTimer.unref();
-    socket.once('disconnect', () => clearTimeout(expiryTimer));
+    const sessionTimer=setInterval(async()=>{try{const rows=await(await getPool()).request().input('u',sql.UniqueIdentifier,user.id).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null).query('SELECT TOP 1 Id FROM UserSessions WHERE UserId=@u AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME()');if(!rows.recordset[0])socket.disconnect(true)}catch{socket.disconnect(true)}},15000);sessionTimer.unref();
+    socket.once('disconnect', () => {clearTimeout(expiryTimer);clearInterval(sessionTimer)});
     socket.use(async (_packet, next) => {
       try {
         if(!_packet[1]||typeof _packet[1]!=='object')throw new Error('Invalid socket payload');
         verifyAccess(socket.handshake.auth.token);
-        const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, user.id)
-          .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE'");
+        const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, user.id).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
+          .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME())");
         if (!account.recordset[0]) throw new Error('unauthorized');
         next();
       } catch { next(new Error('unauthorized')); socket.disconnect(true); }

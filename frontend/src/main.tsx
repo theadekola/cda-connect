@@ -11,7 +11,7 @@ import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {Capacitor} from '@capacitor/core';
 import {Protected,Welcome,Login,Register,Recovery} from './auth';
 import {Shell} from './shell';
-import {ApiError,session} from './api';
+import {ApiError,session,restoreSession} from './api';
 import {Loading} from './ui';
 import './styles.css';
 import './responsive.css';
@@ -27,5 +27,5 @@ session.subscribe(()=>{const next=session.get()?.user.Id;if(next!==cachedUserId)
 class Boundary extends React.Component<React.PropsWithChildren,{failed:boolean}>{state={failed:false};static getDerivedStateFromError(){return{failed:true}}render(){return this.state.failed?<main className="page"><h1>This page could not load</h1><p>Reload to load the latest version.</p><button onClick={()=>location.reload()}>Reload</button></main>:this.props.children}}
 function App(){useLocale();return <Boundary><QueryClientProvider client={queryClient}><BrowserRouter><LanguageSync/><Suspense fallback={<Loading/>}><Routes><Route path="/" element={<Welcome/>}/><Route path="/login" element={<Login/>}/><Route path="/invite/:code" element={<CommunityInvite/>}/><Route path="/register" element={<Register/>}/><Route path="/forgot-password" element={<Recovery/>}/><Route element={<Protected/>}><Route element={<Shell/>}><Route path="/home" element={<Home/>}/><Route path="/communities" element={<Communities/>}/><Route path="/communities/join" element={<Join/>}/><Route path="/communities/create" element={<CreateCommunity/>}/><Route path="/community/:id/:section" element={<Community/>}/><Route path="/post/:id" element={<Comments/>}/><Route path="/poll/:communityId/:id" element={<Poll/>}/><Route path="/chat/:id" element={<Chat/>}/><Route path="/notifications" element={<Notifications/>}/><Route path="/ai" element={<AiAssistant/>}/><Route path="/profile/*" element={<Profile/>}/><Route path="/member/:id" element={<MemberProfile/>}/><Route path="/settings/*" element={<SettingsPage/>}/></Route></Route><Route path="*" element={<main className="page"><h1>Page not found</h1><Link to="/home">Return to home</Link></main>}/></Routes></Suspense></BrowserRouter></QueryClientProvider></Boundary>}
 startUsageMeter();applyDisplayPreferences();applyLanguage(getLocale());
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+void restoreSession().finally(()=>createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>));
 if(import.meta.env.PROD&&!Capacitor.isNativePlatform()&&'serviceWorker' in navigator){void navigator.serviceWorker.register('/sw.js').catch(()=>{/* Installation unavailable; the online application remains usable. */})}

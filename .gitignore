@@ -17,3 +17,7 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/private-uploads/
 deploy/secrets/
+
+.pnpm-store/
+frontend/test-results/
+frontend/playwright-report/

@@ -1,3 +1,4 @@
+import {operationalHealth} from './services/operationalHealth.js';
 import http from 'node:http';
 import { Server } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -15,3 +16,5 @@ const subClient = pubClient.duplicate();
 io.adapter(createAdapter(pubClient, subClient));
 configureSocket(io);
 server.listen(env.PORT, env.HOST, () => console.log(`CDA Connect API listening on ${env.HOST}:${env.PORT}`));
+
+setInterval(()=>void operationalHealth().catch(()=>console.error('Operational monitoring failed')),30000).unref();

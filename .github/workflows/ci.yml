@@ -1,0 +1,92 @@
+name: Release checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 10
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: CI-only-Disposable-Password-492!
+        ports: ['1433:1433']
+    env:
+      DB_SERVER: localhost
+      DB_NAME: CDAConnectTest
+      DB_USER: cda_ci_runtime
+      DB_PASSWORD: CI-only-Runtime-Password-739!
+      DB_ADMIN_USER: sa
+      DB_ADMIN_PASSWORD: CI-only-Disposable-Password-492!
+      DB_TRUST_CERT: 'true'
+      REDIS_TEST_URL: redis://localhost:6379/15
+      SQL_TEST_MODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22.16'}
+      - uses: pnpm/action-setup@v4
+        with: {version: '11.19.0'}
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir backend build
+      - run: pnpm --dir backend test
+      - run: bash -n deploy/start-ubuntu.sh deploy/install-native.sh
+      - run: node backend/scripts/migrate.mjs validate
+      - run: node backend/scripts/integration-database.mjs prepare
+      - run: node backend/scripts/migrate.mjs apply
+      - run: node backend/scripts/migrate.mjs apply
+      - run: node backend/scripts/migrate.mjs verify
+      - run: node --test backend/test/queue-recovery.redis.mjs backend/test/session-security.sql.mjs
+      - run: pnpm --dir backend audit --audit-level high
+  web:
+    # Baselines were recorded on Windows with the pinned Playwright browser.
+    runs-on: windows-latest
+    env:
+      VITE_API_URL: https://cdaconnect.org/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22.16', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci --prefix frontend
+      - run: npm --prefix frontend run typecheck
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend run build
+      - run: npm audit --prefix frontend --audit-level high
+      - run: node frontend/node_modules/playwright/cli.js install chromium
+      - run: node frontend/node_modules/playwright/cli.js test --config frontend/playwright.config.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: {name: visual-failures, path: frontend/test-results, retention-days: 7}
+  android:
+    runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: https://cdaconnect.org/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22.16'}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - run: npm ci --prefix frontend
+      - working-directory: frontend
+        run: |
+          npx cap add android
+          npm run cap:sync
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Scan complete history (including reachable old commits)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.30.1 git /repo --config /repo/.gitleaks.toml --redact --verbose
