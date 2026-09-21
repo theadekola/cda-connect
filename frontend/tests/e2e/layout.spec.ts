@@ -211,3 +211,125 @@ for(const width of [390,412,1440])test(`announcement pages and publishing at ${w
  await page.getByRole('button',{name:'Publish announcement',exact:true}).click();await expect(page).toHaveURL(new RegExp('/announcements$'));expect(submitted).toEqual({title:'New announcement',body:'Published from the dedicated page',isPinned:true});await expect(page.getByRole('link',{name:'New announcement',exact:true})).toBeVisible();
  await page.getByRole('link',{name:'New announcement',exact:true}).focus();await page.keyboard.press('Enter');await expect(page.locator('.announcement-full-detail')).toContainText('Published from the dedicated page');
 });
+
+for(const width of [390,412,1440])test(`chat composer and voice controls at ${width}px`,async({page})=>{
+ await setup(page);await page.setViewportSize({width,height:900});const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};
+ await page.addInitScript(()=>{
+  class Recorder{static isTypeSupported(){return true}state='inactive';mimeType='audio/webm';ondataavailable:any;onstop:any;onerror:any;start(){this.state='recording'}stop(){this.state='inactive';this.ondataavailable?.({data:new Blob(['voice'],{type:this.mimeType})});this.onstop?.()}}
+  Object.defineProperty(window,'MediaRecorder',{value:Recorder});Object.defineProperty(navigator.mediaDevices,'getUserMedia',{value:async()=>({getTracks:()=>[{stop(){}}]})});
+ });
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;
+  if(path.endsWith('/members'))json=[{UserId:user.Id,FirstName:user.FirstName,LastName:user.LastName},{UserId:'other-member',FirstName:'Tobi',LastName:'Hamed'}];
+  else if(path.endsWith('/conversations'))json=[{Id:'chat-test',Name:'General',Type:'COMMUNITY'}];
+  else if(path.endsWith('/conversations/chat-test'))json={Id:'chat-test',Name:'General',Type:'COMMUNITY',CommunityId:community.Id};
+  else if(path.endsWith('/messages'))json=[];
+  else return r.fallback();return r.fulfill({json,headers});
+ });
+ await page.goto('/community/'+community.Id+'/conversations');await expect(page.locator('.chat-conversation-row')).toHaveCount(2);await expect(page.getByText('Your community profile')).toHaveCount(0);await expect(page.locator('.chat-conversation-list')).not.toContainText(user.FirstName);
+ await page.getByRole('button',{name:'Direct',exact:true}).click();await expect(page.locator('.chat-conversation-row')).toHaveCount(1);await expect(page.locator('.chat-conversation-row')).toContainText('Tobi');
+ await page.goto('/chat/chat-test');const input=page.getByRole('textbox',{name:'Message',exact:true});await expect(input).toBeVisible();const original=await input.evaluate(el=>el.getBoundingClientRect().height);expect(await input.evaluate(el=>getComputedStyle(el).resize)).toBe('none');
+ await input.fill('Long message\n'.repeat(30));expect(await input.evaluate(el=>el.getBoundingClientRect().height)).toBeGreaterThan(original);expect(await input.evaluate(el=>el.getBoundingClientRect().height)).toBeLessThanOrEqual(180);await input.fill('');expect(await input.evaluate(el=>el.getBoundingClientRect().height)).toBe(original);
+ await page.clock.install();await page.getByRole('button',{name:'Record voice message'}).click();await expect(page.getByRole('button',{name:'Stop recording'})).toBeVisible();await page.clock.runFor(121000);await expect(page.getByRole('button',{name:'Stop recording'})).toBeVisible();await expect(page.getByRole('status').filter({hasText:'Recording'})).toContainText('121s');await expect(page.getByText('/ 120s',{exact:false})).toHaveCount(0);
+ await page.getByRole('button',{name:'Stop recording'}).click();await expect(page.locator('.chat-voice-preview')).toHaveAttribute('controlslist','nodownload');await expect(page.getByText('Voice message.webm',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Remove attachment'}).click();await expect(page.locator('.chat-voice-preview')).toHaveCount(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+for(const width of [390,412,1440])test(`community activity calendar at ${width}px`,async({page})=>{
+ await setup(page);await page.setViewportSize({width,height:900});const root='/community/'+community.Id,headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;
+  if(path.endsWith('/capabilities'))json={permissions:['EVENT_CREATE']};
+  else if(path.endsWith('/events'))json=[{Id:'event-calendar',Title:'Community cleanup',StartDateTime:'2026-09-17T09:00:00Z',EndDateTime:'2026-09-17T18:00:00Z'}];
+  else if(path.endsWith('/meetings'))json=[{Id:'meeting-calendar',Title:'Budget meeting',StartDateTime:'2026-09-17T10:00:00Z',EndDateTime:'2026-09-17T11:00:00Z'}];
+  else if(path.endsWith('/polls'))json=[{Id:'poll-calendar',Question:'Choose a project',StartAt:'2026-09-16T08:00:00Z',EndAt:'2026-09-18T18:00:00Z'}];
+  else if(path.endsWith('/finance/me'))json={dues:[{Id:'levy-calendar',PlanName:'Community dues',DueDate:'2026-09-17T00:00:00Z'}]};
+  else return r.fallback();return r.fulfill({json,headers});
+ });
+ await page.goto(root+'/events');await expect(page.locator('.events-intro')).toHaveCount(0);await expect(page.getByRole('button',{name:'My Events',exact:true})).toHaveCount(0);
+ await page.getByRole('button',{name:'Create event',exact:true}).click();await expect(page.locator('.topbar').getByRole('link',{name:'Back to events'})).toBeVisible();await expect(page.locator('main').getByText('Back to events',{exact:true})).toHaveCount(0);await page.getByRole('link',{name:'Back to events'}).click();
+ await page.getByRole('button',{name:'Calendar',exact:true}).click();const today=page.locator('.event-calendar-grid button[aria-current=date]');await expect(today).toHaveAttribute('aria-label',/2026-09-17, 4 activities/);await expect(today.locator('.calendar-dot')).toHaveCount(4);
+ await today.click();await expect(page.locator('.calendar-activity')).toHaveCount(4);await expect(page.getByRole('link',{name:/Budget meeting/})).toHaveAttribute('href',root+'/meetings?meeting=meeting-calendar');await expect(page.getByRole('link',{name:/Community dues/})).toHaveAttribute('href',root+'/finance?view=pay&ledger=levy-calendar');
+ const colors=await today.locator('.calendar-dot').evaluateAll(nodes=>nodes.map(n=>getComputedStyle(n).backgroundColor));expect(new Set(colors).size).toBe(4);
+ await page.getByRole('button',{name:'2026-09-18, 1 activities: Poll',exact:true}).click();await expect(page.locator('.calendar-activity')).toHaveCount(1);await expect(page.locator('.calendar-activity')).toContainText('Choose a project');
+ await page.getByRole('button',{name:'Next month',exact:true}).click();await expect(page.locator('.event-calendar>header')).toContainText('October 2026');await expect(page.locator('.calendar-activity')).toHaveCount(0);await page.getByRole('button',{name:'Today',exact:true}).click();await expect(today).toHaveAttribute('aria-pressed','true');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);if(width===390)await page.screenshot({path:test.info().outputPath('activity-calendar.png'),fullPage:true});
+ await page.getByRole('link',{name:/Community cleanup/}).click();await expect(page).toHaveURL(/event=event-calendar/);await expect(page.locator('.topbar').getByRole('link',{name:'Back to events'})).toBeVisible();
+});
+
+for(const [width,columns] of [[390,2],[412,2],[768,3],[1440,4]])test(`marketplace shopping and seller chat at ${width}px`,async({page})=>{
+ await setup(page);await page.setViewportSize({width,height:900});const root='/community/'+community.Id+'/marketplace',headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'},seller='seller-member',photo='https://cdaconnect.org/seller-test.svg';let contactPath='';
+ const listings=Array.from({length:6},(_,i)=>({Id:'product-'+i,CommunityId:community.Id,SellerUserId:seller,Title:'Laptop '+i,Price:300+i,Currency:'GBP',Category:'Electronics',ItemCondition:'FAIR',Description:'Working laptop with charger.',Area:'Community centre',CreatedAt:'2026-09-17T09:00:00Z',ImageUrl:photo,ImageUrls:[photo,photo+'?second=1'],FirstName:'Tobi',LastName:'Hamed',ProfileImage:photo,ContactPreference:'PHONE'}));
+ await page.route('**/seller-test.svg*',r=>r.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#073b78"/></svg>'}));
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;
+  if(path.endsWith('/communities/'+community.Id+'/marketplace'))json=listings;
+  else if(path.endsWith('/marketplace/product-0'))json=listings[0];
+  else if(path.includes('/direct-conversations/')){contactPath=path;json={Id:'seller-chat'}}
+  else if(path.endsWith('/conversations/seller-chat'))json={Id:'seller-chat',Type:'DIRECT',DirectName:'Tobi Hamed',CommunityId:community.Id};
+  else return r.fallback();return r.fulfill({json,headers});
+ });
+ await page.goto(root);await expect(page.locator('.market-recent>article')).toHaveCount(6);expect(await page.locator('.market-recent').evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(columns);
+ expect(await page.locator('.market-recent').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgba(0, 0, 0, 0)');expect(await page.locator('.market-recent').evaluate(el=>getComputedStyle(el).borderTopWidth)).toBe('0px');await page.locator('.market-row-link').first().click();await expect(page.locator('.market-detail')).toBeVisible();await expect(page.locator('main').getByRole('button',{name:'Back to Marketplace',exact:true})).toHaveCount(0);await expect(page.locator('.topbar').getByRole('link',{name:'Back to Marketplace'})).toBeVisible();
+ const profile=page.getByRole('link',{name:'View seller profile: Tobi Hamed'});await expect(profile).toHaveAttribute('href','/member/'+seller);await expect(profile.locator('img')).toHaveAttribute('src',photo);await expect.poll(()=>profile.locator('img').evaluate((el:HTMLImageElement)=>el.naturalWidth)).toBeGreaterThan(0);
+ await page.getByRole('button',{name:'View photo 2'}).click();await expect(page.locator('.market-main-photo img')).toHaveAttribute('src',photo+'?second=1');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);if(width===390)await page.screenshot({path:test.info().outputPath('market-product.png'),fullPage:true});
+ await page.getByRole('button',{name:'Contact seller',exact:true}).click();await expect(page).toHaveURL(/\/chat\/seller-chat$/);expect(contactPath).toBe('/api/v1/communities/'+community.Id+'/direct-conversations/'+seller);
+});
+
+test('single marketplace card and own listing contact',async({page})=>{
+ await setup(page);await page.setViewportSize({width:390,height:900});const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'},item={Id:'own-item',SellerUserId:user.Id,Title:'My laptop',Price:300,Currency:'GBP',FirstName:user.FirstName,LastName:user.LastName};let contacted=false;
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;if(path.includes('/direct-conversations/'))contacted=true;if(path.endsWith('/marketplace'))return r.fulfill({json:[item],headers});if(path.endsWith('/marketplace/own-item'))return r.fulfill({json:item,headers});return r.fallback()});
+ await page.goto('/community/'+community.Id+'/marketplace');const grid=page.locator('.market-recent'),card=grid.locator('article');await expect(card).toHaveCount(1);expect((await card.boundingBox())!.width).toBeLessThan((await grid.boundingBox())!.width*.55);expect(await grid.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgba(0, 0, 0, 0)');await card.locator('.market-row-link').click();await expect(page.getByRole('button',{name:'Contact seller',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Contact seller',exact:true})).toBeDisabled();await expect(page.getByText('This is your listing. Other members can contact you here.')).toBeVisible();expect(contacted).toBe(false);
+});
+
+test('seller chat advert reference opens original listing',async({page})=>{
+ await setup(page);const listing='44444444-4444-4444-8444-444444444444',headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;if(path.endsWith('/conversations/reference-chat'))json={Id:'reference-chat',Name:'Seller',CommunityId:community.Id};else if(path.endsWith('/conversations/reference-chat/messages'))json=[{Id:'reference',SenderUserId:user.Id,MessageText:'Marketplace listing\nhttps://cdaconnect.org/community/'+community.Id+'/marketplace?listing='+listing,CreatedAt:'2026-09-17T12:00:00Z'}];else if(path.endsWith('/marketplace/'+listing))json={Id:listing,Title:'Referenced laptop',SellerUserId:'other',Price:300,Currency:'GBP'};else return r.fallback();return r.fulfill({json,headers})});
+ await page.goto('/chat/reference-chat');const reference=page.getByRole('link',{name:/Marketplace advert.*Referenced laptop/});await expect(reference).toBeVisible();await page.reload();await expect(reference).toBeVisible();await reference.click();await expect(page).toHaveURL(new RegExp('listing='+listing));await expect(page.locator('.market-product-info h1')).toHaveText('Referenced laptop');
+});
+
+for(const receipts of [false,true])test(`opening chat clears unread with receipts ${receipts}`,async({page})=>{
+ await setup(page);await page.setViewportSize({width:390,height:900});let unread=2,marked=false;const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'},cv='read-chat',other='other-user';
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;
+ if(path.endsWith('/users/communications'))json={ReadReceipts:receipts};
+ else if(path.endsWith('/members'))json=[{UserId:other,FirstName:'Tobi',LastName:'Hamed'}];
+ else if(path.endsWith('/communities/'+community.Id+'/conversations'))json=[{Id:cv,Type:'DIRECT',DirectUserId:other,DirectName:'Tobi Hamed',UnreadCount:unread}];
+ else if(path.endsWith('/conversations/'+cv))json={Id:cv,Type:'DIRECT',DirectName:'Tobi Hamed',CommunityId:community.Id};
+ else if(path.endsWith('/conversations/'+cv+'/messages'))json=[{Id:'incoming',SenderUserId:other,MessageText:'Hello',CreatedAt:'2026-09-17T10:00:00Z'},{Id:'last-own-message',SenderUserId:user.Id,MessageText:'OK',CreatedAt:'2026-09-17T10:01:00Z'}];
+ else if(path.endsWith('/conversations/'+cv+'/read')){expect(r.request().postDataJSON()).toEqual({messageId:'last-own-message'});unread=0;marked=true;json={shared:receipts}}
+ else return r.fallback();return r.fulfill({json,headers});
+ });
+ await page.goto('/community/'+community.Id+'/conversations');await expect(page.getByLabel('2 unread messages')).toBeVisible();await page.locator('.chat-conversation-open').click();await expect.poll(()=>marked).toBe(true);await page.getByRole('link',{name:'Back to chats'}).click();await expect(page.getByLabel('2 unread messages')).toHaveCount(0);await page.reload();await expect(page.locator('.chat-conversation-row')).toBeVisible();await expect(page.getByLabel('2 unread messages')).toHaveCount(0);
+});
+
+for(const width of [390,768,1440])test(`finance bank directory and evidence review at ${width}px`,async({page})=>{
+ await setup(page);await page.setViewportSize({width,height:900});
+ const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};let action='',savedBank='',savedAmount=0;
+ await page.route('**/api/v1/communities/*/finance/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any={};
+ if(path.endsWith('/me'))json={canManage:true,dues:[],receipts:[]};
+ else if(path.endsWith('/unpaid-members'))json=[{Id:'unpaid',UserId:'member-two',FirstName:'Unpaid',LastName:'Member',PlanName:'Building levy',CurrencyCode:'NGN',AmountDue:10000,AmountPaid:1000}];
+ else if(path.endsWith('/payment-submissions'))json=[{Id:'submission',UserId:user.Id,FirstName:'Test',LastName:'Member',PlanName:'Building levy',CurrencyCode:'NGN',Amount:10000,PaymentMethod:'BANK_TRANSFER',Reference:'BANK-001',SubmittedAt:'2026-09-17T10:00:00Z',Status:action?'APPROVED':'PENDING',EvidenceUrl:'levy-evidence:proof'}];
+ else if(path.endsWith('/evidence/proof'))return r.fulfill({headers,contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')});
+ else if(r.request().method()==='PATCH')action=r.request().postDataJSON().action;
+ else if(path.endsWith('/bank-account'))savedBank=r.request().postDataJSON().bankName;
+ else if(path.endsWith('/dues-plans'))savedAmount=r.request().postDataJSON().amount;
+ return r.fulfill({headers,json});});
+ await page.goto('/community/'+community.Id+'/finance');
+ await expect(page.locator('.levy-tabs button')).toHaveText(['All (0)','Pending (0)','Paid (0)']);
+ await expect(page.getByRole('button',{name:'View All Levy Types'})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:/Test Member Building levy/})).toHaveCount(0);
+ await page.getByRole('button',{name:/All payment receive/}).click();
+ await page.getByRole('button',{name:'Unpaid',exact:true}).click();await expect(page.getByText('Outstanding:',{exact:false})).toBeVisible();await expect(page.getByRole('link',{name:'Unpaid Member'})).toBeVisible();
+ await page.getByRole('button',{name:'Paid',exact:true}).click();
+ await page.getByRole('button',{name:/Test Member Building levy/}).click();
+ await expect(page).toHaveURL(/view=payment-detail&submission=submission/);await expect(page.getByRole('heading',{name:'Payment details',exact:true})).toBeVisible();await expect(page.getByRole('navigation',{name:'Community payment status'})).toHaveCount(0);await page.reload();await expect(page.getByAltText('Payment evidence')).toBeVisible();await page.getByRole('link',{name:'Back to payments',exact:true}).click();await expect(page).toHaveURL(/view=history/);await page.getByRole('button',{name:/Test Member Building levy/}).click();await expect(page.getByAltText('Payment evidence')).toBeVisible();
+ await expect(page.getByRole('link',{name:'Test Member'})).toHaveAttribute('href','/member/'+user.Id);
+ await page.getByRole('button',{name:'Approve',exact:true}).click();await expect.poll(()=>action).toBe('APPROVE');
+ await page.getByRole('button',{name:'Bank transfer details',exact:true}).click();
+ await page.getByLabel('Bank country').selectOption('NG');
+ await expect(page.getByLabel('Bank Name').locator('option')).not.toHaveCount(1);
+ await page.getByLabel('Bank Name').selectOption('__other');await page.getByLabel('Bank Name').fill('Community bank');
+ await page.getByLabel('Account Name',{exact:true}).fill('Royal View CDA');await page.getByLabel('Account Number',{exact:true}).fill('0123456789');await page.getByRole('button',{name:'Save bank details'}).click();await expect.poll(()=>savedBank).toBe('Community bank');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.getByRole('button',{name:'Create levy',exact:true}).click();
+ const amount=page.locator('input[name=amount]');await amount.fill('10000');await amount.blur();await expect(amount).toHaveValue('10,000.00');
+ await page.getByLabel('Levy Name *',{exact:true}).fill('Building levy');await page.getByLabel('Description *',{exact:true}).fill('Community building');await page.getByRole('button',{name:'Create Levy Type',exact:true}).click();await expect.poll(()=>savedAmount).toBe(10000);
+});

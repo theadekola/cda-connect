@@ -54,7 +54,7 @@
 .conversation-page .message.mine{margin-left:auto;background:#eaf3ff;color:#172033}.conversation-page .message strong{font-size:12px;color:#073B78}.conversation-page .message small{display:block;text-align:right;font-size:11px;color:#66758b;margin-top:5px}
 .chat-date{text-align:center;font-size:12px;color:#66758b;margin:12px 0}.chat-empty{text-align:center;font-size:14px;color:#66758b;padding:24px}
 .chat-composer-area{flex-shrink:0;background:white;padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:1px solid #dfe7ef}.chat-composer-area>p{font-size:13px;margin:4px 8px 8px}
-.conversation-page .composer{display:flex;align-items:center;gap:4px;padding:0;margin:0;position:static;border:0;background:transparent}.conversation-page .composer textarea{flex:1;min-width:0;width:0;min-height:44px;max-height:120px;resize:vertical;border-radius:22px;font-size:16px;padding:10px 14px}
+.conversation-page .composer{display:flex;align-items:center;gap:4px;padding:0;margin:0;position:static;border:0;background:transparent}.conversation-page .composer textarea{flex:1;min-width:0;width:0;min-height:44px;max-height:180px;resize:none;border-radius:22px;font-size:16px;padding:10px 14px}
 .conversation-page .composer button{min-width:44px;width:44px;min-height:44px;padding:10px;display:grid;place-items:center;border:0;background:transparent;color:#073B78}.conversation-page .composer .chat-send{background:#073B78;color:white;border-radius:50%}
 .chat-draft-file{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:6px}.chat-draft-file span{overflow-wrap:anywhere}.chat-draft-file button{min-width:44px;min-height:44px}
 .chat-attachment img,.chat-attachment video{max-width:100%;max-height:360px;border-radius:8px}.chat-attachment audio{max-width:100%;width:260px}.chat-attachment button{font-size:13px;min-height:44px}
@@ -67,3 +67,5 @@
 @media(max-width:380px){.chat-composer-area{padding-left:8px;padding-right:8px}}
 
 .chat-voice-preview{width:100%;max-height:44px}.app .topbar #page-header-search,.app .topbar #community-chat-header-search{flex:0 0 100%;min-width:0}
+
+.chat-listing-reference{display:grid;gap:6px;max-width:260px;color:var(--cda-navy);padding:8px;border:1px solid #dfe7ef;border-radius:10px;background:white}.chat-listing-reference img{width:100%;max-height:140px;object-fit:contain;border-radius:6px}.chat-listing-reference strong{font-size:14px;overflow-wrap:anywhere}.chat-listing-reference span,.chat-listing-reference small{font-size:12px}
