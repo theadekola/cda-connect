@@ -45,6 +45,7 @@ jobs:
       - run: node backend/scripts/migrate.mjs apply
       - run: node backend/scripts/migrate.mjs verify
       - run: node --test backend/test/queue-recovery.redis.mjs backend/test/session-security.sql.mjs
+        timeout-minutes: 5
       - run: pnpm --dir backend audit --audit-level high
   web:
     # Baselines were recorded on Windows with the pinned Playwright browser.

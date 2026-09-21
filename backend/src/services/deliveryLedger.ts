@@ -7,9 +7,10 @@ async function request(t:Target){return (await getPool()).request().input('n',sq
 export async function planDelivery(t:Target,status:DeliveryStatus='QUEUED',reason?:string){
  await (await request(t)).input('s',sql.VarChar(20),status).input('r',sql.NVarChar(2000),reason??null).query(`INSERT INTO NotificationDeliveries(NotificationId,UserId,Channel,DestinationHash,Status,Reason) SELECT @n,@u,@ch,@hash,@s,@r WHERE NOT EXISTS(SELECT 1 FROM NotificationDeliveries WITH(UPDLOCK,HOLDLOCK) WHERE NotificationId=@n AND UserId=@u AND Channel=@ch AND DestinationHash=@hash)`);
 }
-export async function claimDelivery(t:Target){const r=await(await request(t)).query(`UPDATE NotificationDeliveries SET Status='PROCESSING',UpdatedAt=SYSUTCDATETIME() OUTPUT INSERTED.UserId WHERE NotificationId=@n AND UserId=@u AND Channel=@ch AND DestinationHash=@hash AND Status='QUEUED'`);return !!r.recordset[0]}
+export async function claimDelivery(t:Target){const r=await(await request(t)).query(`UPDATE NotificationDeliveries SET Status='PROCESSING',AttemptCount=AttemptCount+1,UpdatedAt=SYSUTCDATETIME() OUTPUT INSERTED.UserId WHERE NotificationId=@n AND UserId=@u AND Channel=@ch AND DestinationHash=@hash AND Status='QUEUED'`);return !!r.recordset[0]}
 export async function finishDelivery(t:Target,status:DeliveryStatus,reason?:string,providerId?:string){
- await(await request(t)).input('s',sql.VarChar(20),status).input('r',sql.NVarChar(2000),reason?.slice(0,2000)??null).input('provider',sql.NVarChar(250),providerId??null).query(`UPDATE NotificationDeliveries SET Status=@s,Reason=@r,ProviderMessageId=COALESCE(@provider,ProviderMessageId),UpdatedAt=SYSUTCDATETIME() WHERE NotificationId=@n AND UserId=@u AND Channel=@ch AND DestinationHash=@hash AND Status IN('QUEUED','PROCESSING')`);
+ await(await request(t)).input('s',sql.VarChar(20),status).input('r',sql.NVarChar(2000),reason?.slice(0,2000)??null).input('provider',sql.NVarChar(250),providerId??null).query(`UPDATE NotificationDeliveries SET Status=CASE WHEN @s='FAILED' AND AttemptCount<3 THEN 'QUEUED' ELSE @s END,Reason=@r,ProviderMessageId=COALESCE(@provider,ProviderMessageId),UpdatedAt=SYSUTCDATETIME() WHERE NotificationId=@n AND UserId=@u AND Channel=@ch AND DestinationHash=@hash AND Status IN('QUEUED','PROCESSING')`);
+ if(status==='FAILED'&&await deliveryNeedsQueue(t))throw new Error('Definite provider rejection; retry with queue backoff');
  await completeOutbox(t.notificationId);
 }
 export async function completeOutbox(id:string,seal=false){

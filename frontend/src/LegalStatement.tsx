@@ -1,6 +1,7 @@
 import {OfficialGuidance} from './OfficialGuidance';
 import {Link} from 'react-router-dom';
 const privacy=[
+ ['Optional analytics','Google Analytics remains disabled until you opt in using Analytics preferences. You can withdraw consent there at any time to stop future measurement and remove accessible analytics cookies on this device. See Cookies for details.'],
  ['About this statement','This statement describes how the CDA Connect application handles information when you create an account, join communities and use its features. Privacy enquiries can be sent to support@cdaconnect.org. The operator’s legal identity, address and detailed processing arrangements must be confirmed before this draft is adopted as a final privacy notice.'],
  ['Information you provide','Account information includes your name, username, email address, phone number, date of birth, location and profile images where supplied. Community information includes memberships, posts, comments, messages, uploaded media, event responses, votes, reports, support requests and financial records associated with features you use.'],
  ['How information is used','The app uses information to create and authenticate accounts, verify contact details, manage community access, deliver messages and updates, record participation, apply your preferences and handle support or safety reports. Security and session information helps manage sign-ins and access. Optional features use the information needed for the feature you enable.'],

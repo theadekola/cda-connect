@@ -199,5 +199,10 @@
     "file": "protect-database.sql",
     "sha256": "5bc4c4a6b1e13ea95b3b9eb88ceb4fcad1e704428b7dea175ee4597dc6d9667b",
     "scope": "server"
+  },
+  {
+    "version": "0041",
+    "file": "review-workflows.sql",
+    "sha256": "a2c31c422748f9fd1a95e393a0a92c50f8caef5b14f0da7e1ea47b8492ff0d52"
   }
 ]

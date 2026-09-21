@@ -2,6 +2,7 @@ import {test,expect,type Page} from '@playwright/test';
 const user={Id:'11111111-1111-4111-8111-111111111111',FirstName:'Adekola',LastName:'Ayannuga',Email:'member@example.test',CreatedAt:'2026-01-01T12:00:00Z',Username:'member'};
 const community={Id:'22222222-2222-4222-8222-222222222222',Name:'Royal View CDA',Description:'Moving forward for progress',MemberCount:2,Role:'Owner'};
 async function setup(page:Page,long=false){
+ await page.addInitScript(()=>localStorage.setItem("cda-analytics-consent","denied"));
  await page.route(/^https:\/\/(www\.googletagmanager\.com|([a-z0-9-]+\.)?google-analytics\.com)\//,r=>r.abort());
  await page.clock.setFixedTime(new Date('2026-09-17T12:00:00Z'));
  await page.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//,r=>r.abort());
@@ -316,9 +317,9 @@ for(const width of [390,768,1440])test(`finance bank directory and evidence revi
  await expect(page.locator('.levy-tabs button')).toHaveText(['All (0)','Pending (0)','Paid (0)']);
  await expect(page.getByRole('button',{name:'View All Levy Types'})).toHaveCount(0);
  await expect(page.getByRole('button',{name:/Test Member Building levy/})).toHaveCount(0);
- await page.getByRole('button',{name:/All payment receive/}).click();
+ await page.getByRole('button',{name:/Payment records/}).click();
  await page.getByRole('button',{name:'Unpaid',exact:true}).click();await expect(page.getByText('Outstanding:',{exact:false})).toBeVisible();await expect(page.getByRole('link',{name:'Unpaid Member'})).toBeVisible();
- await page.getByRole('button',{name:'Paid',exact:true}).click();
+ await page.getByRole('button',{name:'Submissions',exact:true}).click();
  await page.getByRole('button',{name:/Test Member Building levy/}).click();
  await expect(page).toHaveURL(/view=payment-detail&submission=submission/);await expect(page.getByRole('heading',{name:'Payment details',exact:true})).toBeVisible();await expect(page.getByRole('navigation',{name:'Community payment status'})).toHaveCount(0);await page.reload();await expect(page.getByAltText('Payment evidence')).toBeVisible();await page.getByRole('link',{name:'Back to payments',exact:true}).click();await expect(page).toHaveURL(/view=history/);await page.getByRole('button',{name:/Test Member Building levy/}).click();await expect(page.getByAltText('Payment evidence')).toBeVisible();
  await expect(page.getByRole('link',{name:'Test Member'})).toHaveAttribute('href','/member/'+user.Id);
@@ -338,6 +339,7 @@ for(const width of [390,768,1440])test(`document details page navigation at ${wi
  await setup(page);await page.setViewportSize({width,height:900});const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};
  await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;
  if(path.endsWith('/communities/'+community.Id+'/documents'))json=[{Id:'document-one',Title:'Community policy',Category:'Policies',FileName:'policy.pdf',SizeBytes:1024,CurrentVersion:1,UpdatedAt:'2026-09-17T12:00:00Z'}];
+ else if(path.endsWith('/documents/document-one'))json={Id:'document-one',Title:'Community policy',Category:'Policies',FileName:'policy.pdf',SizeBytes:1024,CurrentVersion:1};
  else if(path.endsWith('/documents/document-one/download-url'))json={url:'https://cdaconnect.org/fixture-document.pdf'};
  else if(path.endsWith('/documents/document-one/history'))json=[{Id:'version-one',VersionNumber:1,ChangeNotes:'Initial upload',UploadedAt:'2026-09-17T12:00:00Z'}];
  else return r.fallback();return r.fulfill({headers,json});});
@@ -356,7 +358,7 @@ for(const width of [390,768,1440])test(`emergency dashboard actions at ${width}p
  else if(path.endsWith('/sos'))json=[];
  else return r.fallback();return r.fulfill({json,headers});});
  await page.goto('/community/'+community.Id+'/alerts');await expect(page.getByRole('heading',{name:'Quick Actions'})).toBeVisible();await expect(page.getByRole('link',{name:'Call Coordinator'})).toHaveAttribute('href','tel:+441234567890');await expect(page.getByRole('link',{name:'Text Coordinator'})).toHaveAttribute('href','sms:+441234567890');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.getByRole('button',{name:'I’m Safe',exact:true}).click();await page.getByRole('link',{name:/Flood warning/}).click();await page.getByRole('button',{name:'I’m Safe',exact:true}).click();await expect.poll(()=>response).toBe('SAFE');await page.getByRole('link',{name:'Back to emergency'}).click();await page.getByRole('button',{name:'Send Emergency Alert',exact:true}).click();await page.getByLabel('Title',{exact:true}).fill('Test incident');await page.getByLabel('What happened?').fill('Test alert content');await page.getByRole('button',{name:'Send alert',exact:true}).click();await expect.poll(()=>created).toBe(true);await expect(page.getByRole('status')).toContainText('notification delivery queued');
+ await page.getByRole('button',{name:'I’m Safe',exact:true}).click();await page.getByRole('link',{name:/Flood warning/}).click();await page.getByRole('button',{name:'I’m Safe',exact:true}).click();await expect.poll(()=>response).toBe('SAFE');await page.getByRole('link',{name:'Back to emergency'}).click();await page.getByRole('button',{name:'Send Emergency Alert',exact:true}).click();await page.getByLabel('Title',{exact:true}).fill('Test incident');await page.getByLabel('What happened?').fill('Test alert content');await page.locator('input[type=checkbox]').last().check();await page.getByRole('button',{name:'Send alert',exact:true}).click();await expect.poll(()=>created).toBe(true);await expect(page.getByRole('status')).toContainText('notification delivery queued');
 });
 
 for(const width of [320,390,768,1440])test(`executive position selector and dates at ${width}px`,async({page})=>{
@@ -365,4 +367,17 @@ for(const width of [320,390,768,1440])test(`executive position selector and date
  await page.route('**/api/v1/communities/*/members',r=>r.fulfill({headers,json:[{UserId:user.Id,FirstName:user.FirstName,LastName:user.LastName,Email:user.Email}]}));
  await page.goto('/community/'+community.Id+'/excos?view=add');await page.getByRole('combobox',{name:'Community member *',exact:true}).selectOption(user.Id);const position=page.getByRole('combobox',{name:'Position / Role *',exact:true});await expect(position).toHaveJSProperty('tagName','SELECT');await position.selectOption('Financial Secretary');await expect(position).toHaveValue('Financial Secretary');await position.selectOption('__other');await page.getByLabel('Custom position *',{exact:true}).fill('Safety Officer');await position.selectOption('Secretary');await expect(page.getByLabel('Custom position *',{exact:true})).toHaveCount(0);
  await page.getByLabel('Date Appointed *',{exact:true}).fill('2026-09-17');await page.getByLabel('Tenure End Date *',{exact:true}).fill('2027-09-17');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const boxes=await page.locator('.exco-dates input').evaluateAll(nodes=>nodes.map(n=>({width:n.getBoundingClientRect().width,parent:n.parentElement!.getBoundingClientRect().width})));expect(boxes.every(b=>b.width<=b.parent+1)).toBe(true);await page.getByRole('button',{name:'Add Exco Member',exact:true}).click();await expect.poll(()=>saved?.position).toBe('Secretary');expect(saved.appointedDate).toBe('2026-09-17');expect(saved.tenureEndDate).toBe('2027-09-17');
+});
+
+for(const width of [320,390,768])test(`shared date fields stay inside forms at ${width}px`,async({page})=>{
+ await setup(page);await page.setViewportSize({width,height:850});const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};
+ await page.route('**/api/v1/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any;if(path.endsWith('/capabilities'))json={permissions:['EVENT_CREATE','MEETING_CREATE','ATTENDANCE_MANAGE']};else if(path.endsWith('/excos'))json={items:[],canManage:true};else if(path.endsWith('/finance/me'))json={canManage:true,dues:[],receipts:[]};else return r.fallback();return r.fulfill({headers,json});});
+ await page.route('**/api/v1/**',r=>r.request().method()==='OPTIONS'?r.fulfill({status:204,headers:{...headers,'access-control-allow-methods':'GET,POST,PUT,PATCH,DELETE,OPTIONS','access-control-allow-headers':'authorization,content-type,x-cda-client'}}):r.fallback());
+ for(const section of ['excos?view=add','events?create=1','finance?view=create','meetings?view=create']){await page.goto('/community/'+community.Id+'/'+section);const dateFields=page.locator('input[type=date],input[type=datetime-local],input[type=time]');await expect(dateFields.first()).toBeVisible();const boxes=await dateFields.evaluateAll(nodes=>nodes.map(n=>{const b=n.getBoundingClientRect(),p=n.parentElement!.getBoundingClientRect();return{left:b.left,right:b.right,parentLeft:p.left,parentRight:p.right,viewport:innerWidth}}));expect(boxes.every(b=>b.left>=b.parentLeft-1&&b.right<=b.parentRight+1&&b.right<=b.viewport+1)).toBe(true);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.evaluate(()=>window.scrollTo(100,0));expect(await page.evaluate(()=>window.scrollX)).toBe(0);}
+});
+
+test('analytics stays off until consent and stops after withdrawal',async({page})=>{
+ await setup(page);await page.addInitScript(()=>{if(!sessionStorage.getItem('consent-test-started')){localStorage.removeItem('cda-analytics-consent');sessionStorage.setItem('consent-test-started','1')}});let requests=0;
+ await page.route('https://www.googletagmanager.com/**',r=>{requests++;return r.fulfill({contentType:'application/javascript',body:''})});
+ await page.goto('/login');await expect(page.getByRole('button',{name:'Accept analytics',exact:true})).toBeVisible();expect(requests).toBe(0);await page.getByRole('button',{name:'Accept analytics',exact:true}).click();await expect.poll(()=>requests).toBe(1);await page.getByRole('button',{name:'Analytics preferences',exact:true}).click();await page.getByRole('button',{name:'Reject optional analytics',exact:true}).click();await page.waitForLoadState();expect(await page.evaluate(()=>localStorage.getItem('cda-analytics-consent'))).toBe('denied');expect(requests).toBe(1);
 });
