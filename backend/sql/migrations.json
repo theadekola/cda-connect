@@ -203,6 +203,16 @@
   {
     "version": "0041",
     "file": "review-workflows.sql",
-    "sha256": "a2c31c422748f9fd1a95e393a0a92c50f8caef5b14f0da7e1ea47b8492ff0d52"
+    "sha256": "c876e44cb77f9d14cc4970146050b0bd07948c611db8b0b4e32651a222bee9e6"
+  },
+  {
+    "version": "0042",
+    "file": "finance-permissions.sql",
+    "sha256": "0cf232b60ae7e4ffbc407c6857e62d83e824a85024fada8c9a634bbcfb5d51ed"
+  },
+  {
+    "version": "0043",
+    "file": "workflow-integrity.sql",
+    "sha256": "d648694588d7f158da05d3b79563d398835ada2d40f5d9d3ed8e807595855db3"
   }
 ]

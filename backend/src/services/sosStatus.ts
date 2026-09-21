@@ -1,0 +1,8 @@
+import crypto from 'node:crypto';
+import {sql} from '../config/db.js';
+export function sosEventId(id:string,status:string){const bytes=crypto.createHash('sha256').update('cda:sos:'+id.toLowerCase()+':'+status).digest().subarray(0,16);bytes[6]=(bytes[6]&15)|80;bytes[8]=(bytes[8]&63)|128;const hex=bytes.toString('hex');return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`}
+export async function queueSOSStatus(tx:sql.Transaction,event:{id:string;communityId:string;requesterId:string;status:string}){
+ const titles:Record<string,string>={ACKNOWLEDGED:'SOS acknowledged',ASSIGNED:'Responder assigned',IN_PROGRESS:'Assistance in progress',RESOLVED:'SOS resolved',CANCELLED:'SOS cancelled by a manager'};
+ const notificationId=sosEventId(event.id,event.status),payload={notificationId,eventId:notificationId,communityId:event.communityId,targetUserId:event.requesterId,type:'EMERGENCY_ALERT',title:titles[event.status],body:'Your SOS request has been updated. Open it to see the current status.',entityId:event.id,priority:'high',data:{sosStatusId:event.id,status:event.status,url:'/community/'+event.communityId+'/alerts?view=sos-status&sos='+event.id}};
+ await new sql.Request(tx).input('n',sql.UniqueIdentifier,notificationId).input('c',sql.UniqueIdentifier,event.communityId).input('payload',sql.NVarChar(sql.MAX),JSON.stringify(payload)).query("IF NOT EXISTS(SELECT 1 FROM NotificationOutbox WITH(UPDLOCK,HOLDLOCK) WHERE EventId=@n) INSERT NotificationOutbox(NotificationId,EventId,CommunityId,NotificationType,Payload,Status) VALUES(@n,@n,@c,'EMERGENCY_ALERT',@payload,'PENDING')");
+}

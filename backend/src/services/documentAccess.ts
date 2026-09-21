@@ -1,7 +1,7 @@
 import {getPool,sql} from '../config/db.js';
 import {AppError} from '../utils/errors.js';
 // Every read path binds @u and aliases the document as d. Role restrictions apply even to admins.
-export const documentVisibility=`EXISTS (
+export const documentVisibility=`d.IsArchived=0 AND EXISTS (
  SELECT 1 FROM CommunityMembers viewerMember
  JOIN Users viewer ON viewer.Id=viewerMember.UserId AND viewer.AccountStatus='ACTIVE'
  JOIN Communities viewerCommunity ON viewerCommunity.Id=viewerMember.CommunityId

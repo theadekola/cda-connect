@@ -28,6 +28,6 @@ try{
  const applied=(await pool.request().query('SELECT Version,Checksum FROM dbo.SchemaMigrations')).recordset;
  for(const m of manifest)if(!applied.some(x=>x.Version===m.version&&x.Checksum===m.sha256))throw Error('Missing required schema version '+m.version);
  if(!admin){const rights=(await pool.request().query("SELECT HAS_PERMS_BY_NAME('dbo','SCHEMA','ALTER') CanAlter,IS_SRVROLEMEMBER('sysadmin') IsAdmin,HAS_PERMS_BY_NAME(DB_NAME(),'DATABASE','ALTER') CanAlterDatabase,HAS_PERMS_BY_NAME('dbo.SchemaMigrations','OBJECT','UPDATE') CanEditLedger")).recordset[0];if(rights.CanAlter||rights.IsAdmin||rights.CanAlterDatabase||rights.CanEditLedger)throw Error('Runtime identity must not have schema alteration rights');}
- await pool.request().query(`SELECT TOP 0 FamilyId,RotatedAt FROM UserSessions;SELECT TOP 0 SecurityHoldUntil FROM Users;SELECT TOP 0 JobId,Status FROM NotificationDeliveries;SELECT TOP 0 Stage FROM EmailChangeRequests;SELECT dbo.CanViewMeeting(NULL,NULL) AccessCheck;`);
+ await pool.request().query(`SELECT TOP 0 FamilyId,RotatedAt FROM UserSessions;SELECT TOP 0 SecurityHoldUntil FROM Users;SELECT TOP 0 JobId,Status FROM NotificationDeliveries;SELECT TOP 0 Stage FROM EmailChangeRequests;SELECT TOP 0 RequestKey,AssignedResponderId,AcknowledgedAt,ResolutionNote FROM SOSRequests;SELECT TOP 0 IsArchived FROM KnowledgeDocuments;SELECT dbo.CanViewMeeting(NULL,NULL) AccessCheck;`);
  console.log('Required schema versions and compatibility checks passed');
 }finally{await pool.close()}
