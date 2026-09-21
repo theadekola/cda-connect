@@ -93,3 +93,11 @@
 @media(max-width:767px){
  .app .cover-header-actions :is(button,a,summary):is(:hover,:focus-visible){background:white;color:var(--cda-navy)}
 }
+
+/* Keep the header's layout space stable while hiding its controls on mobile. */
+@media(max-width:767px){
+ .app .workspace>header.topbar[data-auto-hide]{position:sticky;top:0;z-index:20;transition:transform 180ms ease}
+ .app .workspace>header.topbar[data-auto-hide][data-scrolled="true"]{background:var(--cda-navy)}
+ .app .workspace>header.topbar[data-auto-hide][data-hidden="true"]{transform:translateY(-100%);pointer-events:none}
+}
+@media(prefers-reduced-motion:reduce){.app .workspace>header.topbar[data-auto-hide]{transition:none}}

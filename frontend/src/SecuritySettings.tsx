@@ -34,7 +34,7 @@ export function SecuritySettings(){
  {field==='learn'&&<><p>Use a unique password and enable two-factor authentication. Keep your recovery phone available. Review active sessions and revoke any you do not recognise.</p><p>Never share passwords or verification codes. The security check reviews account settings and delivery status; it does not scan your device, detect every compromise or assess your existing password’s strength.</p><Link className="button secondary" to="/settings/support">Contact support</Link></>}
  {!titles[field]&&<p>This security page does not exist.</p>}
  </div>;
- return <div className="privacy-dashboard security-dashboard"><p>Manage your account security and keep your data safe.</p>{feedback}
+ return <div className="privacy-dashboard security-dashboard">{feedback}
  <section className="security-hero"><ShieldCheck size={58}/><div><h2>{findings.length?'Review your account protection':'Account checks completed'}</h2><p>Last checked: {date(u?.checkedAt)}</p><small>{findings.length?`${findings.length} recommendation${findings.length===1?'':'s'} to review`:'No issues found in the checks below'}</small></div><Action run={async()=>{const result=await q.refetch();if(result.error)throw result.error;await sessions.refetch();setNotice('Account security settings checked.')}}>Run Security Check</Action></section>
  {findings.length>0&&<ul className="security-findings">{findings.map(f=><li key={f}>{f}</li>)}</ul>}
  <section className="settings-group"><h2>Account Protection</h2><div className="settings-list">

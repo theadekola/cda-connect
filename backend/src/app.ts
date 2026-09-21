@@ -42,10 +42,11 @@ app.get('/health', async (_req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/communities', communitiesRouter);
+// Temporary media links re-check access themselves; mount before routers with global requireAuth.
+app.use('/api/v1', mediaRouter);
 app.use('/api/v1', contentRouter);
 app.use('/api/v1', chatRouter);
 app.use('/api/v1', feedRouter);
-app.use('/api/v1', mediaRouter);
 app.use('/api/v1', platformRouter);
 app.use('/api/v1', safetyRouter);
 app.use('/api/v1', advancedRouter);

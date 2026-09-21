@@ -55,3 +55,10 @@ body:has(.social-post-page) .workspace{padding-bottom:0}
 .social-post-page .post-media img,.social-post-page .post-media video{border-radius:0}
 .community-workspace>.community-feed>.feed-filter{margin-top:0}
 .app .page .community-feed .feed-post{width:100%;margin-left:0;margin-right:0;padding:14px 16px}
+
+.app .feed-linked-card{cursor:pointer}
+.app .feed-post .feed-author{min-width:0;flex:1}
+.app .feed-post .feed-author>div{min-width:0;overflow-wrap:anywhere}
+.app .feed-post .feed-header-share{align-self:flex-start;flex:0 0 44px;min-width:44px;min-height:44px;padding:10px;background:transparent;border:0;color:var(--cda-navy);display:grid;place-items:center}
+.app .feed-post .feed-content-link{color:inherit;text-decoration:none;overflow-wrap:anywhere}
+.app .feed-post .feed-content-link:focus-visible{outline:2px solid var(--cda-navy);outline-offset:4px}

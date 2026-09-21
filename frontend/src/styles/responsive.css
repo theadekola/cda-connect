@@ -36,10 +36,10 @@
 .verification-switch button[aria-pressed=true]{background:var(--cda-navy)!important;color:white!important}
 @media(max-width:767px){.auth-page section,.auth-panel,.welcome-entry{padding-inline:max(12px,env(safe-area-inset-left))!important}.auth-panel-content,.welcome-entry-content{max-width:none!important;width:100%}.auth-page .location-selectors{grid-template-columns:1fr}}
 /* Community menu: two compact groups with room for complete labels. */
-.app #main .community-menu>section:not(.community-hero){padding:12px 0;margin:0 0 12px}
+.app #main .community-menu>section:not(.community-hero){padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));margin:0 0 12px}
 .app #main .community-menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
 .app #main .community-menu-grid>a{min-height:94px;padding:12px 6px;border-radius:12px;gap:8px}
-.app #main .community-menu-grid>a>span{width:36px;height:36px}
-.app #main .community-menu-grid svg{width:21px;height:21px}
+.app #main .community-menu-grid>a>span{width:32px;height:32px;padding:6px;border-radius:10px;align-items:center;justify-content:center}
+.app #main .community-menu-grid svg{width:20px;height:20px;flex-shrink:0}
 .app #main .community-menu-grid strong{font-size:12px;line-height:1.35;overflow-wrap:normal;word-break:normal}
 @media(max-width:380px){.app #main .community-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

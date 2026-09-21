@@ -153,3 +153,15 @@
 .app #main .settings-dashboard .settings-row-text strong{color:var(--text-primary);font-size:14px;line-height:1.4}
 .app #main .settings-dashboard .settings-row-text small{color:var(--text-secondary);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .app #main .settings-dashboard .settings-row{min-height:56px;padding:12px}
+
+/* Rounded settings surfaces, scoped to settings on all devices. */
+.app #main :is(.settings-detail,.settings-dashboard){--settings-section-radius:16px}
+.app #main .settings-detail :is(.settings-list,.card,.privacy-safety,.notification-hero,.notification-help,.storage-hero,.security-hero,.security-findings,.help-hero,.about-hero,.about-mission,.about-features,.help-contact-grid>a){border:1px solid var(--border);border-radius:var(--settings-section-radius);min-width:0;max-width:100%}
+.app #main .settings-detail .settings-list{overflow:hidden;background:var(--surface)}
+.app #main .settings-detail .settings-list>.settings-row:first-child{border-top:0}
+.app #main .settings-detail .settings-list>.settings-row:last-child{border-bottom:0}
+.app #main .settings-detail .settings-row{min-height:64px;gap:12px;padding:14px 16px}
+.app #main .settings-detail .settings-row-text strong{font-size:.875rem;line-height:1.4;color:var(--text-primary)}
+.app #main .settings-detail .settings-row-text small{font-size:.8125rem;line-height:1.5;color:var(--text-secondary)}
+.app #main .settings-detail :is(.settings-group,.card,.privacy-safety,.notification-hero,.storage-hero,.security-hero,.help-hero,.about-hero) h2{font-size:1rem;line-height:1.4}
+.app #main .settings-detail :is(button,.button){font-size:.875rem;white-space:normal;max-width:100%}

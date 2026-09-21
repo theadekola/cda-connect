@@ -12,3 +12,5 @@ test('only community managers may update map position',async()=>{queries=[];asse
 
 test('empty discovery never returns a global directory',async()=>{queries=[];const r=await call('/discover/search',null,'GET');assert.deepEqual(await r.json(),[]);assert.equal(queries.length,0)});
 test('name search bypasses distance and matches only names',async()=>{queries=[];await call('/discover/search',{q:'Royal View',latitude:6.6,longitude:3.3});assert.equal(queries.length,1);assert.equal(queries[0].params.lat,null);assert.match(queries[0].query,/LOWER\(c.Name\)/)});
+
+test('discovery excludes private communities at the database query',async()=>{queries=[];await call('/discover/search',{q:'Private name'});assert.match(queries[0].query,/WHERE c.IsPrivate=0 AND/)});

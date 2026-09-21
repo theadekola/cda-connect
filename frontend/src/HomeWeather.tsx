@@ -1,12 +1,8 @@
-import {useEffect,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {Capacitor} from '@capacitor/core';
-import {Geolocation} from '@capacitor/geolocation';
-import {Cloud,CloudSun,CloudMoon,CloudRain,CloudSnow,CloudLightning,CloudFog,Sun,Moon,MapPin,X,RefreshCw} from 'lucide-react';
+import {Cloud,CloudSun,CloudMoon,CloudRain,CloudSnow,CloudLightning,CloudFog,Sun,Moon,MapPin} from 'lucide-react';
 import {api} from './api';
-import {currentPosition} from './location';
+import {Geolocation} from '@capacitor/geolocation';
 import './home-weather.css';
-type Position={latitude:number;longitude:number};
 type Weather={temperature:number;code:number;isDay:boolean;rainChance:number|null;updatedAt:string};
 export function weatherCondition(code:number,isDay:boolean){
  if(code===0)return {kind:isDay?'sun':'moon',label:isDay?'Clear skies':'Clear night',Icon:isDay?Sun:Moon};
@@ -18,22 +14,18 @@ export function weatherCondition(code:number,isDay:boolean){
  if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code))return {kind:'rain',label:code<60?'Drizzle':'Rain',Icon:CloudRain};
  return {kind:'cloud',label:'Weather',Icon:Cloud};
 }
+class WeatherLocationError extends Error {}
 export function HomeWeather(){
- const [position,setPosition]=useState<Position|null>(null),[locating,setLocating]=useState(false),[error,setError]=useState(''),dialog=useRef<HTMLDialogElement>(null);
- async function locate(){setLocating(true);setError('');try{const p=await currentPosition();setPosition({latitude:Number(p.latitude.toFixed(2)),longitude:Number(p.longitude.toFixed(2))})}catch{setError('Allow location access in your device or browser settings, then try again.')}finally{setLocating(false)}}
- useEffect(()=>{let active=true;void(async()=>{try{const allowed=Capacitor.isNativePlatform()?(await Geolocation.checkPermissions()).location==='granted':!!navigator.permissions&&(await navigator.permissions.query({name:'geolocation'})).state==='granted';if(active&&allowed)await locate()}catch{/* Ask only when the member taps Use location. */}})();return()=>{active=false}},[]);
- const query=useQuery({queryKey:['home-weather',position?.latitude,position?.longitude],enabled:!!position,queryFn:()=>api.send<Weather>('/me/weather',position),staleTime:600000,refetchInterval:600000,retry:1});
- const weather=query.data,condition=weather?weatherCondition(weather.code,weather.isDay):null,Icon=condition?.Icon||MapPin,busy=locating||(!!position&&query.isPending);
- function open(){dialog.current?.showModal()}
- return <div className="home-weather"><button className="weather-summary" type="button" aria-label={weather?`${condition!.label}, ${Math.round(weather.temperature)} degrees Celsius${weather.rainChance===null?'':`, ${weather.rainChance}% rain chance`}. Open weather details`:'Open local weather'} onClick={open}>
+ // Weather uses device permission independently of the community location-sharing preference.
+ // Obtain fresh coordinates on every refresh so weather follows the device when it moves.
+ const query=useQuery({queryKey:['home-weather'],queryFn:async()=>{
+  let position;try{position=(await Geolocation.getCurrentPosition({enableHighAccuracy:false,maximumAge:0,timeout:15000})).coords}catch{throw new WeatherLocationError('Allow location access in your device or browser settings to show local weather.')}
+  return api.send<Weather>('/me/weather',{latitude:Number(position.latitude.toFixed(2)),longitude:Number(position.longitude.toFixed(2))});
+ },staleTime:600000,gcTime:0,refetchInterval:600000,refetchIntervalInBackground:false,refetchOnWindowFocus:'always',refetchOnReconnect:'always',retry:false});
+ const locationError=query.error instanceof WeatherLocationError,weather=locationError?undefined:query.data,condition=weather?weatherCondition(weather.code,weather.isDay):null,Icon=condition?.Icon||MapPin;
+ const label=weather?`${condition!.label}, ${Math.round(weather.temperature)} degrees Celsius${weather.rainChance===null?'':`, ${weather.rainChance}% rain chance`}. ${query.isError?'Update failed. ':''}Refresh local weather`:locationError?'Allow device location, then tap to retry weather':query.isError?'Weather unavailable. Tap to retry':'Loading local weather';
+ return <div className="home-weather"><button className="weather-summary" type="button" aria-label={label} title={label} disabled={query.isFetching} onClick={()=>void query.refetch()}>
  <span className={'weather-art weather-'+(condition?.kind||'unknown')} aria-hidden="true"><Icon size={30}/>{condition&&['rain','snow','storm'].includes(condition.kind)&&<span className="weather-particles"><i/><i/><i/></span>}</span>
- <span className="weather-reading">{weather?<><strong>{Math.round(weather.temperature)}°C</strong><small>{query.isError?'Update failed':weather.rainChance===null?'Rain —':`Rain ${weather.rainChance}%`}</small></>:<><strong>Weather</strong><small>{busy?'Loading…':error||query.isError?'Tap to retry':'Use location'}</small></>}</span>
- </button><dialog ref={dialog} className="weather-dialog" aria-labelledby="weather-title"><header><h2 id="weather-title">Local weather</h2><button type="button" aria-label="Close weather" onClick={()=>dialog.current?.close()}><X size={20}/></button></header>
- {weather&&<><p className="weather-details-temperature"><Icon aria-hidden="true"/> {Math.round(weather.temperature)}°C · {condition!.label}</p><p>Rain chance this hour: {weather.rainChance===null?'Unavailable':weather.rainChance+'%'}</p><p className="weather-updated">Near your device location · Updated {new Date(weather.updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</p></>}
- {!weather&&<p>Use your current location to show nearby weather. An approximate location is sent to Open-Meteo.</p>}
- {(error||query.isError)&&<p role="alert">{error||'Weather could not be updated. Please try again.'}</p>}
- <button type="button" disabled={busy||query.isFetching} onClick={()=>{if(position&&!error)void query.refetch();else void locate()}}><RefreshCw size={16}/>{busy||query.isFetching?'Loading…':position&&!error?'Refresh weather':'Use my location'}</button>
- {position&&<button type="button" disabled={locating} onClick={()=>void locate()}>Update location</button>}
- <small><a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Weather by Open-Meteo</a> · Local estimates may differ from conditions at your exact position.</small>
- </dialog></div>
+ <span className="weather-reading" aria-live="polite">{weather?<><strong>{Math.round(weather.temperature)}°C</strong><small>{query.isError?'Update failed':weather.rainChance===null?'Rain —':`Rain ${weather.rainChance}%`}</small></>:<><strong>Weather</strong><small>{query.isFetching?'Loading…':locationError?'Allow location':'Tap to retry'}</small></>}</span>
+ </button></div>
 }

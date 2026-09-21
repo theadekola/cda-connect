@@ -167,3 +167,16 @@
 @media(max-width:600px){.app .published-hero .meeting-emblem{flex-basis:104px;width:104px;height:104px;min-width:104px;min-height:104px;padding:10px;gap:5px}}
 @media(max-width:600px){.app .meeting-emblem strong{font-size:10px}}
 @media(max-width:600px){.app .published-meeting>:not(.published-hero){width:calc(100% - 24px)}}
+
+/* Meeting attendance navigation and compact, single-line totals. */
+.app #main .community-attendance-history .attendance-counts{display:flex;flex-wrap:nowrap;gap:10px;grid-column:1/-1;overflow-x:auto;max-width:100%;font-size:11px}
+.app #main .community-attendance-history .attendance-counts>span{flex-shrink:0;gap:4px}
+.app #main .community-attendance-history .attendance-counts svg{width:14px;height:14px;flex-shrink:0}
+.app #main .community-attendance-history .attendance-toolbar{flex-wrap:nowrap;align-items:center}
+.app #main .community-attendance-history .attendance-toolbar>*{min-width:0;max-width:55%;font-size:13px}
+.app #main .meeting-attendance-detail .attendance-panel{border:1px solid var(--border);border-radius:16px}
+.meeting-attendance-detail .attendance-toolbar{align-items:center;flex-wrap:wrap}
+.meeting-attendance-detail h2{margin:0;font-size:18px;overflow-wrap:anywhere}
+.meeting-attendance-detail .attendance-person small{display:block;color:var(--text-secondary);font-size:12px;margin-top:4px}
+.meeting-attendance-detail .attendance-person>div{min-width:0;overflow-wrap:anywhere}
+.meeting-attendance-detail .attendance-personal-status{flex-shrink:0}

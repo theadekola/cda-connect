@@ -19,7 +19,7 @@ export function PrivacySettings(){
  if(q.isPending)return <Loading/>;if(q.error)return <ErrorBox error={q.error}/>;const p=q.data;
  const toggle=(key:string,title:string,description:string,checked:boolean,Icon:typeof UserRound)=><label className="settings-row account-switch-row"><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{title}</strong><small>{description}</small></span><input type="checkbox" role="switch" checked={checked} disabled={!!busy} onChange={e=>save(key,e.target.checked)}/></label>;
  if(field)return <><Link className="settings-back" to="/settings/privacy"><ArrowLeft size={17}/>Privacy & safety</Link><h2 className="privacy-detail-title">{titles[field]||'Privacy & safety'}</h2><PrivacyDetail key={field} field={field} preferences={p}/></>;
- return <div className="privacy-dashboard"><p>Manage your privacy settings and stay safe on CDA Connect.</p>{error!=null&&<ErrorBox error={error}/>}<p className="privacy-status" role="status" aria-live="polite">{busy?'Saving…':notice}</p>
+ return <div className="privacy-dashboard">{error!=null&&<ErrorBox error={error}/>}<p className="privacy-status" role="status" aria-live="polite">{busy?'Saving…':notice}</p>
  <section className="settings-group"><h2>Profile privacy</h2><div className="settings-list">
  <Row field="visibility" title="Profile visibility" description="Control who can see your member profile" value={p.PrivateAccount?'My communities':'Everyone'} Icon={UserRound}/>
  <Row field="followers" title="Who can follow you" description="Choose who can follow your activities" value={p.AllowFollowers?'Eligible members':'Nobody'} Icon={Users}/>

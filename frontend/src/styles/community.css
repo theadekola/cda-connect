@@ -189,3 +189,5 @@
  .app .topbar .community-header-text :is(strong,small){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
  .app #main .community-hero-cover{height:var(--mobile-cover-height)}
  .community-cover-workspace::before{height:calc(var(--community-header-height,64px) + var(--mobile-cover-height) + 20px)}}
+
+.app .create-community .create-footer-actions{display:flex;align-items:stretch;gap:10px;margin-top:16px}.app .create-community .create-footer-actions>button{flex:1;min-width:0;width:auto;margin:0;font-size:12px;min-height:44px;padding:10px;white-space:normal}.app .create-community .create-footer-actions>button svg{flex-shrink:0;width:18px}
