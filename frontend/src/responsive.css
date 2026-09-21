@@ -7,6 +7,9 @@
 #root input::-webkit-calendar-picker-indicator{flex-shrink:0;margin-left:4px}
 #root form,#root fieldset,#root form label,#root .workspace,#root main{min-width:0}
 #root .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#root .meeting-wizard .wizard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#root .meeting-wizard .wizard-grid>label{min-width:0}
+@media(max-width:380px){#root .meeting-wizard .wizard-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){#root .form-grid{grid-template-columns:minmax(0,1fr)}}
 html,body{max-width:100%;overflow-x:clip;overscroll-behavior-x:none}
 .analytics-consent{position:fixed;z-index:10000;bottom:calc(80px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:680px;margin:auto;background:white;color:var(--text-primary);padding:18px;border:1px solid var(--border);border-radius:14px;box-shadow:0 4px 24px #0003;max-height:65dvh;overflow:auto}.analytics-consent p{font-size:14px;margin:8px 0}.analytics-consent>div{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.analytics-consent button{font-size:13px;min-height:44px}.privacy-footer{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;padding:16px;font-size:13px}.privacy-footer button{font-size:12px}.privacy-footer-app{padding-bottom:calc(90px + env(safe-area-inset-bottom))}

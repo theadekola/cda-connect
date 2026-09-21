@@ -4,7 +4,5 @@ dist/
 .env
 .env.*
 !.env.example
-android/
-ios/
 *.log
 .chrome-test/

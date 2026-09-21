@@ -79,8 +79,8 @@ jobs:
       - run: npm ci --prefix frontend
       - working-directory: frontend
         run: |
-          npx cap add android
-          npm run cap:sync
+          test -d android || npx cap add android
+          npm run cap:sync:android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
