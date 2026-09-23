@@ -1,4 +1,5 @@
 import {operationalHealth} from './services/operationalHealth.js';
+import {allowMediaEmbedding} from './middleware/mediaResourcePolicy.js';
 import {protectCookieMutation} from './services/sessionCookies.js';
 import express from 'express';
 import path from 'node:path';
@@ -27,7 +28,7 @@ app.use(cors({ origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(',
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/',protectCookieMutation);
 app.use((_req,res,next)=>{res.set('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()');next()});
-if (env.STORAGE_DRIVER === 'local') app.use('/uploads', express.static(path.resolve('uploads')));
+if (env.STORAGE_DRIVER === 'local') app.use('/uploads', express.static(path.resolve('uploads'),{setHeaders:allowMediaEmbedding}));
 app.use('/api/', distributedRateLimit);
 
 app.get('/health', async (_req, res) => {

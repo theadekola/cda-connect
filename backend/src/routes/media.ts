@@ -1,4 +1,5 @@
 import {documentVisibility} from '../services/documentAccess.js';
+import {allowMediaEmbedding} from '../middleware/mediaResourcePolicy.js';
 import {randomUUID} from 'node:crypto';
 import {requireConversationContact} from '../services/privacy.js';
 import { Router } from 'express';
@@ -33,7 +34,7 @@ mediaRouter.get('/media/chat-download/:token',asyncHandler(async(req,res)=>{
  const claim=JSON.parse(raw),file=await chatFile(claim.userId,claim.conversationId,claim.objectId);if(!file)throw new AppError(404,'Attachment not found');
  res.setHeader('Content-Type',file.MimeType);res.setHeader('Cache-Control','private, no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Content-Security-Policy',"default-src 'none'; sandbox");
  if(!/^(image|audio|video)\//.test(file.MimeType))res.setHeader('Content-Disposition',"attachment; filename*=UTF-8''"+encodeURIComponent(cleanName(file.OriginalName)));
- res.send(await readObject(file.StorageKey));
+ allowMediaEmbedding(res);res.send(await readObject(file.StorageKey));
 }));
 async function issueFile(userId:string,communityId:string,issueId:string,objectId:string){
  await requireCommunityMember(userId,communityId);const manager=await hasPermission(userId,communityId,'ISSUE_MANAGE');

@@ -35,6 +35,7 @@
 .verification-switch button{flex:1;background:transparent!important;color:var(--cda-navy)!important;border:0;border-radius:7px}
 .verification-switch button[aria-pressed=true]{background:var(--cda-navy)!important;color:white!important}
 @media(max-width:767px){.auth-page section,.auth-panel,.welcome-entry{padding-inline:max(12px,env(safe-area-inset-left))!important}.auth-panel-content,.welcome-entry-content{max-width:none!important;width:100%}.auth-page .location-selectors{grid-template-columns:1fr}}
+@media(max-width:767px){.auth-page.login-page>.auth-panel{padding-inline:0!important}.auth-page.login-page .login-mobile-hero{width:100%;max-width:none;margin-inline:0}.auth-page.login-page .auth-panel-content{padding-left:max(20px,env(safe-area-inset-left))!important;padding-right:max(20px,env(safe-area-inset-right))!important}}
 /* Community menu: two compact groups with room for complete labels. */
 .app #main .community-menu>section:not(.community-hero){padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));margin:0 0 12px}
 .app #main .community-menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}

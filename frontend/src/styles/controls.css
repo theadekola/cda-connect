@@ -835,6 +835,14 @@ button:disabled{background:#CBD5E1;color:var(--text-secondary);opacity:1}
  .auth-page:not(.login-page) .auth-panel{background:#fff}
 }
 .auth-panel-content a[href="/login"],.auth-panel-content a[href="/register"],.welcome-actions a[href="/login"]{font-weight:700}
+@media(min-width:768px){
+ .desktop-auth-brand{display:flex;width:min(72%,300px);margin:0 0 clamp(34px,5vh,56px)}
+ .desktop-auth-brand .brand-logo{width:52px;height:52px}
+ .desktop-auth-brand .brand-wordmark{width:min(230px,calc(100% - 62px));height:auto}
+ .welcome-points{width:100%;flex-wrap:nowrap;gap:8px}
+ .welcome-points a{flex:1 1 auto;min-width:0;padding:8px 9px;justify-content:center;white-space:nowrap;font-size:clamp(.62rem,.72vw,.78rem)}
+}
+@media(max-width:767px){.desktop-auth-brand{display:none}}
 .home-wordmark{display:block;width:clamp(210px,25vw,300px);max-width:100%;height:auto;margin:-10px 0 12px}
 @media(max-width:767px){
  .home-wordmark{width:230px;margin:-10px 0 8px}

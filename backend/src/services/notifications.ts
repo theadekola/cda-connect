@@ -1,3 +1,4 @@
+import {sendNativePush,type NativeMessage} from './nativePush.js';
 import {sendWebPush} from './webPush.js';
 import { env } from '../config/env.js';
 import nodemailer from 'nodemailer';
@@ -21,6 +22,7 @@ export async function sendPushBatch(messages: unknown[]) {
   for(let index=0;index<messages.length;index++){
     const message=messages[index] as {to?:string;title?:string;body?:string};
     if(typeof message.to==='string'&&message.to.startsWith('webpush:'))tickets[index]=await sendWebPush(message.to,message);
+    else if(typeof message.to==='string'&&/^(fcm|apns|apns-sandbox):/.test(message.to))tickets[index]=await sendNativePush(message as NativeMessage);
     else native.push({index,message});
   }
   if(native.length){

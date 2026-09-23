@@ -1,4 +1,5 @@
 import {Capacitor} from '@capacitor/core';
+import {resolveAssetUrl} from './assetUrl';
 export type RecordData=Record<string,unknown>;
 export type User={Id:string;FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string};
 export type Session={accessToken:string;user:User};
@@ -21,7 +22,7 @@ async function perform<T>(path:string,options:RequestInit={},retry=true):Promise
  if(!response.ok){const data=await response.json().catch(()=>({}));throw new ApiError(response.status,data.error||'The request could not be completed.')}
  return response.status===204?undefined as T:response.json() as Promise<T>;
 }
-function asset(value:string){if(!value)return '';try{const url=new URL(value,window.location.origin),apiUrl=new URL(base(),window.location.origin);if(url.pathname.startsWith('/uploads/')||['localhost','127.0.0.1','0.0.0.0'].includes(url.hostname)){url.protocol=apiUrl.protocol;url.host=apiUrl.host;url.port=apiUrl.port}return url.toString()}catch{return value}}
+function asset(value:string){if(!value)return '';try{return resolveAssetUrl(value,base(),window.location.origin)}catch{return value}}
 export function socketOrigin(){return import.meta.env.VITE_SOCKET_URL||new URL(base(),window.location.origin).origin}
 export const api={url:(path:string)=>base()+path,get:<T>(p:string,signal?:AbortSignal,headers?:HeadersInit)=>perform<T>(p,{signal,headers}),send:<T=RecordData>(p:string,body:unknown={},method='POST')=>perform<T>(p,{method,body:JSON.stringify(body)}),upload:<T>(p:string,data:FormData)=>perform<T>(p,{method:'POST',body:data}),asset};
 export function rows(value:unknown):RecordData[]{if(Array.isArray(value))return value as RecordData[];if(value&&typeof value==='object'){const v=value as RecordData;for(const key of ['items','data','posts','documents','members'])if(Array.isArray(v[key]))return v[key] as RecordData[]}return[]}

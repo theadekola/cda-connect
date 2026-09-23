@@ -224,10 +224,10 @@ test('current UI disables forms and buttons during submission',async()=>{
 
 test('public media uploads return a URL while private document, chat, issue and levy uploads do not',async()=>{
   const media=await readFile(new URL('../src/routes/media.ts',import.meta.url),'utf8');
-  const api=await readFile(new URL('../../frontend/src/api.ts',import.meta.url),'utf8');
+  const api=await readFile(new URL('../../frontend/src/assetUrl.ts',import.meta.url),'utf8');
   assert.match(media,/\.\.\.\(documentUpload\|\|chatUpload\|\|issueUpload\|\|levyUpload\?\{\}:\{url:stored\.url\}\)/);
   assert.match(api,/localhost','127\.0\.0\.1','0\.0\.0\.0/);
-  assert.match(api,/url\.host=apiUrl\.host/);
+  assert.match(api,/new URL\(url\.pathname\+url\.search\+url\.hash,apiUrl\.origin\)/);
   assert.match(api,/url\.pathname\.startsWith\('\/uploads\/'\)/);
 });
 

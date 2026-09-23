@@ -1,3 +1,4 @@
+import {listenNativePush} from './nativePush';
 import {useMobileHeader} from './useMobileHeader';
 import {settingsTitles} from './settingsNavigation';
 import {HeaderTitleContext} from './pageTitle';
@@ -34,6 +35,7 @@ function pageName(path:string){
 export function Shell(){
  const[open,setOpen]=useState(false),[logoutError,setLogoutError]=useState(''),[offline,setOffline]=useState(!navigator.onLine);
  const location=useLocation(),nav=useNavigate(),s=useSession(),qc=useQueryClient();
+ useEffect(()=>listenNativePush(path=>nav(path)),[s?.user.Id,nav]);
  const mobileHeader=useMobileHeader(location.pathname+location.search,open);
  const profile=useQuery({queryKey:['/users/me'],queryFn:()=>api.get<RecordData>('/users/me')});
  const [failedPhoto,setFailedPhoto]=useState('');

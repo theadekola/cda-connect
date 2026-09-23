@@ -1,3 +1,4 @@
+import {NativePushSettings,disconnectNativePush} from './nativePush';
 import {Smartphone} from 'lucide-react';
 import {useEffect,useState} from 'react';
 import {Capacitor} from '@capacitor/core';
@@ -7,13 +8,15 @@ const supported=()=>!Capacitor.isNativePlatform()&&'serviceWorker' in navigator&
 const installed=()=>matchMedia('(display-mode: standalone)').matches||Boolean((navigator as Navigator&{standalone?:boolean}).standalone);
 async function subscription(){const reg=await navigator.serviceWorker.getRegistration('/');return reg?.pushManager.getSubscription()??null}
 export async function disconnectPush(){
+ if(Capacitor.isNativePlatform()){await disconnectNativePush();return}
  if(!supported())return;
  const sub=await subscription();
  if(sub){await api.send('/users/web-push/subscribe',{endpoint:sub.endpoint},'DELETE');await sub.unsubscribe()}
 }
 function applicationKey(value:string){return Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(value.length/4)*4,'=')),c=>c.charCodeAt(0))}
 
-export function PushSettings({home=false,compact=false}:{home?:boolean;compact?:boolean}){
+export function PushSettings(props:{home?:boolean;compact?:boolean}){return Capacitor.isNativePlatform()?(props.home?null:<NativePushSettings/>):<WebPushSettings {...props}/>}
+function WebPushSettings({home=false,compact=false}:{home?:boolean;compact?:boolean}){
  const[key,setKey]=useState<string|null>(null),[sub,setSub]=useState<PushSubscription|null>(null),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[ready,setReady]=useState(false);
  useEffect(()=>{let active=true;if(!supported()){setReady(true);return}
   Promise.all([api.get<{publicKey:string|null}>('/users/web-push/key'),subscription()]).then(async([config,existing])=>{

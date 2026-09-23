@@ -21,3 +21,8 @@ deploy/secrets/
 .pnpm-store/
 frontend/test-results/
 frontend/playwright-report/
+
+# Native push configuration is supplied per environment.
+frontend/android/app/google-services.json
+frontend/ios/App/App/GoogleService-Info.plist
+*.p8

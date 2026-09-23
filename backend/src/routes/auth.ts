@@ -82,14 +82,18 @@ authRouter.post('/login',asyncHandler(async(req,res)=>{
 authRouter.post('/login/two-factor',asyncHandler(async(req,res)=>{const d=z.object({challengeToken:z.string(),code:z.string().regex(/^\d{6}$/)}).parse(req.body);let challenge:{purpose?:string;id?:string;method?:string;challengeId?:string};try{challenge=jwt.verify(d.challengeToken,env.JWT_ACCESS_SECRET) as typeof challenge}catch{throw new AppError(401,'Two-factor challenge has expired')}if(challenge.purpose!=='two-factor-login'||!challenge.id)throw new AppError(401,'Invalid two-factor challenge');const pool=await getPool(),result=await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).query('SELECT TOP 1 Id,FirstName,LastName,Email,Phone,PasswordHash,ProfileImage,CoverImage,Country,State,LGA,Postcode,Address,DateOfBirth,CreatedAt,AccountStatus,TwoFactorEnabled,TwoFactorMethod,TwoFactorSecret FROM Users WHERE Id=@uid'),row=result.recordset[0];if(!row||!row.TwoFactorEnabled||row.TwoFactorMethod!==challenge.method)throw new AppError(401,'Two-factor authentication is no longer active');if(row.TwoFactorMethod==='sms')await verifySmsChallenge(pool,row.Id,challenge.challengeId||'', 'login',d.code);else if(!row.TwoFactorSecret||!verifyTotp(decryptSecret(row.TwoFactorSecret),d.code))throw new AppError(400,'Authenticator code is incorrect');res.json(await issueSession(pool,row,res))}));
 
 authRouter.post('/password-reset/request',asyncHandler(async(req,res)=>{
-  const phone=normalizePhone(z.object({phone:z.string().min(8).max(30)}).parse(req.body).phone),pool=await getPool();
-  const result=await pool.request().input('phone',sql.NVarChar(30),phone).query("SELECT TOP 1 Id,Phone FROM Users WHERE Phone=@phone AND AccountStatus='ACTIVE'");
+  const email=z.object({email:z.string().trim().toLowerCase().email().max(255)}).parse(req.body).email,pool=await getPool();
+  const result=await pool.request().input('email',sql.NVarChar(255),email).query("SELECT TOP 1 Id,Email FROM Users WHERE Email=@email AND AccountStatus='ACTIVE'");
   const user=result.recordset[0];
   if(!user)return res.status(202).json({success:true,expiresInSeconds:env.SMS_CODE_EXPIRES_MINUTES*60,resendAfterSeconds:env.SMS_RESEND_SECONDS,resetToken:jwt.sign({purpose:'password-reset-unavailable'},env.JWT_ACCESS_SECRET,{expiresIn:'10m'})});
   const recent=await pool.request().input('uid',sql.UniqueIdentifier,user.Id).input('purpose',sql.NVarChar(30),'password-reset').query('SELECT TOP 1 CreatedAt FROM TwoFactorChallenges WHERE UserId=@uid AND Purpose=@purpose AND ConsumedAt IS NULL ORDER BY CreatedAt DESC');
   if(recent.recordset[0]){const wait=env.SMS_RESEND_SECONDS-Math.floor((Date.now()-new Date(recent.recordset[0].CreatedAt).getTime())/1000);if(wait>0)throw new AppError(429,`Please wait ${wait} seconds before requesting another code`)}
-  const challengeId=await createSmsChallenge(pool,user.Id,phone,'password-reset');
-  const resetToken=jwt.sign({purpose:'password-reset',id:user.Id,phone,challengeId},env.JWT_ACCESS_SECRET,{expiresIn:`${env.SMS_CODE_EXPIRES_MINUTES}m`});
+  const code=crypto.randomInt(100000,1000000).toString(),expires=new Date(Date.now()+env.SMS_CODE_EXPIRES_MINUTES*60000);
+  const challenge=await pool.request().input('uid',sql.UniqueIdentifier,user.Id).input('purpose',sql.NVarChar(30),'password-reset').input('hash',sql.NVarChar(64),verificationHash(user.Id,code)).input('expires',sql.DateTime2,expires).query('INSERT INTO TwoFactorChallenges(UserId,Purpose,CodeHash,ExpiresAt) OUTPUT INSERTED.Id VALUES(@uid,@purpose,@hash,@expires)');
+  const challengeId=challenge.recordset[0].Id as string;
+  try{const sent=await sendEmailBatch([{to:user.Email,subject:'Reset your CDA Connect password',text:`Your CDA Connect password reset code is ${code}. It expires in ${env.SMS_CODE_EXPIRES_MINUTES} minutes. If you did not request this, ignore this email.`}]);if(sent.skipped)throw new AppError(503,'Password reset email is not configured')}
+  catch(error){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('DELETE FROM TwoFactorChallenges WHERE Id=@id');throw error}
+  const resetToken=jwt.sign({purpose:'password-reset',id:user.Id,email,challengeId},env.JWT_ACCESS_SECRET,{expiresIn:`${env.SMS_CODE_EXPIRES_MINUTES}m`});
   res.status(202).json({success:true,expiresInSeconds:env.SMS_CODE_EXPIRES_MINUTES*60,resendAfterSeconds:env.SMS_RESEND_SECONDS,resetToken});
 }));
 

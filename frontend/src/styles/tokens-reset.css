@@ -6,7 +6,7 @@ html,body{background:var(--background);color:var(--text-primary)}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
-html.app-pull-refresh,html.app-pull-refresh body{overscroll-behavior-y:contain}
+html.app-pull-refresh,html.app-pull-refresh body{overscroll-behavior-y:none}
 @keyframes refresh-spin{to{transform:rotate(360deg)}}
 html.cda-large-text{font-size:18px}
 html.cda-large-text input:not([type=checkbox]):not([type=radio]),html.cda-large-text textarea,html.cda-large-text select{font-size:18px!important}

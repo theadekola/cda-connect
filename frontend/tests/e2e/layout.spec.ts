@@ -34,14 +34,14 @@ for(const width of [390,768,1440])test(`settings subpages have rounded groups wi
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
 });
-test('community gutters and compact icons; mobile header follows scroll direction',async({page})=>{
+test('community gutters and compact icons; mobile header stays visible while scrolling',async({page})=>{
  await page.setViewportSize({width:390,height:700});await setup(page);await page.goto('/community/'+community.Id+'/menu');
  const header=page.locator('.workspace>.topbar');await expect(page.locator('.community-menu-grid').first()).toBeVisible();
  const section=page.locator('.community-menu>section:not(.community-hero)').first();expect(await section.evaluate(el=>parseFloat(getComputedStyle(el).paddingLeft))).toBeGreaterThanOrEqual(16);
  expect(await page.locator('.community-menu-grid>a>span').first().evaluate(el=>getComputedStyle(el).width)).toBe('32px');
- await page.evaluate(()=>window.scrollTo(0,300));await expect(header).toHaveAttribute('data-hidden','true');await expect(header).toHaveAttribute('inert','');
+ await page.evaluate(()=>window.scrollTo(0,300));await expect(header).toHaveAttribute('data-hidden','false');await expect(header).not.toHaveAttribute('inert','');
  await page.evaluate(()=>window.scrollTo(0,240));await expect(header).toHaveAttribute('data-hidden','false');await expect.poll(()=>header.evaluate(el=>el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
- await page.evaluate(()=>window.scrollTo(0,400));await expect(header).toHaveAttribute('data-hidden','true');
+ await page.evaluate(()=>window.scrollTo(0,400));await expect(header).toHaveAttribute('data-hidden','false');
  await page.setViewportSize({width:1440,height:700});await expect(header).toHaveAttribute('data-hidden','false');await page.evaluate(()=>window.scrollTo(0,500));await expect(header).toHaveAttribute('data-hidden','false');
  await page.setViewportSize({width:390,height:700});await page.goto('/profile');await expect(header).toHaveAttribute('data-hidden','false');
 });
