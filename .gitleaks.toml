@@ -6,3 +6,7 @@ condition = "AND"
 paths = ['''^deploy/\.env\.example$''']
 regexTarget = "secret"
 regexes = ['''^REPLACE_WITH_64_HEX_CHARACTERS$''']
+
+[[allowlists]]
+description = "Historical pnpm content-addressed cache (third-party package fixtures)"
+paths = ['''(^|/)\.pnpm-store/''']
