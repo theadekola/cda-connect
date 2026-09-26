@@ -14,10 +14,9 @@ test('email signup marks only email verified and does not require a phone',()=>{
 test('registration rejects a different address, wrong purpose, missing and expired proofs',()=>{
  for(const token of [undefined,sign({purpose:'email-verification',email:'another@example.com'}),sign({purpose:'phone-verification',email}),sign({purpose:'access',email}),jwt.sign({purpose:'email-verification',email},env.JWT_ACCESS_SECRET,{expiresIn:-1})])assert.throws(()=>verifyRegistrationIdentity({verificationMethod:'email',email,emailVerificationToken:token}));
 });
-test('SMS proof cannot verify an email or omit the phone',()=>{
+test('phone verification proof cannot be used to register an account',()=>{
  const phone='+2348012345678',token=sign({purpose:'phone-verification',phone});
- assert.deepEqual(verifyRegistrationIdentity({verificationMethod:'sms',email,phone,phoneVerificationToken:token}),{emailVerified:false,phoneVerified:true});
- assert.throws(()=>verifyRegistrationIdentity({verificationMethod:'sms',email,phoneVerificationToken:token}));
+ assert.throws(()=>verifyRegistrationIdentity({verificationMethod:'sms',email,phone,phoneVerificationToken:token}));
 });
 test('Namecheap SMTP uses encryption, server credentials and the configured sender',async t=>{
  let closed=false;

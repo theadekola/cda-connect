@@ -72,6 +72,8 @@
 	<string>CDA Connect uses your location only when requested to find nearby communities or set a community map position.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>CDA Connect uses your location only when requested to find nearby communities or set a community map position.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>CDA Connect uses Face ID to unlock your signed-in session on this device.</string>
 <key>NSMicrophoneUsageDescription</key><string>CDA Connect uses your microphone when you record voice messages or join calls.</string>
 <key>NSCameraUsageDescription</key><string>CDA Connect uses your camera for video calls and to scan membership cards for attendance.</string>
 </dict>

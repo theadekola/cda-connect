@@ -1,6 +1,6 @@
 import {operationalHealth} from './services/operationalHealth.js';
 import {allowMediaEmbedding} from './middleware/mediaResourcePolicy.js';
-import {protectCookieMutation} from './services/sessionCookies.js';
+import {protectCookieMutation,trustedRequestOrigins} from './services/sessionCookies.js';
 import express from 'express';
 import path from 'node:path';
 import cors from 'cors';
@@ -24,7 +24,7 @@ import { getPool } from './config/db.js';
 export const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),credentials:true }));
+app.use(cors({origin:env.CORS_ORIGIN==='*'?true:trustedRequestOrigins(),credentials:true}));
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/',protectCookieMutation);
 app.use((_req,res,next)=>{res.set('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()');next()});

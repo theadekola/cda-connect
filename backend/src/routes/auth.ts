@@ -55,10 +55,10 @@ authRouter.post('/phone-verification/verify',asyncHandler(async(req,res)=>{
   const verificationToken=jwt.sign({purpose:'phone-verification',phone},env.JWT_ACCESS_SECRET,{expiresIn:'15m'});res.json({success:true,verificationToken});
 }));
 
-const registerSchema=z.object({firstName:z.string().trim().min(2).max(100),lastName:z.string().trim().min(2).max(100),email:z.string().trim().toLowerCase().email(),phone:z.string().trim().min(8).max(30).optional(),verificationMethod:z.enum(['sms','email']).default('sms'),phoneVerificationToken:z.string().min(1).optional(),emailVerificationToken:z.string().min(1).optional(),country:z.string().trim().min(2).max(100),state:z.string().trim().min(1).max(100),lga:z.string().trim().min(1).max(150).optional(),postcode:z.string().trim().min(1).max(30).optional(),address:z.string().trim().min(2,'Enter your area or community').max(500),dateOfBirth:z.coerce.date().max(new Date()),password:z.string().min(8).max(200)});
+const registerSchema=z.object({firstName:z.string().trim().min(2).max(100),lastName:z.string().trim().min(2).max(100),email:z.string().trim().toLowerCase().email(),phone:z.string().trim().min(8).max(30).optional(),verificationMethod:z.literal('email').default('email'),emailVerificationToken:z.string().min(1),country:z.string().trim().min(2).max(100),state:z.string().trim().min(1).max(100),lga:z.string().trim().min(1).max(150).optional(),postcode:z.string().trim().min(1).max(30).optional(),address:z.string().trim().min(2,'Enter your area or community').max(500),dateOfBirth:z.coerce.date().max(new Date()),password:z.string().min(8).max(200)});
 authRouter.post('/register',asyncHandler(async(req,res)=>{
   const d=registerSchema.parse(req.body); const pool=await getPool(); const email=d.email.trim().toLowerCase();const phone=d.phone?normalizePhone(d.phone):null;
-  const verified=verifyRegistrationIdentity({...d,email,phone});
+  const verified=verifyRegistrationIdentity({verificationMethod:d.verificationMethod,email,emailVerificationToken:d.emailVerificationToken});
   const exists=await pool.request().input('email',sql.NVarChar(255),email).input('phone',sql.NVarChar(30),phone).query('SELECT TOP 1 Email,Phone FROM Users WHERE Email=@email OR Phone=@phone');
   if(exists.recordset[0]?.Email?.toLowerCase()===email) throw new AppError(409,'This email address is already registered');
   if(exists.recordset[0]?.Phone===phone) throw new AppError(409,'This phone number is already registered');

@@ -24,6 +24,20 @@ allprojects {
     }
 }
 
+subprojects {
+    tasks.register('androidTestClasses') {
+        description = "Assembles Android test classes."
+        group = "Verification"
+        dependsOn tasks.matching { it.name.endsWith('AndroidTestSources') }
+    }
+
+    tasks.register('testClasses') {
+        description = "Assembles unit test classes."
+        group = "Verification"
+        dependsOn tasks.matching { it.name.endsWith('UnitTestSources') }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

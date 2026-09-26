@@ -13,6 +13,15 @@ test('password recovery requests a registered email address',()=>{
  assert.doesNotMatch(recovery,/Registered phone number|<PhoneField/);
 });
 
+test('registration verifies email only and separates its verification buttons',()=>{
+ const register=auth.slice(auth.indexOf('export function Register'),auth.indexOf('export function Recovery'));
+ assert.match(register,/email-verification\/request/);
+ assert.match(register,/verificationMethod:'email'/);
+ assert.match(register,/className="registration-verification-actions"/);
+ assert.doesNotMatch(register,/verification-switch|phone-verification|>SMS<|<PhoneField/);
+ assert.match(controls,/\.registration-verification-actions\{display:grid;gap:14px\}/);
+});
+
 test('desktop auth branding and feature links share the requested layout',()=>{
  assert.match(auth,/<div className="welcome-entry-content"><BrandLink\/>/);
  assert.match(auth,/<div className="auth-panel-content"><BrandLink\/>/);
