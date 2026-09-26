@@ -89,6 +89,25 @@ test('persisted notification history and server read state are used',async()=>{
   assert.match(routes,/This content is no longer available\./);
 });
 
+test('join checks do not open notification queue connections before a request is created',async()=>{
+  const source=await readFile(new URL('../src/services/communityJoin.ts',import.meta.url),'utf8');
+  const routes=await readFile(new URL('../src/routes/communities.ts',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/^import \{enqueueCommunityNotification\}/m);
+  assert.match(source,/await import\('\.\.\/queues\/index\.js'\)/);
+  assert.match(source,/row\?\.Result==='PENDING'&&row\.RequestId/);
+  assert.doesNotMatch(routes,/^import \{enqueueCommunityNotification\}/m);
+  assert.match(routes,/async function enqueueCommunityNotification/);
+});
+
+test('in-app activity is persisted before outbound preferences can mute delivery',async()=>{
+  const worker=await readFile(new URL('../src/workers/worker.ts',import.meta.url),'utf8');
+  const persisted=worker.indexOf('INSERT INTO UserNotifications');
+  const muted=worker.indexOf("'MUTED','Outbound delivery preferences or conversation presence'");
+  assert.ok(persisted>0&&muted>persisted);
+  assert.match(worker,/requiredPermission/);
+  assert.match(worker,/permission\.Code=@requiredPermission/);
+});
+
 test('document reads share authoritative visibility and role access checks',async()=>{
   const source=await readFile(new URL('../src/routes/advanced.ts',import.meta.url),'utf8');
   const access=await readFile(new URL('../src/services/documentAccess.ts',import.meta.url),'utf8');

@@ -1,6 +1,6 @@
 import {HeaderSearch} from './HeaderSearch';
 import {refreshInterval,useStoragePreferences,useConnectionType} from './storageDevice';
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {Link,useNavigate,useSearchParams} from 'react-router-dom';
@@ -20,6 +20,12 @@ export function CommunityChats({id,permissions}:{id:string;permissions:string[]}
  const[tab,setTab]=useState('all'),[search,setSearch]=useState(''),[name,setName]=useState(''),[selected,setSelected]=useState<string[]>([]),[memberSearch,setMemberSearch]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>();
  const chats=useQuery({queryKey:[base+'/conversations'],queryFn:({signal})=>api.get<RecordData[]>(base+'/conversations',signal),refetchInterval:()=>refreshInterval(15000)}),members=useQuery({queryKey:[base+'/members'],queryFn:({signal})=>api.get<RecordData[]>(base+'/members',signal),refetchInterval:()=>refreshInterval(15000)});
  const canCreate=permissions.includes('CHAT_CREATE'),roster=(members.data||[]).filter(m=>(!m.MembershipStatus||m.MembershipStatus==='ACTIVE')&&str(m.UserId).toLowerCase()!==str(session.get()?.user.Id).toLowerCase()).map(m=>{const existing=(chats.data||[]).find(c=>c.Type==='DIRECT'&&str(c.DirectUserId).toLowerCase()===str(m.UserId).toLowerCase());return {...existing,Id:existing?.Id||'member-'+m.UserId,Type:'DIRECT',DirectUserId:m.UserId,DirectName:[m.FirstName,m.LastName].filter(Boolean).join(' '),DirectImage:m.ProfileImage,IsSelf:str(m.UserId).toLowerCase()===str(session.get()?.user.Id).toLowerCase(),NewDirect:!existing} as RecordData}),all=[...(chats.data||[]).filter(c=>c.Type!=='DIRECT'),...roster],list=all.filter(c=>(tab==='all'||(tab==='direct'?c.Type==='DIRECT':c.Type!=='DIRECT'))&&[chatName(c),c.LastMessage,c.LastSender].join(' ').toLowerCase().includes(search.toLowerCase())).sort((a,b)=>{const time=(c:RecordData)=>Date.parse(str(c.LastMessageAt||c.CreatedAt))||0;return time(b)-time(a)||chatName(a).localeCompare(chatName(b))});
+ useEffect(()=>{
+  const menus=()=>Array.from(document.querySelectorAll<HTMLDetailsElement>('.chat-row-menu[open]'));
+  const close=()=>menus().forEach(menu=>menu.open=false);
+  const pointer=(event:PointerEvent)=>{const active=(event.target as Element).closest<HTMLDetailsElement>('.chat-row-menu');menus().forEach(menu=>{if(menu!==active)menu.open=false})};
+  const key=(event:KeyboardEvent)=>{if(event.key==='Escape')close()};document.addEventListener('pointerdown',pointer);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',pointer);document.removeEventListener('keydown',key)};
+ },[]);
 
  function open(kind:'group'|'direct'){setParams({new:kind});setName('');setMemberSearch('');setSelected([]);setError(undefined);setTimeout(()=>{editor.current?.scrollIntoView({behavior:'smooth',block:'start'});editor.current?.querySelector<HTMLInputElement>('input')?.focus()},0)}
  async function create(){if(!mode||busy)return;setBusy(true);setError(undefined);try{const result=await api.send<RecordData>(mode==='group'?base+'/conversations':base+'/direct-conversations/'+selected[0],mode==='group'?{name:name.trim(),type:'GROUP',memberUserIds:selected}:{});if(!result.Id)throw Error('The chat could not be opened. Please try again.');await qc.invalidateQueries({queryKey:[base+'/conversations']});nav('/chat/'+result.Id)}catch(e){setError(e)}finally{setBusy(false)}}

@@ -95,6 +95,7 @@
 .app .community-topbar .top-actions>a.topbar-icon[aria-label="Join community"]{display:inline-flex}
 .app .page .directory-card-link{display:grid;grid-template-columns:90px minmax(0,1fr);align-items:start;gap:14px;padding-right:40px}
 .app .page .directory-card-link>.directory-logo{width:90px;height:90px;aspect-ratio:1;margin:0;border-radius:12px}
+.app .page .directory-community-mark{position:relative;width:90px;height:90px;align-self:center;justify-self:center}.app .page .directory-community-mark>.directory-logo{width:100%;height:100%;aspect-ratio:1;margin:0;border-radius:12px}.directory-community-mark>.community-activity-dot{top:-3px;right:-3px;width:12px;height:12px}
 .app .page .directory-direct-card{padding:14px 12px}
 .app .page .directory-card-link .directory-card-content{min-width:0;padding:0}
 .app .page .directory-card-link .directory-name{font-size:15px;line-height:1.4}
@@ -191,3 +192,9 @@
  .community-cover-workspace::before{height:calc(var(--community-header-height,64px) + var(--mobile-cover-height) + 20px)}}
 
 .app .create-community .create-footer-actions{display:flex;align-items:stretch;gap:10px;margin-top:16px}.app .create-community .create-footer-actions>button{flex:1;min-width:0;width:auto;margin:0;font-size:12px;min-height:44px;padding:10px;white-space:normal}.app .create-community .create-footer-actions>button svg{flex-shrink:0;width:18px}
+
+.community-menu-icon{position:relative}
+.community-activity-dot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:#f28c18;box-shadow:0 0 0 1px #d96d00;animation:community-activity-blink 1.15s ease-in-out infinite}
+@keyframes community-activity-blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.72)}}
+@media (prefers-reduced-motion:reduce){.community-activity-dot{animation:none}}
+@media (max-width:767px){.app .page .directory-community-mark{width:72px;height:72px}}

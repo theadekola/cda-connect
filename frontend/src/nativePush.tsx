@@ -5,8 +5,11 @@ import {Smartphone} from 'lucide-react';
 import {api,session} from './api';
 import {NativeDevice} from './nativeDevice';
 const key='cda-native-push';
+const optOutKey='cda-native-push-disabled';
 type Registration={token:string;userId:string};
 function saved():Registration|null{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}}
+function optedOut(){return localStorage.getItem(optOutKey)===session.get()?.user.Id}
+function savePreference(enabled:boolean){const userId=session.get()?.user.Id;if(enabled)localStorage.removeItem(optOutKey);else if(userId)localStorage.setItem(optOutKey,userId)}
 export function nativeEnabled(){return saved()?.userId===session.get()?.user.Id&&!!saved()?.token}
 export async function nativePushStatus(){
  const [build,server]=await Promise.all([NativeDevice.pushConfiguration(),api.get<{android:boolean;ios:boolean}>('/users/devices/push-config')]);
@@ -44,19 +47,22 @@ export async function disconnectNativePush(){
  await api.send('/users/devices',{deviceToken:existing.token},'DELETE');
  await PushNotifications.unregister();await PushNotifications.removeAllDeliveredNotifications();localStorage.removeItem(key);
 }
-export function listenNativePush(navigate:(path:string)=>void){
+export function listenNativePush(navigate:(path:string)=>void,onNotification?:()=>void){
  if(!Capacitor.isNativePlatform())return()=>{};
- let disposed=false,listener:PluginListenerHandle|undefined;
+ let disposed=false;const listeners:PluginListenerHandle[]=[];
+ const keep=(handle:PluginListenerHandle)=>{if(disposed)void handle.remove();else listeners.push(handle)};
+ void PushNotifications.addListener('pushNotificationReceived',()=>onNotification?.()).then(keep).catch(()=>{});
  void PushNotifications.addListener('pushNotificationActionPerformed',event=>{
+  onNotification?.();
   const data=event.notification.data||{};const path=data.destination||data.url;
   navigate(typeof path==='string'&&/^\/(?!\/)/.test(path)&&!path.includes('\\')?path:'/notifications');
- }).then(handle=>{if(disposed)void handle.remove();else listener=handle}).catch(()=>{});
- if(nativeEnabled())void enableNativePush(false).catch(()=>{});
- return()=>{disposed=true;void listener?.remove()};
+ }).then(keep).catch(()=>{});
+ if(!optedOut())void enableNativePush(!nativeEnabled()).catch(()=>{});
+ return()=>{disposed=true;void Promise.all(listeners.map(listener=>listener.remove()))};
 }
 export function NativePushSettings(){
  const[enabled,setEnabled]=useState(false),[ready,setReady]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- useEffect(()=>{let active=true;void nativePushStatus().then(status=>{if(active){setEnabled(status.enabled);setMessage(status.message);setReady(true)}}).catch(()=>{if(active){setMessage('Unable to check notification setup. Reopen this page when online.');setReady(true)}});return()=>{active=false}},[]);
- async function toggle(){setBusy(true);try{if(enabled)await disconnectNativePush();else await enableNativePush();setEnabled(!enabled);setMessage(enabled?'Notifications disabled on this device.':'Notifications enabled on this device.')}catch(error){setMessage(error instanceof Error?error.message:'Unable to update notifications.')}finally{setBusy(false)}}
- return <div className="notification-push"><label className="settings-row account-switch-row"><span className="settings-row-icon"><Smartphone size={21}/></span><span className="settings-row-text"><strong>Push Notifications</strong><small>Receive notifications on this device</small></span><input type="checkbox" role="switch" checked={enabled} disabled={busy||!ready} onChange={()=>void toggle()}/></label>{(busy||message)&&<p className="privacy-note" role="status">{busy?'Updating device notifications…':message}</p>}{enabled&&<button className="notification-test" disabled={busy} onClick={async()=>{setBusy(true);try{await api.send('/users/devices/test',{deviceToken:saved()?.token});setMessage('Test notification sent to this device.')}catch(e){setMessage(e instanceof Error?e.message:'Unable to send test.')}finally{setBusy(false)}}}>Send test notification</button>}</div>;
+ useEffect(()=>{let active=true;void(async()=>{try{const status=await nativePushStatus();if(status.enabled){if(active)setEnabled(true)}else if(status.ready&&!optedOut()){await enableNativePush();if(active){setEnabled(true);setMessage('Notifications enabled on this device.')}}else if(active)setMessage(status.message)}catch(error){if(active)setMessage(error instanceof Error?error.message:'Unable to check notification setup. Reopen this page when online.')}finally{if(active)setReady(true)}})();return()=>{active=false}},[]);
+ async function toggle(){setBusy(true);try{if(enabled){await disconnectNativePush();savePreference(false);setEnabled(false);setMessage('Notifications disabled on this device.')}else{await enableNativePush();savePreference(true);setEnabled(true);setMessage('Notifications enabled on this device.')}}catch(error){setMessage(error instanceof Error?error.message:'Unable to update notifications.')}finally{setBusy(false)}}
+ return <div className="notification-push"><label className="settings-row account-switch-row"><span className="settings-row-icon"><Smartphone size={21}/></span><span className="settings-row-text"><strong>Push Notifications</strong><small>Receive notifications on this device</small></span><input type="checkbox" role="switch" checked={enabled} disabled={busy||!ready} onChange={()=>void toggle()}/></label>{(busy||message)&&<p className="privacy-note" role="status">{busy?'Updating device notifications…':message}</p>}</div>;
 }

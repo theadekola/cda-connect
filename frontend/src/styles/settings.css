@@ -39,7 +39,6 @@
 .settings-detail .push-settings{margin:0 0 20px}
 .settings-detail code{overflow-wrap:anywhere;display:block;margin:16px 0}
 .settings-detail p{overflow-wrap:anywhere}
-.security-timeout-options{border:0;margin:0;padding:0}.security-timeout-options input[type=radio]{width:20px;height:20px;min-height:20px;accent-color:var(--cda-green);flex:0 0 20px}
 .settings-switches>label{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:70px;padding:12px 0;border-bottom:1px solid var(--border)}
 .settings-switches small{display:block;line-height:1.5}
 .settings-switches input{width:22px;height:22px;accent-color:var(--cda-green-dark);flex-shrink:0}

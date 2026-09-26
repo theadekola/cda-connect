@@ -8,10 +8,12 @@ self.addEventListener('fetch',event=>{if(event.request.mode==='navigate'&&event.
 function safeDestination(value){if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||/[\\\x00-\x1f]/.test(value))return '/notifications';try{const url=new URL(value,self.location.origin);return url.origin===self.location.origin?url.pathname+url.search+url.hash:'/notifications'}catch{return '/notifications'}}
 self.addEventListener('push',event=>{
  let content={};try{content=event.data?.json()||{}}catch{}
- event.waitUntil(self.registration.showNotification(typeof content.title==='string'?content.title.slice(0,180):'CDA Connect',{
+ const shown=self.registration.showNotification(typeof content.title==='string'?content.title.slice(0,180):'CDA Connect',{
   body:typeof content.body==='string'?content.body.slice(0,500):'You have a new notification. Open CDA Connect to read it.',
   icon:'/icon-192.png',badge:'/icon-192.png',tag:typeof content.tag==='string'&&/^cda-[a-z0-9-]{1,80}$/i.test(content.tag)?content.tag:'cda-'+crypto.randomUUID(),data:{url:safeDestination(content.url)}
- }));
+ });
+ const refreshed=self.clients.matchAll({type:'window',includeUncontrolled:true}).then(windows=>windows.forEach(client=>client.postMessage({type:'CDA_NOTIFICATION_RECEIVED'})));
+ event.waitUntil(Promise.all([shown,refreshed]));
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();
