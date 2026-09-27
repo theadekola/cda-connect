@@ -109,9 +109,7 @@
  .app .workspace>header.topbar[data-auto-hide][data-hidden="true"]{transform:translateY(-100%);pointer-events:none}
 }
 @media(prefers-reduced-motion:reduce){.app .workspace>header.topbar[data-auto-hide]{transition:none}}
-.notification-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#f28c18;color:#fff;font:700 10px/1 Manrope,system-ui;box-shadow:0 0 0 2px var(--surface);animation:notification-alert-pulse 1.25s ease-in-out infinite}
-@keyframes notification-alert-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.38;transform:scale(.82)}}
-@media(prefers-reduced-motion:reduce){.notification-badge{animation:none}}
+.notification-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#f28c18;color:#fff;font:700 10px/1 Manrope,system-ui;box-shadow:0 0 0 2px var(--surface)}
 .sidebar nav .notification-badge{margin-left:auto;box-shadow:0 0 0 2px var(--cda-navy)}
 .sidebar nav a.active .notification-badge{box-shadow:0 0 0 2px var(--cda-blue)}
 .notification-button{position:relative}
