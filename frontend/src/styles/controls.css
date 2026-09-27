@@ -440,6 +440,21 @@ button:disabled{background:#CBD5E1;color:var(--text-secondary);opacity:1}
   .mobile-bottom-nav a:hover{text-decoration:none}
 }
 
+/* Installed web app and native app navigation: compact floating pill. */
+@media(max-width:767px){
+  .mobile-bottom-nav.mobile-bottom-nav-floating{right:auto;bottom:max(10px,env(safe-area-inset-bottom));left:50%;width:calc(100% - 24px);max-width:430px;display:flex;align-items:center;justify-content:space-between;gap:3px;padding:6px;transform:translateX(-50%);border:1px solid rgba(255,255,255,.16);border-radius:999px;background:var(--cda-navy);box-shadow:0 10px 30px rgba(2,32,71,.28);backdrop-filter:blur(18px)}
+  .mobile-bottom-nav.mobile-bottom-nav-floating a{flex:0 0 44px;min-width:44px;min-height:44px;padding:0 10px;flex-direction:row;gap:6px;border-radius:999px;color:white;font-size:11px;transition:flex-basis .16s ease,background-color .16s ease,color .16s ease}
+  .mobile-bottom-nav.mobile-bottom-nav-floating a span{display:none;white-space:nowrap}
+  .mobile-bottom-nav.mobile-bottom-nav-floating a.active{flex:1 1 auto;max-width:112px;background:white;color:var(--cda-navy)}
+  .mobile-bottom-nav.mobile-bottom-nav-floating a.active span{display:inline}
+  .mobile-bottom-nav.mobile-bottom-nav-floating a svg{width:20px;height:20px;flex:none}
+}
+
+@media(max-width:340px){
+  .mobile-bottom-nav.mobile-bottom-nav-floating{width:calc(100% - 12px);gap:1px;padding:5px}
+  .mobile-bottom-nav.mobile-bottom-nav-floating a{flex-basis:40px;min-width:40px;padding-inline:8px}
+}
+
 @media(max-width:767px){
   .communities-section{margin-top:8px}
 }

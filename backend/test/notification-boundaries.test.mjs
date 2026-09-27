@@ -89,6 +89,18 @@ test('persisted notification history and server read state are used',async()=>{
   assert.match(routes,/This content is no longer available\./);
 });
 
+test('call signalling preserves media mode and supports ringing, decline and cancellation',async()=>{
+  const socket=await readFile(new URL('../src/socket.ts',import.meta.url),'utf8');
+  const chat=await readFile(new URL('../src/routes/chat.ts',import.meta.url),'utf8');
+  assert.match(socket,/mode:callMode/);
+  assert.match(socket,/call:decline/);
+  assert.match(socket,/call:cancelled/);
+  assert.match(socket,/call:answered/);
+  assert.match(socket,/CallerName/);
+  assert.match(chat,/calls\/ice/);
+  assert.match(chat,/Cache-Control','private, no-store/);
+});
+
 test('join checks do not open notification queue connections before a request is created',async()=>{
   const source=await readFile(new URL('../src/services/communityJoin.ts',import.meta.url),'utf8');
   const routes=await readFile(new URL('../src/routes/communities.ts',import.meta.url),'utf8');

@@ -8,7 +8,7 @@ Object.assign(process.env,{NODE_ENV:'test',DB_SERVER:'localhost',DB_NAME:'test',
 const {accountRouter}=await import('../dist/routes/account.js');
 const hash=await bcrypt.hash('CorrectPassword1!',4),viewer='a9b1c630-0be5-426c-b145-578eb4da9181',target='bd6c205a-8085-4236-a5ac-d476f0b03cec';
 let queries=[],mode='default';
-const pool={connected:true,request(){const params={};return{input(k,_type,value){params[k]=value;return this},async query(query){queries.push({query,params});if(mode==='duplicate'&&query.includes('MERGE AccountSettings'))throw{number:2601};if(query.startsWith('SELECT PasswordHash'))return{recordset:[{PasswordHash:hash}]};if(query.includes('COALESCE(a.AllowFollowers'))return{recordset:mode==='denied'?[]:[{Id:target,AllowFollowers:false,ShowOnlineStatus:false}]};return{recordset:[]}}}}};
+const pool={connected:true,request(){const params={};return{input(k,_type,value){params[k]=value;return this},async query(query){queries.push({query,params});if(mode==='duplicate'&&query.includes('MERGE AccountSettings'))throw{number:2601};if(query.startsWith('SELECT IsProtectedAccount'))return{recordset:[{IsProtectedAccount:mode==='protected'}]};if(query.startsWith('SELECT PasswordHash'))return{recordset:[{PasswordHash:hash}]};if(query.includes('COALESCE(a.AllowFollowers'))return{recordset:mode==='denied'?[]:[{Id:target,AllowFollowers:false,ShowOnlineStatus:false}]};return{recordset:[]}}}}};
 const connect=sql.ConnectionPool.prototype.connect;sql.ConnectionPool.prototype.connect=async()=>pool;
 const app=express();app.use(express.json());app.use((req,_res,next)=>{req.user={id:viewer,email:'member@example.com'};next()});app.use(accountRouter);app.use((e,_req,res,_next)=>res.status(e.status??(e.name==='ZodError'?400:500)).json({error:e.message||'failure'}));
 const server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));const base='http://127.0.0.1:'+server.address().port;
@@ -32,8 +32,11 @@ test('legacy email endpoint cannot bypass the staged verification flow',async()=
  queries=[];assert.equal((await call('/account/email','PUT',{email:'new@example.com',password:'CorrectPassword1!'})).status,404);assert.equal(queries.length,0);
 });
 test('deactivation checks password before revoking devices and sessions',async()=>{
- queries=[];assert.equal((await call('/account/deactivate','POST',{password:'wrong'})).status,400);assert.equal(queries.length,1);
+ queries=[];assert.equal((await call('/account/deactivate','POST',{password:'wrong'})).status,400);assert.equal(queries.length,2);
  assert.equal((await call('/account/deactivate','POST',{password:'CorrectPassword1!'})).status,200);assert.ok(queries.at(-1).query.includes("AccountStatus='DEACTIVATED'"));assert.ok(queries.at(-1).query.includes('DELETE FROM UserDevices'));
+});
+test('protected super-admin cannot deactivate the account',async()=>{
+ mode='protected';queries=[];const response=await call('/account/deactivate','POST',{password:'CorrectPassword1!'});assert.equal(response.status,403);assert.equal(queries.length,1);assert.ok(!queries.some(q=>q.query.includes("AccountStatus='DEACTIVATED'")));mode='default';
 });
 test('data export scopes queries to the signed-in user and excludes authentication secrets',async()=>{
  queries=[];const response=await call('/account/export');assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.ok(queries.every(q=>q.params.u===viewer));assert.ok(queries.every(q=>!/(PasswordHash|UserSessions|TwoFactorSecret|SELECT \* FROM Users)/i.test(q.query)));

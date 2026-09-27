@@ -3,3 +3,5 @@
 .app .profile-tab-content .member-activity-content{padding:0;max-width:none;margin:0}
 
 .activity-statistics{margin:0 0 16px;font-size:.875rem;color:var(--muted,#64748b)}.activity-statistics summary{cursor:pointer}.activity-statistics p{display:flex;flex-wrap:wrap;gap:8px 20px}.activity-statistics strong{color:var(--text,#111827)}
+
+.activity-entry-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}.activity-entry-heading strong{min-width:0;overflow-wrap:anywhere}.activity-entry-heading time{flex:none;color:#75849c;font-size:10px;white-space:nowrap}@media(max-width:600px){.activity-timeline article{flex-wrap:nowrap}.activity-entry-heading{gap:6px}.activity-entry-heading time{font-size:9px}}

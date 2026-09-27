@@ -64,7 +64,8 @@ const schema = z.object({
   SMS_CODE_EXPIRES_MINUTES: z.coerce.number().int().min(2).max(30).default(10),
   SMS_RESEND_SECONDS: z.coerce.number().int().min(30).max(600).default(60),
   ALLOW_PHONE_VERIFICATION_BYPASS: z.string().default('false').transform(v => v === 'true'),
-  EMERGENCY_BATCH_SIZE: z.coerce.number().default(1000)
+  EMERGENCY_BATCH_SIZE: z.coerce.number().default(1000),
+  RTC_ICE_SERVERS: z.string().default('[{"urls":"stun:stun.l.google.com:19302"}]')
 });
 
 export const env = schema.parse(process.env);

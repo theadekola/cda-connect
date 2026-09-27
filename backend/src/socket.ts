@@ -83,26 +83,40 @@ export function configureSocket(io: Server) {
       } catch (e) { console.error(e); ack?.({ ok: false, error: 'Unable to send message' }); }
     });
 
-    socket.on('call:join', async ({ conversationId }, ack) => {
+    socket.on('call:join', async ({ conversationId, mode }, ack) => {
       try {
+        const callMode=mode==='video'?'video':'audio';
+        if(socket.data.callConversationId&&socket.data.callConversationId!==conversationId)return ack?.({ok:false,error:'End the current call first'});
+        const callAttempt=(socket.data.callJoinVersion??0)+1;socket.data.callJoinVersion=callAttempt;
         await requireConversationContact(user.id,String(conversationId),'call');
         await requireCallParticipants(user.id,String(conversationId));
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
           .query("SELECT 1 ok FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId=@u AND cm.IsActive=1 AND membership.Status='ACTIVE'");
         if (!member.recordset[0]) return ack?.({ ok: false, error: 'Forbidden' });
+        if(socket.data.callJoinVersion!==callAttempt)return ack?.({ok:false,error:'Call cancelled'});
         const room = `call:${conversationId}`;
         const peers = [...(io.sockets.adapter.rooms.get(room) ?? [])];
         socket.join(room);
         socket.data.callConversationId = conversationId;
+        if(peers.length)io.to(`user:${user.id}`).emit('call:answered',{conversationId});
         socket.to(room).emit('call:participant-joined', { conversationId, socketId: socket.id, userId: user.id });
         if (peers.length === 0) {
           const members = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
-            .query("SELECT cm.UserId FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId JOIN Users u ON u.Id=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId<>@u AND cm.IsActive=1 AND membership.Status='ACTIVE' AND u.AccountStatus='ACTIVE'");
-          for (const member of members.recordset) if(await allowCall(member.UserId)) io.to(`user:${member.UserId}`).emit('call:incoming', { conversationId, callerUserId: user.id });
+            .query("SELECT cm.UserId,CONCAT(caller.FirstName,' ',caller.LastName) CallerName,cv.Name ConversationName FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId JOIN Users recipient ON recipient.Id=cm.UserId JOIN Users caller ON caller.Id=@u WHERE cm.ConversationId=@cv AND cm.UserId<>@u AND cm.IsActive=1 AND membership.Status='ACTIVE' AND recipient.AccountStatus='ACTIVE'");
+          if(socket.data.callJoinVersion!==callAttempt)return ack?.({ok:false,error:'Call cancelled'});
+          const invitees:string[]=[];
+          for (const member of members.recordset) if(await allowCall(member.UserId)){invitees.push(member.UserId);io.to(`user:${member.UserId}`).emit('call:incoming',{conversationId,callerUserId:user.id,callerName:member.CallerName,conversationName:member.ConversationName,mode:callMode})}
+          socket.data.callInvitees=invitees;
         }
         ack?.({ ok: true, socketId: socket.id, peers });
       } catch (e) { console.error(e); ack?.({ ok: false, error: 'Unable to join call' }); }
+    });
+
+    socket.on('call:decline', async ({conversationId}) => {
+      try{await requireConversationContact(user.id,String(conversationId),'call');await requireCallParticipants(user.id,String(conversationId))}catch{return}
+      io.to(`call:${conversationId}`).emit('call:declined',{conversationId,userId:user.id});
+      io.to(`user:${user.id}`).emit('call:answered',{conversationId});
     });
 
     socket.on('call:signal', async ({ conversationId, targetSocketId, signal }) => {
@@ -115,14 +129,17 @@ export function configureSocket(io: Server) {
     });
 
     socket.on('call:leave', ({ conversationId }) => {
+      socket.data.callJoinVersion=(socket.data.callJoinVersion??0)+1;
       const room = `call:${conversationId}`;
       socket.leave(room);
       socket.data.callConversationId = undefined;
       socket.to(room).emit('call:participant-left', { conversationId, socketId: socket.id });
+      for(const invitee of socket.data.callInvitees??[])io.to(`user:${invitee}`).emit('call:cancelled',{conversationId});
+      socket.data.callInvitees=undefined;
     });
 
     socket.on('disconnect', async () => {
-      if(socket.data.callConversationId)socket.to(`call:${socket.data.callConversationId}`).emit('call:participant-left',{conversationId:socket.data.callConversationId,socketId:socket.id});
+      if(socket.data.callConversationId){socket.to(`call:${socket.data.callConversationId}`).emit('call:participant-left',{conversationId:socket.data.callConversationId,socketId:socket.id});for(const invitee of socket.data.callInvitees??[])io.to(`user:${invitee}`).emit('call:cancelled',{conversationId:socket.data.callConversationId})}
       for(const conversationId of activeConversations)await redis.srem(`presence:conversation:${conversationId}:user:${user.id}`,socket.id);
       await redis.srem(`presence:user:${user.id}:sockets`, socket.id);
       const count = await redis.scard(`presence:user:${user.id}:sockets`);

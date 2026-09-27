@@ -6,11 +6,12 @@ import {z} from 'zod';
 import bcrypt from 'bcryptjs';
 import {getPool,sql} from '../config/db.js';
 import {asyncHandler,AppError} from '../utils/errors.js';
+import {assertAccountCanClose} from '../services/accountProtection.js';
 
 export const accountRouter=Router();
 accountRouter.get('/account',asyncHandler(async(req,res)=>{
  const pool=await getPool();
- const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT u.Id,u.FirstName,u.LastName,u.Email,u.Phone,u.DateOfBirth,u.Address,u.Country,u.State,u.LGA,u.Postcode,u.ProfileImage,u.CreatedAt,u.AccountStatus,a.Username,COALESCE(a.PrivateAccount,1) PrivateAccount,COALESCE(a.AllowFollowers,0) AllowFollowers,COALESCE(a.EmailUpdates,0) EmailUpdates,COALESCE(a.PersonalizedExperience,1) PersonalizedExperience,COALESCE(p.ShowOnlineStatus,1) ShowOnlineStatus FROM Users u LEFT JOIN AccountSettings a ON a.UserId=u.Id LEFT JOIN PrivacyPreferences p ON p.UserId=u.Id WHERE u.Id=@u`);
+ const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT u.Id,u.FirstName,u.LastName,u.Email,u.Phone,u.DateOfBirth,u.Address,u.Country,u.State,u.LGA,u.Postcode,u.ProfileImage,u.CreatedAt,u.AccountStatus,u.IsSuperAdmin,u.IsProtectedAccount,a.Username,COALESCE(a.PrivateAccount,1) PrivateAccount,COALESCE(a.AllowFollowers,0) AllowFollowers,COALESCE(a.EmailUpdates,0) EmailUpdates,COALESCE(a.PersonalizedExperience,1) PersonalizedExperience,COALESCE(p.ShowOnlineStatus,1) ShowOnlineStatus FROM Users u LEFT JOIN AccountSettings a ON a.UserId=u.Id LEFT JOIN PrivacyPreferences p ON p.UserId=u.Id WHERE u.Id=@u`);
  res.json(r.recordset[0]);
 }));
 accountRouter.put('/account/username',asyncHandler(async(req,res)=>{
@@ -29,6 +30,7 @@ accountRouter.get('/account/export',asyncHandler(async(req,res)=>{
 }));
 accountRouter.post('/account/deactivate',asyncHandler(async(req,res)=>{
  const {password}=z.object({password:z.string().min(1)}).parse(req.body),pool=await getPool();
+ await assertAccountCanClose(req.user!.id,pool);
  const r=await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query('SELECT PasswordHash FROM Users WHERE Id=@u');
  if(!r.recordset[0]||!await bcrypt.compare(password,r.recordset[0].PasswordHash))throw new AppError(400,'Current password is incorrect');
  await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query(`SET XACT_ABORT ON;BEGIN TRANSACTION;UPDATE Users SET AccountStatus='DEACTIVATED',UpdatedAt=SYSUTCDATETIME() WHERE Id=@u;DELETE FROM UserSessions WHERE UserId=@u;DELETE FROM UserDevices WHERE UserId=@u;IF OBJECT_ID('WebPushSubscriptions','U') IS NOT NULL DELETE FROM WebPushSubscriptions WHERE UserId=@u;COMMIT;`);

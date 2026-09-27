@@ -214,5 +214,15 @@
     "version": "0043",
     "file": "workflow-integrity.sql",
     "sha256": "d648694588d7f158da05d3b79563d398835ada2d40f5d9d3ed8e807595855db3"
+  },
+  {
+    "version": "0044",
+    "file": "audit-identifiers.sql",
+    "sha256": "8154744dfea1b060c7de64e028a77b98b146ee56ed93d9bc4d2484fc9a2da682"
+  },
+  {
+    "version": "0045",
+    "file": "protected-super-admin.sql",
+    "sha256": "e0ddb90c6d622286e3afe7781111b564e2897388d953f59b911ddcc731a7b276"
   }
 ]
