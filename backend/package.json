@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "worker": "tsx watch src/workers/worker.ts",
-    "worker:start": "node dist/workers/worker.js"
+    "worker:start": "node dist/workers/worker.js",
+    "setup:super-admin": "node scripts/setup-super-admin.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",

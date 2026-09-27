@@ -22,3 +22,14 @@ test('audit views use numeric identifiers and exclude authentication and evidenc
  const views=sql.slice(sql.indexOf('CREATE OR ALTER VIEW dbo.AuditUsers'));
  assert.doesNotMatch(views,/PasswordHash|TwoFactorSecret|EvidenceUrl/);
 });
+
+test('audit access migration masks PII and separates sensitive audit roles',async()=>{
+ const sql=await readFile(new URL('../sql/super-admin-security-v2.sql',import.meta.url),'utf8');
+ const masked=sql.slice(sql.indexOf('CREATE OR ALTER VIEW dbo.AuditUsers'),sql.indexOf('CREATE OR ALTER VIEW dbo.AuditUserPII'));
+ assert.doesNotMatch(masked,/u\.Email(?:,|\s)|u\.Phone(?:,|\s)|u\.Address(?:,|\s)|u\.DateOfBirth(?:,|\s)/);
+ assert.match(sql,/CREATE OR ALTER VIEW dbo\.AuditUserPII/);
+ assert.match(sql,/CREATE OR ALTER VIEW dbo\.AuditSecurity/);
+ for(const role of ['cda_platform_audit_reader','cda_user_pii_reader','cda_finance_audit_reader','cda_security_audit_reader'])assert.match(sql,new RegExp(role));
+ assert.match(sql,/REVOKE SELECT ON dbo\.AuditContributions FROM cda_audit_reader/);
+ assert.doesNotMatch(sql,/PasswordHash|RefreshTokenHash|TwoFactorSecret|EvidenceUrl/);
+});

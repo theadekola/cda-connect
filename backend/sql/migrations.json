@@ -223,6 +223,23 @@
   {
     "version": "0045",
     "file": "protected-super-admin.sql",
-    "sha256": "e0ddb90c6d622286e3afe7781111b564e2897388d953f59b911ddcc731a7b276"
+    "sha256": "0a3d6374ab3c2b15a4ff8d5cb76c0b47f0da62dfc1ab1378a74362ebc340216b",
+    "supersededBy": "0047"
+  },
+  {
+    "version": "0046",
+    "file": "audit-access-boundaries.sql",
+    "sha256": "0d7fd3a92e5c8599493eeef3119625bff072582103cdfa05a09f57e64d31b31a",
+    "supersededBy": "0047"
+  },
+  {
+    "version": "0047",
+    "file": "super-admin-security-v2.sql",
+    "sha256": "cc25e86f6a42e50aaab47f4a898ce80e549966827d605e9bc3884bd3cad932af"
+  },
+  {
+    "version": "0048",
+    "file": "super-admin-dashboard-security.sql",
+    "sha256": "5a3f8291e25c1ee467586d112f8452bcf966b9feb834bdcfbb653b1a3e39debe"
   }
 ]

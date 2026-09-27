@@ -6,6 +6,7 @@
 !**/.env.production.example
 **/.npm-cache/
 **/.tmp/
+**/.test-tmp/
 .corepack-cache/
 .chrome-test/
 work/
@@ -14,6 +15,16 @@ release/
 *.bak
 *.trn
 *.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+**/playwright/.auth/
+**/storage-state*.json
+**/storageState*.json
+**/credentials*.json
+**/*service-account*.json
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/private-uploads/
@@ -22,6 +33,8 @@ deploy/secrets/
 .pnpm-store/
 frontend/test-results/
 frontend/playwright-report/
+frontend/.playwright-tmp/
+**/.playwright-tmp/
 
 # Native push configuration is supplied per environment.
 frontend/android/app/google-services.json

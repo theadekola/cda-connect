@@ -83,9 +83,9 @@ authRouter.post('/login/two-factor',asyncHandler(async(req,res)=>{const d=z.obje
 
 authRouter.post('/password-reset/request',asyncHandler(async(req,res)=>{
   const email=z.object({email:z.string().trim().toLowerCase().email().max(255)}).parse(req.body).email,pool=await getPool();
-  const result=await pool.request().input('email',sql.NVarChar(255),email).query("SELECT TOP 1 Id,Email FROM Users WHERE Email=@email AND AccountStatus='ACTIVE'");
+  const result=await pool.request().input('email',sql.NVarChar(255),email).query("SELECT TOP 1 Id,Email,IsProtectedAccount FROM Users WHERE Email=@email AND AccountStatus='ACTIVE'");
   const user=result.recordset[0];
-  if(!user)return res.status(202).json({success:true,expiresInSeconds:env.SMS_CODE_EXPIRES_MINUTES*60,resendAfterSeconds:env.SMS_RESEND_SECONDS,resetToken:jwt.sign({purpose:'password-reset-unavailable'},env.JWT_ACCESS_SECRET,{expiresIn:'10m'})});
+  if(!user||user.IsProtectedAccount)return res.status(202).json({success:true,expiresInSeconds:env.SMS_CODE_EXPIRES_MINUTES*60,resendAfterSeconds:env.SMS_RESEND_SECONDS,resetToken:jwt.sign({purpose:'password-reset-unavailable'},env.JWT_ACCESS_SECRET,{expiresIn:'10m'})});
   const recent=await pool.request().input('uid',sql.UniqueIdentifier,user.Id).input('purpose',sql.NVarChar(30),'password-reset').query('SELECT TOP 1 CreatedAt FROM TwoFactorChallenges WHERE UserId=@uid AND Purpose=@purpose AND ConsumedAt IS NULL ORDER BY CreatedAt DESC');
   if(recent.recordset[0]){const wait=env.SMS_RESEND_SECONDS-Math.floor((Date.now()-new Date(recent.recordset[0].CreatedAt).getTime())/1000);if(wait>0)throw new AppError(429,`Please wait ${wait} seconds before requesting another code`)}
   const code=crypto.randomInt(100000,1000000).toString(),expires=new Date(Date.now()+env.SMS_CODE_EXPIRES_MINUTES*60000);
@@ -101,7 +101,7 @@ authRouter.post('/password-reset/complete',asyncHandler(async(req,res)=>{
   const d=z.object({resetToken:z.string().min(1),code:z.string().regex(/^\d{6}$/),newPassword:z.string().min(8).max(200).regex(/[A-Z]/,'Password requires an uppercase letter').regex(/[a-z]/,'Password requires a lowercase letter').regex(/\d/,'Password requires a number').regex(/[^A-Za-z0-9]/,'Password requires a special character')}).parse(req.body);
   let challenge:{purpose?:string;id?:string;challengeId?:string};try{challenge=jwt.verify(d.resetToken,env.JWT_ACCESS_SECRET) as typeof challenge}catch{throw new AppError(400,'Reset code has expired. Request a new code')}
   if(challenge.purpose!=='password-reset'||!challenge.id||!challenge.challengeId)throw new AppError(400,'Reset code is invalid or expired');
-  const pool=await getPool();await verifySmsChallenge(pool,challenge.id,challenge.challengeId,'password-reset',d.code);
+  const pool=await getPool(),target=(await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).query("SELECT IsProtectedAccount FROM Users WHERE Id=@uid AND AccountStatus='ACTIVE'")).recordset[0];if(!target||target.IsProtectedAccount)throw new AppError(403,'Protected Super Admin password recovery requires the audited account security workflow');await verifySmsChallenge(pool,challenge.id,challenge.challengeId,'password-reset',d.code);
   const passwordHash=await bcrypt.hash(d.newPassword,12);
   await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).input('hash',sql.NVarChar(500),passwordHash).query("UPDATE Users SET PasswordHash=@hash,PasswordChangedAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid AND AccountStatus='ACTIVE'; UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RevokedAt IS NULL");
   res.json({success:true});

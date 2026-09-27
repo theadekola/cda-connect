@@ -8,20 +8,6 @@ IF COL_LENGTH('dbo.Users','IsProtectedAccount') IS NULL
 
 GO
 
-DECLARE @protectedUserId UNIQUEIDENTIFIER;
-SELECT @protectedUserId=Id
-FROM dbo.Users
-WHERE LOWER(Email)=N'adekola750@outlook.com';
-
-IF @protectedUserId IS NULL
- THROW 51000,'The protected super-admin account adekola750@outlook.com was not found',1;
-
-UPDATE dbo.Users
-SET IsSuperAdmin=1,IsProtectedAccount=1,AccountStatus='ACTIVE',UpdatedAt=SYSUTCDATETIME()
-WHERE Id=@protectedUserId;
-
-GO
-
 CREATE OR ALTER TRIGGER dbo.TR_Users_ProtectSuperAdmin
 ON dbo.Users
 AFTER UPDATE,DELETE

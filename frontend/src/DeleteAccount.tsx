@@ -1,9 +1,9 @@
 import {useState,type FormEvent} from 'react';
-import {Link,useNavigate} from 'react-router-dom';
-import {useQueryClient} from '@tanstack/react-query';
+import {Link,Navigate,useNavigate} from 'react-router-dom';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {Trash2,UserRound,Users,MessageCircle,CalendarDays,FileText,Lightbulb,LockKeyhole,Eye,EyeOff} from 'lucide-react';
-import {api,session} from './api';
-import {ErrorBox} from './ui';
+import {api,session,type RecordData} from './api';
+import {ErrorBox,Loading} from './ui';
 
 const effects=[
  [UserRound,'Your personal profile will be removed','Your name and contact details are cleared and your profile and cover images are unlinked.'],
@@ -14,7 +14,11 @@ const effects=[
 ] as const;
 export function DeleteAccount(){
  const [password,setPassword]=useState(''),[visible,setVisible]=useState(false),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>();const nav=useNavigate(),qc=useQueryClient();
+ const account=useQuery({queryKey:['/users/account'],queryFn:()=>api.get<RecordData>('/users/account')});
  async function submit(e:FormEvent){e.preventDefault();if(busy||!password||!confirmed)return;setBusy(true);setError(undefined);try{await api.send('/me/delete-account',{password,confirmation:'DELETE'});setPassword('');setConfirmed(false);session.set(null);qc.clear();nav('/login',{replace:true})}catch(e){setError(e);setBusy(false)}}
+ if(account.isPending)return <Loading/>;
+ if(account.error)return <ErrorBox error={account.error}/>;
+ if(account.data.IsProtectedAccount)return <Navigate to="/settings/support" replace/>;
  return <div className="delete-account"><p>We’re sorry to see you go. Please read the information below before deleting your account.</p>
  <section className="delete-account-warning"><Trash2 size={48}/><div><h2>This action cannot be undone</h2><p>Deleting your account permanently removes your personal profile and prevents future access to this account. Read below to understand what is removed and retained.</p></div></section>
  <section className="settings-group"><h2>What happens when you delete your account?</h2><div className="settings-list">{effects.map(([Icon,title,text])=><div className="settings-row delete-effect" key={title}><span className="settings-row-icon"><Icon size={22}/></span><span className="settings-row-text"><strong>{title}</strong><small>{text}</small></span></div>)}</div></section>

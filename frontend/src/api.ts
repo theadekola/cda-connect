@@ -1,7 +1,7 @@
 import {Capacitor} from '@capacitor/core';
 import {resolveAssetUrl} from './assetUrl';
 export type RecordData=Record<string,unknown>;
-export type User={Id:string;FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string};
+export type User={Id:string;FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string;IsSuperAdmin?:boolean;IsProtectedAccount?:boolean};
 export type Session={accessToken:string;user:User};
 // Credentials live only in memory. The refresh credential is an HttpOnly cookie.
 try{sessionStorage.removeItem('cda-connect-session');localStorage.removeItem('cda-connect-session')}catch{}
