@@ -12,6 +12,10 @@ const platform=fs.readFileSync(new URL('../src/routes/platform.ts',import.meta.u
 const middleware=fs.readFileSync(new URL('../src/middleware/superAdmin.ts',import.meta.url),'utf8');
 const router=fs.readFileSync(new URL('../src/routes/superAdmin.ts',import.meta.url),'utf8');
 const app=fs.readFileSync(new URL('../src/app.ts',import.meta.url),'utf8');
+const moderationMigration=fs.readFileSync(new URL('../sql/platform-moderation-controls.sql',import.meta.url),'utf8');
+const platformGuard=fs.readFileSync(new URL('../src/middleware/communityPlatformStatus.ts',import.meta.url),'utf8');
+const socket=fs.readFileSync(new URL('../src/socket.ts',import.meta.url),'utf8');
+const worker=fs.readFileSync(new URL('../src/workers/worker.ts',import.meta.url),'utf8');
 
 test('normal migration creates protection structures without personal bootstrap data',()=>{
  assert.doesNotMatch(migration,/@outlook\.com|@gmail\.com/i);
@@ -76,4 +80,25 @@ test('super-admin uses dedicated database-backed authorization and no community 
 test('attendance requires owner/admin or an explicitly assigned permission',()=>{
  assert.match(permissions,/p\.Code=@p OR community\.OwnerUserId=@u OR r\.Name IN \('Owner','Admin'\)/);
  assert.doesNotMatch(permissions,/EXISTS\(SELECT 1 FROM CommunityMembers WHERE UserId=@u AND CommunityId=@c AND Status='ACTIVE'\)/);
+});
+
+test('dangerous account actions require confirmation, protect administrators, audit, notify and revoke access',()=>{
+ assert.match(router,/reason:z\.string\(\)\.trim\(\)\.min\(8\)\.max\(1000\)/);
+ assert.match(router,/You cannot suspend or reactivate your own account/);
+ assert.match(router,/SUPER_ADMIN_MANAGE/);
+ assert.match(router,/previousStatus:target\.AccountStatus,newStatus:body\.status/);
+ assert.match(router,/sendEmailRecipient/);
+ assert.match(router,/disconnectUserSockets\(id\)/);
+ assert.match(router,/DELETE UserDevices WHERE UserId=@id/);
+});
+
+test('community lifecycle is migrated and enforced across HTTP, sockets and notification workers',()=>{
+ for(const column of ['PlatformStatus','SuspendedAt','SuspendedBy','SuspensionReason','UpdatedAt'])assert.match(moderationMigration,new RegExp(column));
+ assert.match(moderationMigration,/ACTIVE','RESTRICTED','SUSPENDED','ARCHIVED/);
+ assert.match(router,/patch\('\/communities\/:communityId\/status'/);
+ assert.match(router,/SUPER_ADMIN_COMMUNITY_STATUS_CHANGED/);
+ assert.match(platformGuard,/COMMUNITY_PLATFORM_RESTRICTED/);
+ assert.match(socket,/community\.PlatformStatus='ACTIVE'/);
+ assert.match(worker,/COMMUNITY_'\+platform\.PlatformStatus/);
+ assert.equal(manifest.find(item=>item.version==='0049')?.file,'platform-moderation-controls.sql');
 });

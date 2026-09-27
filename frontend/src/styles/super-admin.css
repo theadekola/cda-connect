@@ -3,3 +3,8 @@
 @media(max-width:520px){.admin-content{padding-left:10px;padding-right:10px}.admin-panel,.admin-metrics article{padding:14px}.admin-topbar small{display:none}.admin-topbar h1{font-size:1rem}.admin-hero h2{font-size:1.35rem}}
 
 .admin-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.admin-success{position:sticky;top:88px;z-index:12;background:#eaf8ef;border:1px solid #a9d7b8;border-radius:12px;padding:12px 16px;margin:0}
+.admin-protected-notice,.admin-confirm-target{background:#f4f8fc;border:1px solid #d7e3ef;border-radius:10px;padding:12px}
+.admin-modal-backdrop{position:fixed;inset:0;z-index:100;background:#001a33aa;display:grid;place-items:center;padding:16px}
+.admin-modal{width:min(560px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:#fff;border-radius:18px;padding:24px;box-shadow:0 24px 80px #001a3355}
+.admin-modal h2{margin-bottom:8px}.admin-modal textarea,.admin-modal input{width:100%}.admin-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}

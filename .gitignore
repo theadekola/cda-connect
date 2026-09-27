@@ -35,6 +35,8 @@ frontend/test-results/
 frontend/playwright-report/
 frontend/.playwright-tmp/
 **/.playwright-tmp/
+frontend/.playwright-browsers/
+**/.playwright-browsers/
 
 # Native push configuration is supplied per environment.
 frontend/android/app/google-services.json

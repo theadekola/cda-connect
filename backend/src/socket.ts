@@ -7,7 +7,12 @@ import { getPool, sql } from './config/db.js';
 import { getRedis } from './config/redis.js';
 import { enqueueCommunityNotification } from './queues/index.js';
 
+let activeSocketServer:Server|undefined;
+export function disconnectUserSockets(userId:string){activeSocketServer?.in(`user:${userId}`).disconnectSockets(true)}
+export function disconnectCommunitySockets(communityId:string){activeSocketServer?.in(`community:${communityId}`).disconnectSockets(true)}
+
 export function configureSocket(io: Server) {
+  activeSocketServer=io;
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token as string;
@@ -37,6 +42,8 @@ export function configureSocket(io: Server) {
       } catch { next(new Error('unauthorized')); socket.disconnect(true); }
     });
     socket.join(`user:${user.id}`);
+    const communities=await (await getPool()).request().input('u',sql.UniqueIdentifier,user.id).query("SELECT CommunityId FROM CommunityMembers WHERE UserId=@u AND Status='ACTIVE'");
+    for(const community of communities.recordset)socket.join(`community:${community.CommunityId}`);
     const redis = getRedis();
     await redis.sadd(`presence:user:${user.id}:sockets`, socket.id);
     await redis.expire(`presence:user:${user.id}:sockets`, 3600);
@@ -47,7 +54,7 @@ export function configureSocket(io: Server) {
       try{await requireConversationContact(user.id,String(conversationId))}catch{return}
       const pool = await getPool();
       const r = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
-        .query(`SELECT 1 ok FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
+        .query(`SELECT 1 ok FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN Communities community ON community.Id=conversation.CommunityId AND community.PlatformStatus='ACTIVE' JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
       if(r.recordset[0]){socket.join(`conversation:${conversationId}`);activeConversations.add(String(conversationId));await redis.sadd(`presence:conversation:${conversationId}:user:${user.id}`,socket.id);await redis.expire(`presence:conversation:${conversationId}:user:${user.id}`,3600)}
     });
     socket.on('conversation:leave',async({conversationId})=>{socket.leave(`conversation:${conversationId}`);activeConversations.delete(String(conversationId));await redis.srem(`presence:conversation:${conversationId}:user:${user.id}`,socket.id)});
@@ -62,7 +69,7 @@ export function configureSocket(io: Server) {
         if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(d.clientMessageId))return ack?.({ok:false,error:'A valid client message ID is required'});
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id)
-          .query(`SELECT conversation.CommunityId,conversation.Name FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
+          .query(`SELECT conversation.CommunityId,conversation.Name FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN Communities community ON community.Id=conversation.CommunityId AND community.PlatformStatus='ACTIVE' JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
         if (!member.recordset[0]) return ack?.({ ok: false, error: 'Forbidden' });
         await requireConversationContact(user.id,d.conversationId);
         if(d.mediaUrl){
@@ -92,7 +99,7 @@ export function configureSocket(io: Server) {
         await requireCallParticipants(user.id,String(conversationId));
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, conversationId).input('u', sql.UniqueIdentifier, user.id)
-          .query("SELECT 1 ok FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId=@u AND cm.IsActive=1 AND membership.Status='ACTIVE'");
+          .query("SELECT 1 ok FROM ConversationMembers cm JOIN Conversations cv ON cv.Id=cm.ConversationId JOIN Communities community ON community.Id=cv.CommunityId AND community.PlatformStatus='ACTIVE' JOIN CommunityMembers membership ON membership.CommunityId=cv.CommunityId AND membership.UserId=cm.UserId WHERE cm.ConversationId=@cv AND cm.UserId=@u AND cm.IsActive=1 AND membership.Status='ACTIVE'");
         if (!member.recordset[0]) return ack?.({ ok: false, error: 'Forbidden' });
         if(socket.data.callJoinVersion!==callAttempt)return ack?.({ok:false,error:'Call cancelled'});
         const room = `call:${conversationId}`;

@@ -241,5 +241,10 @@
     "version": "0048",
     "file": "super-admin-dashboard-security.sql",
     "sha256": "5a3f8291e25c1ee467586d112f8452bcf966b9feb834bdcfbb653b1a3e39debe"
+  },
+  {
+    "version": "0049",
+    "file": "platform-moderation-controls.sql",
+    "sha256": "8ceaacf0768242ba51dbcc3504d7f16d2b850a0050e99d40b88e47f04b016bbd"
   }
 ]

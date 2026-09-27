@@ -17,6 +17,7 @@ import { platformRouter } from './routes/platform.js';
 import { safetyRouter } from './routes/safety.js';
 import { advancedRouter } from './routes/advanced.js';
 import { superAdminRouter } from './routes/superAdmin.js';
+import {requireActiveCommunityMutation} from './middleware/communityPlatformStatus.js';
 import { errorHandler, notFound } from './utils/errors.js';
 import { distributedRateLimit } from './middleware/rateLimit.js';
 import { getRedis } from './config/redis.js';
@@ -44,6 +45,7 @@ app.get('/health', async (_req, res) => {
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/super-admin', superAdminRouter);
 app.use('/api/v1/users', usersRouter);
+app.use('/api/v1',requireActiveCommunityMutation);
 app.use('/api/v1/communities', communitiesRouter);
 // Temporary media links re-check access themselves; mount before routers with global requireAuth.
 app.use('/api/v1', mediaRouter);

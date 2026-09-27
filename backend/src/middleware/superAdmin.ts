@@ -1,7 +1,7 @@
 import type {NextFunction,Request,Response} from 'express';
 import {getPool,sql} from '../config/db.js';
 
-export type SuperAdminPermission='PLATFORM_AUDIT_VIEW'|'USER_PII_VIEW'|'FINANCE_AUDIT_VIEW'|'SECURITY_AUDIT_VIEW';
+export type SuperAdminPermission='PLATFORM_AUDIT_VIEW'|'USER_PII_VIEW'|'FINANCE_AUDIT_VIEW'|'SECURITY_AUDIT_VIEW'|'SUPER_ADMIN_MANAGE'|'COMMUNITY_MANAGE';
 export type SuperAdminAccessMode='NORMAL'|'SUPPORT'|'BREAK_GLASS';
 
 async function activeSuperAdmin(userId:string){
@@ -35,6 +35,12 @@ export async function requireRecentPassword(req:Request,res:Response,next:NextFu
   if(!result.recordset[0])return res.status(401).json({error:'Confirm your password before this sensitive action',code:'RECENT_PASSWORD_REQUIRED'});
   next();
  }catch(error){next(error)}
+}
+
+export async function hasSuperAdminPermission(userId:string,permission:SuperAdminPermission){
+ const result=await (await getPool()).request().input('u',sql.UniqueIdentifier,userId).input('permission',sql.NVarChar(100),permission)
+  .query("SELECT TOP 1 1 ok FROM Users u JOIN SuperAdminPermissionAssignments p ON p.UserId=u.Id AND p.PermissionCode=@permission WHERE u.Id=@u AND u.AccountStatus='ACTIVE' AND u.IsSuperAdmin=1");
+ return Boolean(result.recordset[0]);
 }
 
 export function requireSuperAdminPermission(permission:SuperAdminPermission,minimumMode:SuperAdminAccessMode='NORMAL'){
