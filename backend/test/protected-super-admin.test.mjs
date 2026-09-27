@@ -94,7 +94,7 @@ test('dangerous account actions require confirmation, protect administrators, au
 
 test('community lifecycle is migrated and enforced across HTTP, sockets and notification workers',()=>{
  for(const column of ['PlatformStatus','SuspendedAt','SuspendedBy','SuspensionReason','UpdatedAt'])assert.match(moderationMigration,new RegExp(column));
- assert.match(moderationMigration,/ACTIVE','RESTRICTED','SUSPENDED','ARCHIVED/);
+ for(const status of ['ACTIVE','RESTRICTED','SUSPENDED','ARCHIVED'])assert.match(moderationMigration,new RegExp(`'{1,2}${status}'{1,2}`));
  assert.match(router,/patch\('\/communities\/:communityId\/status'/);
  assert.match(router,/SUPER_ADMIN_COMMUNITY_STATUS_CHANGED/);
  assert.match(platformGuard,/COMMUNITY_PLATFORM_RESTRICTED/);
