@@ -8,6 +8,7 @@ const settings=fs.readFileSync(new URL('../src/settings.tsx',import.meta.url),'u
 const admin=fs.readFileSync(new URL('../src/SuperAdminDashboard.tsx',import.meta.url),'utf8');
 const detail=fs.readFileSync(new URL('../src/SuperAdminDetail.tsx',import.meta.url),'utf8');
 const main=fs.readFileSync(new URL('../src/main.tsx',import.meta.url),'utf8');
+const account=fs.readFileSync(new URL('../src/account.tsx',import.meta.url),'utf8');
 
 test('protected super-admin does not receive the delete-account link',()=>{
  assert.match(help,/account\.isSuccess&&!account\.data\.IsProtectedAccount/);
@@ -17,6 +18,13 @@ test('protected super-admin does not receive the delete-account link',()=>{
 test('protected super-admin cannot open the delete-account page directly',()=>{
  assert.match(deletion,/if\(account\.data\.IsProtectedAccount\)return <Navigate to="\/settings\/support" replace\/>/);
  assert.match(deletion,/queryKey:\['\/users\/account'\]/);
+});
+
+test('registered email is read-only for every member and protected accounts cannot deactivate',()=>{
+ assert.match(account,/title="Registered email address"[^\n]+locked/);
+ assert.match(account,/registered email address is locked and cannot be changed/i);
+ assert.match(account,/!u\.IsProtectedAccount&&<AccountRow[^\n]+title="Deactivate account"/);
+ assert.match(account,/u\.IsProtectedAccount\?<Navigate to="\/profile\/account" replace\/>/);
 });
 
 test('only a super-admin sees the admin button and the dashboard has its own protected shell',()=>{

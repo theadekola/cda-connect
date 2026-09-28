@@ -16,6 +16,7 @@ const moderationMigration=fs.readFileSync(new URL('../sql/platform-moderation-co
 const platformGuard=fs.readFileSync(new URL('../src/middleware/communityPlatformStatus.ts',import.meta.url),'utf8');
 const socket=fs.readFileSync(new URL('../src/socket.ts',import.meta.url),'utf8');
 const worker=fs.readFileSync(new URL('../src/workers/worker.ts',import.meta.url),'utf8');
+const auth=fs.readFileSync(new URL('../src/routes/auth.ts',import.meta.url),'utf8');
 
 test('normal migration creates protection structures without personal bootstrap data',()=>{
  assert.doesNotMatch(migration,/@outlook\.com|@gmail\.com/i);
@@ -90,6 +91,13 @@ test('dangerous account actions require confirmation, protect administrators, au
  assert.match(router,/sendEmailRecipient/);
  assert.match(router,/disconnectUserSockets\(id\)/);
  assert.match(router,/DELETE UserDevices WHERE UserId=@id/);
+});
+
+test('super-admin normal login skips MFA while the protected workspace and actions require it',()=>{
+ assert.match(auth,/row\.TwoFactorEnabled&&!row\.IsSuperAdmin/);
+ assert.match(router,/superAdminRouter\.use\(requireRecentAuthentication\)/);
+ assert.match(router,/post\('\/mfa\/verify'/);
+ assert.match(middleware,/ReauthenticatedAt>=DATEADD\(minute,-10,SYSUTCDATETIME\(\)\)/);
 });
 
 test('community lifecycle is migrated and enforced across HTTP, sockets and notification workers',()=>{

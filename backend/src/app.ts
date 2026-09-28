@@ -44,8 +44,8 @@ app.get('/health', async (_req, res) => {
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/super-admin', superAdminRouter);
-app.use('/api/v1/users', usersRouter);
 app.use('/api/v1',requireActiveCommunityMutation);
+app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/communities', communitiesRouter);
 // Temporary media links re-check access themselves; mount before routers with global requireAuth.
 app.use('/api/v1', mediaRouter);

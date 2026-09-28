@@ -246,5 +246,10 @@
     "version": "0049",
     "file": "platform-moderation-controls.sql",
     "sha256": "8ceaacf0768242ba51dbcc3504d7f16d2b850a0050e99d40b88e47f04b016bbd"
+  },
+  {
+    "version": "0050",
+    "file": "registered-email-lock.sql",
+    "sha256": "0db18f66eaaba32d8b0fbae735d36c6869f128dfc8c3579c5ffcfbc1d5d65d14"
   }
 ]

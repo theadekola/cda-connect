@@ -1,5 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
-const user={Id:'11111111-1111-4111-8111-111111111111',FirstName:'Adekola',LastName:'Ayannuga',Email:'member@example.test',CreatedAt:'2026-01-01T12:00:00Z',Username:'member'};
+const user={Id:'11111111-1111-4111-8111-111111111111',FirstName:'Adekola',LastName:'Ayannuga',Email:'member@example.test',Country:'Nigeria',CreatedAt:'2026-01-01T12:00:00Z',Username:'member'};
 const community={Id:'22222222-2222-4222-8222-222222222222',Name:'Royal View CDA',Description:'Moving forward for progress',MemberCount:2,Role:'Owner'};
 async function setup(page:Page,long=false){
  await page.addInitScript(()=>{if(!localStorage.getItem("cda-analytics-consent"))localStorage.setItem("cda-analytics-consent","denied")});
@@ -143,10 +143,10 @@ for(const width of [390,768,1440])test(`community creation privacy and generated
  return r.fulfill({json,headers:{'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'}});
  });
  await page.goto('/communities/create');await expect(page.getByText('Bring your community together')).toHaveCount(0);await expect(page.getByText('Location information',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Invite code',{exact:true})).toHaveCount(0);
- await page.getByLabel('Community Name *',{exact:true}).fill('New community');await page.getByLabel('Description *',{exact:true}).fill('A welcoming community');await page.getByLabel('Community category').selectOption('Sports');await page.getByRole('combobox',{name:'Country *',exact:true}).selectOption('NG');await page.getByLabel(/State \/ Region/).selectOption('NG025');await page.getByRole('combobox',{name:'LGA *',exact:true}).selectOption('Ikeja');await page.getByLabel('Community rules',{exact:true}).fill('Be respectful');await page.getByRole('button',{name:'Next',exact:true}).click();
+ await page.getByLabel('Community Name *',{exact:true}).fill('New community');await page.getByLabel('Description *',{exact:true}).fill('A welcoming community');await page.getByLabel('Community category').selectOption('Sports');await expect(page.getByRole('combobox',{name:'Country *',exact:true})).toHaveCount(0);await page.getByLabel(/State \/ Region/).selectOption('NG025');await page.getByRole('combobox',{name:'LGA *',exact:true}).selectOption('Ikeja');await page.getByLabel('Community rules',{exact:true}).fill('Be respectful');await page.getByRole('button',{name:'Next',exact:true}).click();
  await expect(page.getByRole('switch',{name:/Private community/})).toBeChecked();await page.getByRole('switch',{name:/Public community/}).check();await expect(page.getByRole('switch',{name:/Private community/})).not.toBeChecked();
  const boxes=await page.locator('.create-footer-actions>button').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().top));expect(new Set(boxes).size).toBe(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- if(width===390)await page.screenshot({path:test.info().outputPath('community-preferences.png'),fullPage:true});await page.getByRole('button',{name:'Create Community',exact:true}).click();await expect(page.getByLabel('Invite code',{exact:true})).toHaveValue('AABBCCDDEEFF0011');expect(payload.isPrivate).toBe(false);expect(payload.joinCode).toBeUndefined();expect(payload.category).toBe('Sports');
+ if(width===390)await page.screenshot({path:test.info().outputPath('community-preferences.png'),fullPage:true});await page.getByRole('button',{name:'Create Community',exact:true}).click();await expect(page.getByLabel('Invite code',{exact:true})).toHaveValue('AABBCCDDEEFF0011');expect(payload.isPrivate).toBe(false);expect(payload.joinCode).toBeUndefined();expect(payload.category).toBe('Sports');expect(payload.countryCode).toBeUndefined();expect(payload.country).toBeUndefined();
 });
 
 for(const width of [390,412,1440])test(`feed announcement navigation and actual photos at ${width}px`,async({page,context})=>{
@@ -307,7 +307,7 @@ for(const width of [390,768,1440])test(`finance bank directory and evidence revi
  await setup(page);await page.setViewportSize({width,height:900});
  const headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};let action='',savedBank='',savedAmount=0;
  await page.route('**/api/v1/communities/*/finance/**',async r=>{const path=new URL(r.request().url()).pathname;let json:any={};
- if(path.endsWith('/me'))json={canReviewPayments:true,canManageLevies:true,canManageBank:true,dues:[],receipts:[]};
+ if(path.endsWith('/me'))json={canReviewPayments:true,canManageLevies:true,canManageBank:true,communityCountry:'Nigeria',currencyCode:'NGN',dues:[],receipts:[]};
  else if(path.endsWith('/unpaid-members'))json=[{Id:'unpaid',UserId:'member-two',FirstName:'Unpaid',LastName:'Member',PlanName:'Building levy',CurrencyCode:'NGN',AmountDue:10000,AmountPaid:1000}];
  else if(path.endsWith('/payment-submissions'))json=[{Id:'submission',UserId:user.Id,FirstName:'Test',LastName:'Member',PlanName:'Building levy',CurrencyCode:'NGN',Amount:10000,PaymentMethod:'BANK_TRANSFER',Reference:'BANK-001',SubmittedAt:'2026-09-17T10:00:00Z',Status:action?'APPROVED':'PENDING',EvidenceUrl:'levy-evidence:proof'}];
  else if(path.endsWith('/evidence/proof'))return r.fulfill({headers,contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')});
@@ -327,7 +327,9 @@ for(const width of [390,768,1440])test(`finance bank directory and evidence revi
  await expect(page.getByRole('link',{name:'Test Member'})).toHaveAttribute('href','/member/'+user.Id);
  await page.getByRole('button',{name:'Approve',exact:true}).click();await expect.poll(()=>action).toBe('APPROVE');
  await page.getByRole('button',{name:'Bank transfer details',exact:true}).click();
- await page.getByLabel('Bank country').selectOption('NG');
+ await expect(page.getByLabel('Bank country')).toHaveCount(0);
+ await expect(page.getByLabel('Community currency')).toHaveCount(0);
+ await expect(page.getByText('NGN',{exact:true})).toBeVisible();
  await expect(page.getByLabel('Bank Name').locator('option')).not.toHaveCount(1);
  await page.getByLabel('Bank Name').selectOption('__other');await page.getByLabel('Bank Name').fill('Community bank');
  await page.getByLabel('Account Name',{exact:true}).fill('Royal View CDA');await page.getByLabel('Account Number',{exact:true}).fill('0123456789');await page.getByRole('button',{name:'Save bank details'}).click();await expect.poll(()=>savedBank).toBe('Community bank');
