@@ -35,23 +35,34 @@ const contentLookups:Record<string,string>={
  announcement:'SELECT c.PlatformStatus FROM Announcements e JOIN Communities c ON c.Id=e.CommunityId WHERE e.Id=@id'
 };
 
-function directCommunityId(req:Request){
+function pathCommunityId(req:Request){
  const pathMatch=req.path.match(new RegExp(`/communities/(${uuidSource})(?:/|$)`,'i'));
- const supplied=pathMatch?.[1]??req.body?.communityId??req.body?.CommunityId??req.query.communityId;
+ const supplied=pathMatch?.[1];
+ return typeof supplied==='string'&&uuid.test(supplied)?supplied:null;
+}
+
+function suppliedCommunityId(req:Request){
+ const supplied=req.body?.communityId??req.body?.CommunityId??req.query.communityId;
  return typeof supplied==='string'&&uuid.test(supplied)?supplied:null;
 }
 
 async function platformStatusForMutation(req:Request){
- const pool=await getPool(),direct=directCommunityId(req);
+ const pool=await getPool(),direct=pathCommunityId(req);
  if(direct)return (await pool.request().input('id',sql.UniqueIdentifier,direct).query('SELECT PlatformStatus FROM Communities WHERE Id=@id')).recordset[0];
-
- const conversationId=req.query.conversationId;
- if(typeof conversationId==='string'&&uuid.test(conversationId))return (await pool.request().input('id',sql.UniqueIdentifier,conversationId).query('SELECT c.PlatformStatus FROM Conversations e JOIN Communities c ON c.Id=e.CommunityId WHERE e.Id=@id')).recordset[0];
 
  const content=req.path.match(new RegExp(`/content/(post|comment|announcement)/(${uuidSource})/transform(?:/|$)`,'i'));
  if(content)return (await pool.request().input('id',sql.UniqueIdentifier,content[2]).query(contentLookups[content[1].toLowerCase()])).recordset[0];
 
  for(const lookup of entityLookups){const match=req.path.match(lookup.pattern);if(match)return (await pool.request().input('id',sql.UniqueIdentifier,match[1]).query(lookup.query)).recordset[0]}
+
+ const conversationId=req.query.conversationId;
+ if(typeof conversationId==='string'&&uuid.test(conversationId))return (await pool.request().input('id',sql.UniqueIdentifier,conversationId).query('SELECT c.PlatformStatus FROM Conversations e JOIN Communities c ON c.Id=e.CommunityId WHERE e.Id=@id')).recordset[0];
+
+ // Body and generic query IDs are only a fallback for routes that do not
+ // identify a community-owned entity. They must never override ownership
+ // resolved from an entity ID in the URL or a conversation query parameter.
+ const supplied=suppliedCommunityId(req);
+ if(supplied)return (await pool.request().input('id',sql.UniqueIdentifier,supplied).query('SELECT PlatformStatus FROM Communities WHERE Id=@id')).recordset[0];
  return null;
 }
 
