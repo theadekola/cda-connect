@@ -1,3 +1,4 @@
+import {setConversationEventServer} from './services/conversationEvents.js';
 import {communicationSettings,allowCall,requireCallParticipants} from './services/communications.js';
 import {requireConversationContact} from './services/privacy.js';
 import type { Server } from 'socket.io';
@@ -12,7 +13,7 @@ export function disconnectUserSockets(userId:string){activeSocketServer?.in(`use
 export function disconnectCommunitySockets(communityId:string){activeSocketServer?.in(`community:${communityId}`).disconnectSockets(true)}
 
 export function configureSocket(io: Server) {
-  activeSocketServer=io;
+  activeSocketServer=io;setConversationEventServer(io);
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token as string;
@@ -67,6 +68,7 @@ export function configureSocket(io: Server) {
         const d = { conversationId: String(payload.conversationId),clientMessageId:String(payload.clientMessageId??''), messageText: String(payload.messageText ?? '').trim(), messageType: String(payload.messageType ?? 'TEXT').toUpperCase(), mediaUrl: payload.mediaUrl ? String(payload.mediaUrl) : null };
         if (!d.messageText && !d.mediaUrl) return ack?.({ ok: false, error: 'Message is empty' });
         if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(d.clientMessageId))return ack?.({ok:false,error:'A valid client message ID is required'});
+        const replyToMessageId=payload.replyToMessageId?String(payload.replyToMessageId):null;if(replyToMessageId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(replyToMessageId))return ack?.({ok:false,error:'Invalid reply message'});
         const pool = await getPool();
         const member = await pool.request().input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id)
           .query(`SELECT conversation.CommunityId,conversation.Name FROM ConversationMembers member JOIN Conversations conversation ON conversation.Id=member.ConversationId JOIN Communities community ON community.Id=conversation.CommunityId AND community.PlatformStatus='ACTIVE' JOIN CommunityMembers communityMember ON communityMember.CommunityId=conversation.CommunityId AND communityMember.UserId=member.UserId WHERE member.ConversationId=@cv AND member.UserId=@u AND member.IsActive=1 AND communityMember.Status='ACTIVE'`);
@@ -78,9 +80,10 @@ export function configureSocket(io: Server) {
           const file=(await pool.request().input('o',sql.UniqueIdentifier,objectId).input('u',sql.UniqueIdentifier,user.id).input('c',sql.UniqueIdentifier,member.recordset[0].CommunityId).query(`SELECT Id FROM StoredObjects WHERE Id=@o AND UploadedBy=@u AND CommunityId=@c AND IsPrivate=1 AND UploadState='AVAILABLE' AND DeletedAt IS NULL`)).recordset[0];
           if(!file)return ack?.({ok:false,error:'Attachment is unavailable'});
         }
-        const r = await pool.request().input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id).input('client',sql.UniqueIdentifier,d.clientMessageId)
+        if(replyToMessageId){const reply=(await pool.request().input('cv',sql.UniqueIdentifier,d.conversationId).input('reply',sql.UniqueIdentifier,replyToMessageId).query('SELECT Id FROM Messages WHERE Id=@reply AND ConversationId=@cv AND IsDeleted=0')).recordset[0];if(!reply)return ack?.({ok:false,error:'The replied message is unavailable'})}
+        const r = await pool.request().input('reply',sql.UniqueIdentifier,replyToMessageId).input('cv', sql.UniqueIdentifier, d.conversationId).input('u', sql.UniqueIdentifier, user.id).input('client',sql.UniqueIdentifier,d.clientMessageId)
           .input('type', sql.NVarChar(30), d.messageType).input('text', sql.NVarChar(sql.MAX), d.messageText).input('media', sql.NVarChar(1500), d.mediaUrl)
-          .query(`SET XACT_ABORT ON;BEGIN TRANSACTION;IF EXISTS(SELECT 1 FROM Messages WITH(UPDLOCK,HOLDLOCK) WHERE SenderUserId=@u AND ClientMessageId=@client) SELECT *,CAST(1 AS bit) Duplicate FROM Messages WHERE SenderUserId=@u AND ClientMessageId=@client;ELSE INSERT INTO Messages(ConversationId,SenderUserId,ClientMessageId,MessageType,MessageText,MediaUrl) OUTPUT INSERTED.*,CAST(0 AS bit) Duplicate VALUES(@cv,@u,@client,@type,@text,@media);COMMIT TRANSACTION;`);
+          .query(`SET XACT_ABORT ON;BEGIN TRANSACTION;IF EXISTS(SELECT 1 FROM Messages WITH(UPDLOCK,HOLDLOCK) WHERE SenderUserId=@u AND ClientMessageId=@client) SELECT *,CAST(1 AS bit) Duplicate FROM Messages WHERE SenderUserId=@u AND ClientMessageId=@client;ELSE INSERT INTO Messages(ConversationId,SenderUserId,ClientMessageId,MessageType,MessageText,MediaUrl,ReplyToMessageId) OUTPUT INSERTED.*,CAST(0 AS bit) Duplicate VALUES(@cv,@u,@client,@type,@text,@media,@reply);COMMIT TRANSACTION;`);
         const msg = r.recordset[0];
         if(msg.Duplicate)return ack?.({ok:true,message:msg,duplicate:true});
         io.to(`conversation:${d.conversationId}`).emit('message:new', msg);
@@ -154,3 +157,4 @@ export function configureSocket(io: Server) {
     });
   });
 }
+

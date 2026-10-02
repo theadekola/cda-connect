@@ -57,14 +57,18 @@ export async function hasPermission(userId: string, communityId: string, permiss
   return !!r.recordset[0];
 }
 export async function requirePermission(userId:string, communityId:string, permission:string){
-  const memberContributionPermissions=new Set(['CHAT_CREATE','EVENT_CREATE','OPPORTUNITY_MANAGE']);
+  if(permission==='CHAT_CREATE'){
+    await requireCommunityMember(userId,communityId);const r=await(await getCommunityPool(communityId)).request().input('u',sql.UniqueIdentifier,userId).input('c',sql.UniqueIdentifier,communityId).query(`SELECT TOP 1 1 ok FROM Communities c WHERE c.Id=@c AND (c.OwnerUserId=@u OR EXISTS(SELECT 1 FROM CommunityMembers m JOIN CommunityMemberRoles mr ON mr.CommunityMemberId=m.Id JOIN Roles role ON role.Id=mr.RoleId WHERE m.CommunityId=@c AND m.UserId=@u AND m.Status='ACTIVE' AND role.Name IN ('Owner','Admin')))`);if(!r.recordset[0])throw new AppError(403,'Only community owners and administrators can create chat groups');return;
+  }
+  const memberContributionPermissions=new Set(['EVENT_CREATE','OPPORTUNITY_MANAGE']);
   if(memberContributionPermissions.has(permission)){
     await requireCommunityMember(userId,communityId);
-    if(permission==='CHAT_CREATE'||permission==='EVENT_CREATE'){
-      const pool=await getCommunityPool(communityId);const r=await pool.request().input('u',sql.UniqueIdentifier,userId).input('c',sql.UniqueIdentifier,communityId).input('p',sql.NVarChar(100),permission).query(`SELECT TOP 1 1 ok FROM Communities c WHERE c.Id=@c AND (c.OwnerUserId=@u OR EXISTS(SELECT 1 FROM CommunityMembers m JOIN CommunityMemberRoles mr ON mr.CommunityMemberId=m.Id JOIN Roles role ON role.Id=mr.RoleId WHERE m.CommunityId=@c AND m.UserId=@u AND m.Status='ACTIVE' AND role.Name IN ('Owner','Admin')) OR (@p='EVENT_CREATE' AND c.AllowMemberEvents=1) OR (@p='CHAT_CREATE' AND c.AllowMemberDiscussions=1))`);
+    if(permission==='EVENT_CREATE'){
+      const pool=await getCommunityPool(communityId);const r=await pool.request().input('u',sql.UniqueIdentifier,userId).input('c',sql.UniqueIdentifier,communityId).input('p',sql.NVarChar(100),permission).query(`SELECT TOP 1 1 ok FROM Communities c WHERE c.Id=@c AND (c.OwnerUserId=@u OR EXISTS(SELECT 1 FROM CommunityMembers m JOIN CommunityMemberRoles mr ON mr.CommunityMemberId=m.Id JOIN Roles role ON role.Id=mr.RoleId WHERE m.CommunityId=@c AND m.UserId=@u AND m.Status='ACTIVE' AND role.Name IN ('Owner','Admin')) OR (@p='EVENT_CREATE' AND c.AllowMemberEvents=1))`);
       if(!r.recordset[0])throw new AppError(403,'Community preferences do not allow members to create this content');
     }
     return;
   }
   if(!(await hasPermission(userId,communityId,permission))) throw new AppError(403,`Missing permission: ${permission}`);
 }
+

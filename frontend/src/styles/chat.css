@@ -72,3 +72,16 @@
 .chat-voice-preview{width:100%;max-height:44px}.app .topbar #page-header-search,.app .topbar #community-chat-header-search{flex:0 0 100%;min-width:0}
 
 .chat-listing-reference{display:grid;gap:6px;max-width:260px;color:var(--cda-navy);padding:8px;border:1px solid #dfe7ef;border-radius:10px;background:white}.chat-listing-reference img{width:100%;max-height:140px;object-fit:contain;border-radius:6px}.chat-listing-reference strong{font-size:14px;overflow-wrap:anywhere}.chat-listing-reference span,.chat-listing-reference small{font-size:12px}
+
+
+/* A two-second hold or the visible options button opens an accessible dialog. */
+.message{position:relative;-webkit-touch-callout:none}
+.message-options-trigger{float:right;border:0;background:transparent;color:inherit;min-width:32px;min-height:32px;margin:-8px -8px 0 4px;opacity:.65}
+.message-actions-dialog{border:0;padding:0;border-radius:22px;max-width:440px;width:calc(100% - 32px);max-height:85dvh;color:var(--text-primary);background:var(--bg-card,#fff)}
+.message-actions-dialog::backdrop{background:#07152c99;backdrop-filter:blur(5px)}
+.message-actions-content{padding:18px;overflow:auto}.message-actions-content header,.chat-reply-draft{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.message-actions-content header button{background:transparent;border:0;min-height:44px;min-width:44px}.message-actions-content blockquote{margin:12px 0;padding:12px;border-radius:14px;background:var(--bg-secondary,#edf4ff);white-space:pre-wrap;overflow-wrap:anywhere;max-height:20dvh;overflow:auto}
+.message-actions-content nav{display:grid;gap:3px}.message-actions-content nav button{display:flex;align-items:center;gap:14px;background:transparent;border:0;text-align:left;padding:12px;min-height:48px;color:inherit}
+.message-reactions{display:flex;flex-wrap:wrap;gap:2px;border-radius:16px;background:var(--bg-secondary,#edf4ff);padding:6px}.message-reactions button{border:0;background:transparent;font-size:24px;min-height:44px;min-width:44px}.message-reactions button[aria-pressed=true]{background:#06b6d433;border-radius:12px}
+.message-danger{color:#dc3545!important}.message-reaction-counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.message-reaction-counts span{border:1px solid var(--border,#dce3ed);padding:2px 7px;border-radius:12px;font-size:13px}.message-star{color:#ad7800;font-size:16px}
+.message-reply-preview{margin:0 0 10px;padding:8px;border-left:3px solid #06b6d4;background:#06b6d411;border-radius:6px;font-size:13px;max-height:70px;overflow:hidden;white-space:pre-wrap}.message-private-note{font-size:13px;border-top:1px solid var(--border,#dce3ed);padding-top:8px}.chat-reply-draft{padding:10px 16px;border-left:3px solid #06b6d4}.chat-reply-draft p{margin:2px 0;max-height:50px;overflow:hidden}.chat-reply-draft button{min-width:44px;min-height:44px;border:0;background:transparent}

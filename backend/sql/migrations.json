@@ -251,5 +251,10 @@
     "version": "0050",
     "file": "registered-email-lock.sql",
     "sha256": "0db18f66eaaba32d8b0fbae735d36c6869f128dfc8c3579c5ffcfbc1d5d65d14"
+  },
+  {
+    "version": "0051",
+    "file": "chat-message-actions.sql",
+    "sha256": "f57aa16970ae211ea89fe54446c29fb327a3e47b0fbb0b8b00922011091fb5c2"
   }
 ]
