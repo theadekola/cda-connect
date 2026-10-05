@@ -1,0 +1,21 @@
+SET XACT_ABORT ON;
+IF COL_LENGTH('UserSessions','FamilyId') IS NULL
+BEGIN
+ ALTER TABLE UserSessions ADD FamilyId UNIQUEIDENTIFIER NULL,RotatedAt DATETIME2 NULL;
+ -- Retire all pre-cookie sessions, including any captured by the removed browser profile.
+ UPDATE UserSessions SET RevokedAt=COALESCE(RevokedAt,SYSUTCDATETIME());
+END;
+IF COL_LENGTH('Users','SecurityHoldUntil') IS NULL ALTER TABLE Users ADD SecurityHoldUntil DATETIME2 NULL;
+IF OBJECT_ID('EmailChangeRequests','U') IS NULL CREATE TABLE EmailChangeRequests(
+ Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),
+ OldEmail NVARCHAR(255) NOT NULL,NewEmail NVARCHAR(255) NOT NULL,RecoveryPhone NVARCHAR(30) NULL,
+ Stage VARCHAR(20) NOT NULL DEFAULT 'CURRENT',CodeHash CHAR(64) NOT NULL,Attempts INT NOT NULL DEFAULT 0,
+ ExpiresAt DATETIME2 NOT NULL,CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),CompletedAt DATETIME2 NULL);
+IF OBJECT_ID('SecurityMailOutbox','U') IS NULL CREATE TABLE SecurityMailOutbox(
+ Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),UserId UNIQUEIDENTIFIER NOT NULL,Destination NVARCHAR(255) NOT NULL,
+ Subject NVARCHAR(250) NOT NULL,Body NVARCHAR(2000) NOT NULL,Status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+ CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),ProviderMessageId NVARCHAR(250) NULL);
+
+GO
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_UserSessions_Family' AND object_id=OBJECT_ID('UserSessions')) CREATE INDEX IX_UserSessions_Family ON UserSessions(FamilyId,UserId) INCLUDE(RevokedAt,ExpiresAt);
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_EmailChangeRequests_User' AND object_id=OBJECT_ID('EmailChangeRequests')) CREATE INDEX IX_EmailChangeRequests_User ON EmailChangeRequests(UserId,CreatedAt);

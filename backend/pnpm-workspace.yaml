@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  msgpackr-extract: true
+  sharp: true
+overrides:
+  engine.io: 6.6.10

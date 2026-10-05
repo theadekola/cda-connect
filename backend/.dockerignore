@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+uploads/*
+!uploads/.gitkeep
+npm-debug.log*
+
+.env*
+private-uploads
+work

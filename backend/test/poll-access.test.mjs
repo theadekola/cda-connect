@@ -1,0 +1,12 @@
+import test,{after} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import sql from 'mssql';
+Object.assign(process.env,{NODE_ENV:'test',DB_SERVER:'localhost',DB_NAME:'test',DB_USER:'test',DB_PASSWORD:'test',JWT_ACCESS_SECRET:'a'.repeat(64),JWT_REFRESH_SECRET:'b'.repeat(64)});
+const {canViewPollInsights}=await import('../dist/services/pollAccess.js');
+const connect=sql.ConnectionPool.prototype.connect,query=sql.Request.prototype.query;let allowed=false;
+sql.ConnectionPool.prototype.connect=async function(){return this};
+sql.Request.prototype.query=async function(text){assert.match(text,/cm.Status='ACTIVE'/);assert.match(text,/'Owner','Admin','Moderator'/);assert.match(text,/ex.Status='ACTIVE'/);assert.match(text,/ex.AppointedDate<=/);assert.match(text,/ex.TenureEndDate>=/);assert.equal(this.parameters.u.value,'user');assert.equal(this.parameters.c.value,'community');return {recordset:allowed?[{Allowed:1}]:[]}};
+after(()=>{sql.ConnectionPool.prototype.connect=connect;sql.Request.prototype.query=query});
+test('poll insight access fails closed and uses active leadership and exco tenure checks',async()=>{assert.equal(await canViewPollInsights('user','community'),false);allowed=true;assert.equal(await canViewPollInsights('user','community'),true)});
+test('analysis and comments enforce the same server-side leadership guard',async()=>{const content=await readFile(new URL('../src/routes/content.ts',import.meta.url),'utf8'),polls=await readFile(new URL('../src/routes/polls.ts',import.meta.url),'utf8');assert.match(content,/if\(!await canViewPollInsights\(req.user!.id,poll.CommunityId\)\)throw new AppError\(403/);assert.match(polls,/if\(!await canViewPollInsights\(userId,p.CommunityId\)\)throw new AppError\(403/);assert.match(polls,/CanAnalyze:insights/)});

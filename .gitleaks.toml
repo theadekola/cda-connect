@@ -1,0 +1,8 @@
+[extend]
+useDefault = true
+[[allowlists]]
+description = "Documented deployment placeholder (not a credential)"
+condition = "AND"
+paths = ['''^deploy/\.env\.example$''']
+regexTarget = "secret"
+regexes = ['''^REPLACE_WITH_64_HEX_CHARACTERS$''']

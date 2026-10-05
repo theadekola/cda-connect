@@ -1,0 +1,9 @@
+IF COL_LENGTH('dbo.PollOptions','ImageUrl') IS NULL
+BEGIN
+  ALTER TABLE dbo.PollOptions ADD ImageUrl NVARCHAR(1500) NULL;
+END;
+
+IF COL_LENGTH('dbo.Polls','ImageUrl') IS NULL
+BEGIN
+  ALTER TABLE dbo.Polls ADD ImageUrl NVARCHAR(1500) NULL;
+END;

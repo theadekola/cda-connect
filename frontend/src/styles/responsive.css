@@ -1,0 +1,106 @@
+/* Shared app density and responsive layout. Existing brand tokens remain authoritative. */
+.app{--page-gutter:16px}
+.app #main :is(.page,.community-workspace,.community-feed,.community-events,.community-meetings,.attendance-page,.take-attendance,.meeting-wizard,.published-meeting,.directory-page,.members-page,.settings-dashboard,.settings-detail,.account-dashboard,.privacy-dashboard,.profile-layout,.profile-card,.profile-stats,.profile-section,.profile-contact,.profile-edit-heading,.profile-edit-media,.profile-edit-card,.community-profile-content,.community-post-page,.post-detail,.help-support,.legal-statement,.create-community,.community-created,.event-create,.chat-create-page,.change-password,.delete-account,.meeting-form,.meeting-detail){width:100%;max-width:none!important;min-width:0}
+.app #main>.page{padding:12px max(var(--page-gutter),env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(var(--page-gutter),env(safe-area-inset-left))!important}
+.app #main .page :is(.attendance-page,.take-attendance,.community-meetings,.community-events,.meeting-wizard,.published-meeting,.directory-page,.members-page){padding-inline:0!important}
+.app #main .community-menu>section{max-width:none!important}
+.app #main :is(.card,.attendance-panel,.take-summary,.take-members,.take-recent,.wizard-panel,.meeting-section){border-radius:12px;padding:14px}
+.app #main :is(.attendance-history){padding:0}
+.app #main :is(.page-heading,.section-heading){gap:12px;margin-bottom:16px}
+.app #main h1{font-size:clamp(20px,2vw,26px)!important;line-height:1.25}
+.app #main h2{font-size:clamp(17px,1.7vw,21px)!important;line-height:1.3}
+.app #main h3{font-size:16px!important;line-height:1.35}
+.app #main :is(button,.button){font-size:13px;min-height:44px;padding:8px 12px;gap:6px}
+.app #main :is(button,.button)>svg.lucide{width:18px;height:18px;flex-shrink:0}
+.app #main :is(.meeting-shortcuts,.events-shortcuts,.directory-categories) svg{width:24px;height:24px}
+.app #main :is(.feature-banner,.published-hero){padding:20px;gap:16px}
+.app #main :is(input,select,textarea){max-width:100%;min-width:0}
+.app #main :is(.tabs,.community-tabs,.directory-tabs,.chat-list-tabs,.events-tabs,.meeting-tabs,.members-tabs,.profile-tabs,.attendance-tabs,.take-tabs,[role=tablist]){display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;max-width:100%;gap:4px!important;padding:4px!important;margin:10px 0 16px!important;background:#eaf0f6!important;border:0!important;border-radius:10px!important;scroll-padding:4px}
+.app #main :is(.tabs,.community-tabs,.directory-tabs,.chat-list-tabs,.events-tabs,.meeting-tabs,.members-tabs,.profile-tabs,.attendance-tabs,.take-tabs,[role=tablist])>:is(button,a,[role=tab]){display:inline-flex;flex:1 0 auto;align-items:center;justify-content:center;min-height:44px;padding:8px 12px!important;font-size:13px!important;font-weight:600;line-height:1.35;white-space:nowrap;background:transparent!important;color:var(--cda-navy)!important;border:0!important;border-radius:7px!important;text-decoration:none;box-shadow:none!important}
+.app #main :is(.tabs,.community-tabs,.directory-tabs,.chat-list-tabs,.events-tabs,.meeting-tabs,.members-tabs,.profile-tabs,.attendance-tabs,.take-tabs,[role=tablist])>:is([aria-pressed=true],[aria-selected=true],[aria-current=page],.active,.selected){background:var(--cda-navy)!important;color:white!important}
+.app #main :is(.tabs,.community-tabs,.directory-tabs,.chat-list-tabs,.events-tabs,.meeting-tabs,.members-tabs,.profile-tabs,.attendance-tabs,.take-tabs,[role=tablist])>:disabled{opacity:.55;cursor:not-allowed}
+.location-selectors{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;min-width:0}
+.location-selectors label{display:grid;gap:6px;font-size:13px}
+.location-selectors select{width:100%;min-height:44px;font-size:16px;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--cda-navy)}
+.location-selectors>[role=alert]{grid-column:1/-1}
+@media(max-width:767px){.app{--page-gutter:8px}.app #main :is(.card,.attendance-panel,.take-summary,.take-members,.wizard-panel,.meeting-section){padding:12px}.app #main .attendance-history{padding:0}.app #main :is(input,select,textarea){font-size:16px}.app #main :is(.feature-banner,.published-hero){padding:16px}.app #main :is(.tabs,.community-tabs,.directory-tabs,.chat-list-tabs,.events-tabs,.meeting-tabs,.members-tabs,.profile-tabs,.attendance-tabs,.take-tabs,[role=tablist])>:is(button,a,[role=tab]){font-size:12px!important;padding:8px!important}.location-selectors{grid-template-columns:1fr}.app #main .narrow{max-width:none}.app #main .empty{padding:20px 12px}}
+@media(prefers-reduced-motion:reduce){.app #main{scroll-behavior:auto}}
+.directory-area .location-selectors{flex:1;min-width:0}
+@media(max-width:767px){.directory-area{align-items:flex-start}.directory-area .location-selectors{grid-template-columns:1fr}}
+/* Entry and registration screens follow the same compact type scale. */
+:is(.welcome,.auth-page) h1{font-size:clamp(24px,3vw,36px);line-height:1.2}
+:is(.welcome,.auth-page) h2{font-size:clamp(21px,2.5vw,28px);line-height:1.25}
+:is(.welcome,.auth-page) button{min-height:44px;font-size:14px;padding:9px 12px}
+.verification-switch{display:flex;gap:4px;padding:4px;border-radius:10px;background:#eaf0f6}
+.verification-switch button{flex:1;background:transparent!important;color:var(--cda-navy)!important;border:0;border-radius:7px}
+.verification-switch button[aria-pressed=true]{background:var(--cda-navy)!important;color:white!important}
+@media(max-width:767px){.auth-page section,.auth-panel,.welcome-entry{padding-inline:max(12px,env(safe-area-inset-left))!important}.auth-panel-content,.welcome-entry-content{max-width:none!important;width:100%}.auth-page .location-selectors{grid-template-columns:1fr}}
+@media(max-width:767px){.auth-page.login-page>.auth-panel{padding-inline:0!important}.auth-page.login-page .login-mobile-hero{width:100%;max-width:none;margin-inline:0}.auth-page.login-page .auth-panel-content{padding-left:max(20px,env(safe-area-inset-left))!important;padding-right:max(20px,env(safe-area-inset-right))!important}}
+/* Community menu: two compact groups with room for complete labels. */
+.app #main .community-menu>section:not(.community-hero){padding:12px max(16px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));margin:0 0 12px}
+.app #main .community-menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.app #main .community-menu-grid>a{min-height:94px;padding:12px 6px;border-radius:12px;gap:8px}
+.app #main .community-menu-grid>a>span{width:32px;height:32px;padding:6px;border-radius:10px;align-items:center;justify-content:center}
+.app #main .community-menu-grid svg{width:20px;height:20px;flex-shrink:0}
+.app #main .community-menu-grid strong{font-size:12px;line-height:1.35;overflow-wrap:normal;word-break:normal}
+@media(max-width:380px){.app #main .community-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Release-ready sizing shared by browser and Capacitor shells. */
+.app{
+  --header-control-size:40px;
+  --header-icon-size:20px;
+  --section-gap:clamp(12px,1.4vw,18px);
+  --content-gap:clamp(8px,1vw,12px);
+}
+.app .topbar :is(.topbar-icon,button.mobile){
+  box-sizing:border-box;
+  width:var(--header-control-size)!important;
+  min-width:var(--header-control-size)!important;
+  height:var(--header-control-size)!important;
+  min-height:var(--header-control-size)!important;
+  flex:0 0 var(--header-control-size)!important;
+  padding:8px!important;
+  place-items:center;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+}
+.app .topbar :is(.topbar-icon,button.mobile)>svg.lucide{
+  width:var(--header-icon-size)!important;
+  height:var(--header-icon-size)!important;
+  flex:0 0 var(--header-icon-size);
+  stroke-width:2;
+}
+.app .topbar .top-actions,
+.app .topbar .cover-header-actions{gap:4px}
+.app #main :is(section,article,aside,nav,header,footer,form,fieldset),
+.app #main :is(.card,.record-list,.dashboard-grid,.community-menu-grid,.form-grid)>*{min-width:0}
+.app #main :is(h1,h2,h3,h4,p,li,dd,dt,label,strong,small,span){overflow-wrap:anywhere}
+.app #main :is(img,video,canvas,iframe){max-width:100%}
+.app #main :is(video,canvas,iframe){display:block}
+.app #main audio{width:100%;max-width:100%}
+.app #main iframe{border:0}
+.app #main dialog:not(.media-viewer){
+  max-width:calc(100vw - 24px);
+  max-height:calc(100dvh - 24px);
+  overflow:auto;
+}
+.app #main :is(.dashboard-grid,.record-list,.form-grid,.settings-grid,.account-grid,.directory-card-grid,.documents-grid,.marketplace-grid,.poll-grid,.events-grid,.meetings-grid){gap:var(--content-gap)}
+.app #main :is(.card,.attendance-panel,.take-summary,.take-members,.take-recent,.wizard-panel,.meeting-section){margin-bottom:var(--content-gap)}
+.app #main :is(.page-heading,.section-heading,.feature-banner,.published-hero){margin-bottom:var(--section-gap)}
+.app #main :is(.actions,.form-actions,.button-row){gap:8px}
+
+@media(max-width:767px){
+  .app .topbar{gap:6px}
+  .app #main h1{font-size:20px!important}
+  .app #main h2{font-size:17px!important}
+  .app #main h3{font-size:15px!important}
+  .app #main :is(.feature-banner,.published-hero){padding:14px;gap:12px}
+  .app #main :is(.card,.attendance-panel,.take-summary,.take-members,.take-recent,.wizard-panel,.meeting-section){border-radius:11px}
+  .app #main :is(.actions,.form-actions,.button-row)>:is(button,.button,a){max-width:100%}
+}
+
+@media(max-width:360px){
+  .app .topbar{padding-right:max(10px,env(safe-area-inset-right));padding-left:max(10px,env(safe-area-inset-left))}
+  .app #main :is(button,.button){padding-inline:10px}
+}

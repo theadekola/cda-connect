@@ -1,0 +1,10 @@
+// Run with a repository administrator token in GH_TOKEN after CI has run successfully.
+// Preserve existing protection rather than replacing it with weaker defaults.
+const token=process.env.GH_TOKEN,repository=process.env.GITHUB_REPOSITORY||'theadekola/cda-connect',branch=process.env.PROTECTED_BRANCH||'main';
+if(!token)throw Error('Set GH_TOKEN to a repository administration credential');
+if(!/^[\w.-]+\/[\w.-]+$/.test(repository))throw Error('Invalid repository');
+const url=`https://api.github.com/repos/${repository}/branches/${encodeURIComponent(branch)}/protection`,headers={authorization:'Bearer '+token,accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+const read=await fetch(url,{headers});if(!read.ok&&read.status!==404)throw Error('Cannot read branch protection: '+read.status);const existing=read.ok?await read.json():{};
+const checks=[...new Set([...(existing.required_status_checks?.contexts||[]),'backend','web','android','secrets'])];
+const body={required_status_checks:{strict:true,contexts:checks},enforce_admins:true,required_pull_request_reviews:{dismiss_stale_reviews:existing.required_pull_request_reviews?.dismiss_stale_reviews??true,require_code_owner_reviews:existing.required_pull_request_reviews?.require_code_owner_reviews??false,required_approving_review_count:Math.max(1,existing.required_pull_request_reviews?.required_approving_review_count||0)},restrictions:existing.restrictions?{users:existing.restrictions.users.map(x=>x.login),teams:existing.restrictions.teams.map(x=>x.slug),apps:existing.restrictions.apps.map(x=>x.slug)}:null,required_linear_history:existing.required_linear_history?.enabled??false,allow_force_pushes:false,allow_deletions:false,required_conversation_resolution:true,lock_branch:existing.lock_branch?.enabled??false};
+const result=await fetch(url,{method:'PUT',headers:{...headers,'content-type':'application/json'},body:JSON.stringify(body)});if(!result.ok)throw Error('Branch protection update failed: '+result.status);console.log('Required CI checks configured for '+repository+'/'+branch);

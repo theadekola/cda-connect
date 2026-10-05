@@ -1,0 +1,13 @@
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+IF COL_LENGTH('SOSRequests','RequestKey') IS NULL ALTER TABLE SOSRequests ADD RequestKey UNIQUEIDENTIFIER NULL;
+IF COL_LENGTH('SOSRequests','AssignedResponderId') IS NULL ALTER TABLE SOSRequests ADD AssignedResponderId UNIQUEIDENTIFIER NULL;
+IF COL_LENGTH('SOSRequests','AcknowledgedAt') IS NULL ALTER TABLE SOSRequests ADD AcknowledgedAt DATETIME2 NULL;
+IF COL_LENGTH('SOSRequests','ResolutionNote') IS NULL ALTER TABLE SOSRequests ADD ResolutionNote NVARCHAR(2000) NULL;
+IF COL_LENGTH('KnowledgeDocuments','IsArchived') IS NULL ALTER TABLE KnowledgeDocuments ADD IsArchived BIT NOT NULL CONSTRAINT DF_KnowledgeDocuments_Archived DEFAULT 0;
+IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_SOSRequests_AssignedResponder') EXEC(N'ALTER TABLE SOSRequests WITH CHECK ADD CONSTRAINT FK_SOSRequests_AssignedResponder FOREIGN KEY(AssignedResponderId) REFERENCES Users(Id)');
+IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_SOSTargets_Notification') ALTER TABLE SOSTargets WITH CHECK ADD CONSTRAINT FK_SOSTargets_Notification FOREIGN KEY(NotificationId) REFERENCES NotificationOutbox(NotificationId);
+IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_ChatReference_Conversation') ALTER TABLE ChatReferenceRequests WITH CHECK ADD CONSTRAINT FK_ChatReference_Conversation FOREIGN KEY(ConversationId) REFERENCES Conversations(Id);
+IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE name='FK_ChatReference_Listing') ALTER TABLE ChatReferenceRequests WITH CHECK ADD CONSTRAINT FK_ChatReference_Listing FOREIGN KEY(ListingId) REFERENCES MarketplaceListings(Id);
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('KnowledgeDocumentVersions') AND name='UQ_DocumentVersion') ALTER TABLE KnowledgeDocumentVersions ADD CONSTRAINT UQ_DocumentVersion UNIQUE(DocumentId,VersionNumber);
+COMMIT;

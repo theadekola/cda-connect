@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const help=fs.readFileSync(new URL('../src/HelpSupport.tsx',import.meta.url),'utf8');
+const deletion=fs.readFileSync(new URL('../src/DeleteAccount.tsx',import.meta.url),'utf8');
+const settings=fs.readFileSync(new URL('../src/settings.tsx',import.meta.url),'utf8');
+const admin=fs.readFileSync(new URL('../src/SuperAdminDashboard.tsx',import.meta.url),'utf8');
+const detail=fs.readFileSync(new URL('../src/SuperAdminDetail.tsx',import.meta.url),'utf8');
+const main=fs.readFileSync(new URL('../src/main.tsx',import.meta.url),'utf8');
+const account=fs.readFileSync(new URL('../src/account.tsx',import.meta.url),'utf8');
+
+test('protected super-admin does not receive the delete-account link',()=>{
+ assert.match(help,/account\.isSuccess&&!account\.data\.IsProtectedAccount/);
+ assert.match(help,/queryKey:\['\/users\/account'\]/);
+});
+
+test('protected super-admin cannot open the delete-account page directly',()=>{
+ assert.match(deletion,/if\(account\.data\.IsProtectedAccount\)return <Navigate to="\/settings\/support" replace\/>/);
+ assert.match(deletion,/queryKey:\['\/users\/account'\]/);
+});
+
+test('registered email is read-only for every member and protected accounts cannot deactivate',()=>{
+ assert.match(account,/title="Registered email address"[^\n]+locked/);
+ assert.match(account,/registered email address is locked and cannot be changed/i);
+ assert.match(account,/!u\.IsProtectedAccount&&<AccountRow[^\n]+title="Deactivate account"/);
+ assert.match(account,/u\.IsProtectedAccount\?<Navigate to="\/profile\/account" replace\/>/);
+});
+
+test('only a super-admin sees the admin button and the dashboard has its own protected shell',()=>{
+ assert.match(settings,/isSuperAdmin=Boolean\(current\?\.user\.IsSuperAdmin\)/);
+ assert.match(settings,/group\.name==='Account settings'&&isSuperAdmin/);
+ assert.match(settings,/nav\('\/super-admin'/);
+ assert.match(admin,/if\(!current\?\.user\.IsSuperAdmin\)return <Navigate to="\/home" replace\/>/);
+ assert.match(admin,/api\.get<RecordData>\('\/super-admin\/mfa\/status'/);
+ assert.match(admin,/api\.send\('\/super-admin\/mfa\/verify'/);
+ assert.match(admin,/status\.data\.method!==\'authenticator\'/);
+ assert.match(admin,/className="admin-sidebar"/);
+ assert.match(admin,/className="admin-mobile-nav"/);
+ assert.match(main,/path="\/super-admin" element={<SuperAdminShell\/>}/);
+ assert.match(main,/path="\/super-admin\/login" element={<SuperAdminLogin\/>}/);
+});
+
+test('dangerous user and community actions use an explicit reason and name confirmation dialog',()=>{
+ assert.match(detail,/Written reason/);
+ assert.match(detail,/Type the name to confirm/);
+ assert.match(detail,/className="danger"/);
+ assert.match(detail,/Suspend account/);
+ assert.match(detail,/await q\.refetch\(\)/);
+ assert.match(detail,/role="status"/);
+ assert.match(detail,/Revoke verification/);
+ assert.match(detail,/End active emergency broadcasts/);
+});

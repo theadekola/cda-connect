@@ -1,0 +1,5 @@
+Location dataset derived 2026-09-10.
+Countries, regions and cities: https://github.com/dr5hn/countries-states-cities-database (Open Database License 1.0, https://opendatacommons.org/licenses/odbl/1-0/)
+Nigeria states/LGAs: https://github.com/open-admin-data/nigeria-administrative-divisions (CC BY 4.0, https://creativecommons.org/licenses/by/4.0/)
+Changes: name-only hierarchy; Nigeria replaced with state/LGA hierarchy; duplicates removed.
+The derived database is made available under ODbL 1.0. Country coverage does not imply complete local-area coverage.

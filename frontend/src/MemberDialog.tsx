@@ -1,0 +1,3 @@
+import {useEffect,useRef,type ReactNode} from 'react';
+import {createPortal} from 'react-dom';
+export function MemberDialog({children,onClose}:{children:ReactNode;onClose:()=>void}){const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const d=ref.current!;d.showModal();const old=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{d.close();document.body.style.overflow=old}},[]);return createPortal(<dialog ref={ref} className="member-dialog" aria-label="Manage member" onCancel={e=>{e.preventDefault();onClose()}} onClick={e=>{if(e.target===e.currentTarget){const r=e.currentTarget.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)onClose()}}}>{children}</dialog>,document.body)}

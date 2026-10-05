@@ -1,0 +1,20 @@
+IF NOT EXISTS(SELECT 1 FROM Permissions WHERE Code='ATTENDANCE_MANAGE')
+  INSERT INTO Permissions(Id,Code,Description) VALUES(NEWID(),'ATTENDANCE_MANAGE','Manage meeting attendance');
+GO
+INSERT INTO RolePermissions(RoleId,PermissionId)
+SELECT r.Id,p.Id FROM Roles r CROSS JOIN Permissions p
+WHERE r.Name IN('Owner','Admin','Moderator') AND p.Code='ATTENDANCE_MANAGE'
+AND NOT EXISTS(SELECT 1 FROM RolePermissions rp WHERE rp.RoleId=r.Id AND rp.PermissionId=p.Id);
+GO
+IF OBJECT_ID('MeetingAttendanceSessions','U') IS NULL
+CREATE TABLE MeetingAttendanceSessions(MeetingId UNIQUEIDENTIFIER NOT NULL PRIMARY KEY REFERENCES Meetings(Id),AttendanceCode CHAR(6) NOT NULL,CodeExpiresAt DATETIME2 NOT NULL,IsActive BIT NOT NULL DEFAULT 1,CreatedBy UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),UpdatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME());
+GO
+IF OBJECT_ID('MeetingAttendance','U') IS NULL
+CREATE TABLE MeetingAttendance(MeetingId UNIQUEIDENTIFIER NOT NULL REFERENCES Meetings(Id),UserId UNIQUEIDENTIFIER NOT NULL REFERENCES Users(Id),Status NVARCHAR(20) NOT NULL DEFAULT 'PRESENT',CheckInMethod NVARCHAR(20) NOT NULL,CheckedInAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),MarkedBy UNIQUEIDENTIFIER NULL REFERENCES Users(Id),PRIMARY KEY(MeetingId,UserId));
+GO
+IF NOT EXISTS(SELECT 1 FROM sys.indexes WHERE name='IX_MeetingAttendance_CheckedInAt') CREATE INDEX IX_MeetingAttendance_CheckedInAt ON MeetingAttendance(MeetingId,CheckedInAt);
+GO
+INSERT INTO MeetingAttendanceSessions(MeetingId,AttendanceCode,CodeExpiresAt,IsActive,CreatedBy)
+SELECT m.Id,RIGHT('000000'+CAST(ABS(CHECKSUM(NEWID()))%1000000 AS VARCHAR(6)),6),CASE WHEN m.EndDateTime>SYSUTCDATETIME() THEN DATEADD(minute,15,m.EndDateTime) ELSE m.EndDateTime END,CASE WHEN m.EndDateTime>SYSUTCDATETIME() THEN 1 ELSE 0 END,m.CreatedBy
+FROM Meetings m WHERE NOT EXISTS(SELECT 1 FROM MeetingAttendanceSessions s WHERE s.MeetingId=m.Id);
+GO

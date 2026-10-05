@@ -1,0 +1,27 @@
+{
+    servers {
+        trusted_proxies static private_ranges
+        client_ip_headers CF-Connecting-IP
+    }
+}
+:80 {
+    encode zstd gzip
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        X-Frame-Options DENY
+    }
+    @backend path /api/* /socket.io/* /uploads/* /health
+    handle @backend {
+        reverse_proxy api:4000 {
+            header_up X-Forwarded-For {client_ip}
+            header_up X-Forwarded-Proto https
+        }
+    }
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        header Cache-Control "no-cache"
+        file_server
+    }
+}
