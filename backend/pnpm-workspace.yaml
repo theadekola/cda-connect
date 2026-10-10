@@ -7,4 +7,6 @@ overrides:
 # Permit the newly released security fix while retaining pnpm's default
 # minimum-release-age protection for every other dependency.
 minimumReleaseAgeExclude:
+  - express@5.3.0
   - sharp@0.35.5
+
