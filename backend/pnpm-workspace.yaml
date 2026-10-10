@@ -4,3 +4,7 @@ allowBuilds:
   sharp: true
 overrides:
   engine.io: 6.6.10
+# Permit the newly released security fix while retaining pnpm's default
+# minimum-release-age protection for every other dependency.
+minimumReleaseAgeExclude:
+  - sharp@0.35.5
