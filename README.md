@@ -332,13 +332,12 @@ This repository currently does not contain an open-source licence. Source availa
 
 ## Project ownership
 
-**Founder and lead developer:** Adekola Kazeem Ayannuga  
-**Organisation:** The Adekola Labs  
-**Website:** [cdaconnect.org](https://cdaconnect.org)  
-**Portfolio:** [theadekola.online](https://theadekola.online)  
-**GitHub:** [github.com/theadekola](https://github.com/theadekola)
+- **Founder and lead developer:** Adekola Kazeem Ayannuga
+- **Organisation:** The Adekola Labs
+- **Website:** [cdaconnect.org](https://cdaconnect.org)
+- **Portfolio:** [theadekola.online](https://theadekola.online)
+- **GitHub:** [github.com/theadekola](https://github.com/theadekola)
 
 ---
 
 **CDA Connect — Stronger Communities, Better Together**
-
