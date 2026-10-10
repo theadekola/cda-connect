@@ -11,5 +11,6 @@ regexes = ['''^REPLACE_WITH_64_HEX_CHARACTERS$''']
 description = "README deployment placeholder retained in reachable documentation history (not a credential)"
 condition = "AND"
 paths = ['''^README\.md$''']
-regexTarget = "secret"
-regexes = ['''^<secure-secret>$''']
+regexTarget = "match"
+regexes = ['''^DB_PASSWORD=<secure-secret>
+'']
