@@ -858,6 +858,773 @@ Application uploads, environment secrets and tunnel credentials require separate
 
 Production acceptance should cover the complete application, not just the web server.
 
-### Infrastructure Checks
 
-- N
+## 14. Health Monitoring and Production Verification
+
+Production acceptance must cover the complete application environment, not only the public website.
+
+### 14.1 Infrastructure Checks
+
+The following components should be checked regularly:
+
+- Ubuntu application VM availability.
+- Ubuntu database VM availability.
+- Node.js API service.
+- Background worker service.
+- Redis service.
+- Nginx reverse proxy.
+- Cloudflare Tunnel connectivity.
+- Microsoft SQL Server connectivity.
+- Disk utilisation.
+- Memory utilisation.
+- CPU utilisation.
+- Application and system logs.
+- Database backup execution.
+- Background queue processing.
+
+### 14.2 Service Status
+
+On the application VM:
+
+```bash
+sudo systemctl status \
+  cda-api \
+  cda-worker \
+  cda-redis \
+  nginx \
+  cloudflared \
+  --no-pager
+```
+
+Check failed services:
+
+```bash
+systemctl --failed --no-pager
+```
+
+Check whether services start automatically:
+
+```bash
+systemctl is-enabled \
+  cda-api \
+  cda-worker \
+  cda-redis \
+  nginx \
+  cloudflared
+```
+
+### 14.3 API Health
+
+Check the internal application endpoint:
+
+```bash
+curl -fsS http://127.0.0.1:8080/health
+```
+
+Check the public endpoint:
+
+```bash
+curl -fsS https://cdaconnect.org/health
+```
+
+The health response should report the status of:
+
+- API.
+- Microsoft SQL Server.
+- Redis.
+- Background worker.
+- Background queues, where implemented.
+
+A successful HTTP response is not sufficient if required dependencies are reporting failures.
+
+Health endpoints should not expose credentials, private connection strings, internal addresses or other sensitive infrastructure details.
+
+### 14.4 Background Queue Monitoring
+
+CDA Connect uses Redis and BullMQ for asynchronous processing.
+
+Background workflows may include:
+
+- Notifications.
+- Email and SMS processing.
+- Emergency broadcasts.
+- Scheduled operations.
+- Other application jobs.
+
+Monitoring should inspect:
+
+- Waiting jobs.
+- Active jobs.
+- Completed jobs.
+- Failed jobs.
+- Delayed jobs.
+- Stalled jobs.
+- Worker heartbeat.
+- Queue processing latency.
+
+A queue with zero failed jobs does not necessarily prove that notifications were delivered successfully.
+
+Provider delivery status and application-level results must also be checked.
+
+### 14.5 System Resources
+
+Check disk usage:
+
+```bash
+df -h
+```
+
+Check memory:
+
+```bash
+free -h
+```
+
+Check CPU and process activity:
+
+```bash
+top
+```
+
+Check listening ports:
+
+```bash
+sudo ss -lntp
+```
+
+Expected local listeners include:
+
+| Service | Expected address |
+|---|---|
+| Node.js API | 127.0.0.1:4000 |
+| Dedicated Redis | 127.0.0.1:6380 |
+| Nginx application listener | 127.0.0.1:8080 |
+| SQL Server | Private database host |
+
+Actual bindings must be confirmed on the running environment.
+
+### 14.6 Application Logs
+
+API logs:
+
+```bash
+sudo journalctl -u cda-api -n 100 --no-pager
+```
+
+Worker logs:
+
+```bash
+sudo journalctl -u cda-worker -n 100 --no-pager
+```
+
+Redis logs:
+
+```bash
+sudo journalctl -u cda-redis -n 100 --no-pager
+```
+
+Nginx logs:
+
+```bash
+sudo journalctl -u nginx -n 100 --no-pager
+```
+
+Cloudflare Tunnel logs:
+
+```bash
+sudo journalctl -u cloudflared -n 100 --no-pager
+```
+
+Logs must be reviewed for errors without exposing sensitive user data or authentication credentials.
+
+---
+
+## 15. Functional Production Acceptance
+
+Infrastructure health checks must be complemented by functional testing.
+
+The following workflows should be tested using authorised test accounts and non-sensitive test data.
+
+### Authentication and Accounts
+
+- User registration.
+- Login and logout.
+- Password recovery.
+- Token refresh.
+- Session expiration.
+- Account access restrictions.
+- Multi-factor authentication where enabled.
+
+### Community Management
+
+- Community creation.
+- Community discovery.
+- Membership requests.
+- Membership approval.
+- Community administration.
+- Community switching.
+- Member-role restrictions.
+
+### Communication
+
+- Create a post.
+- Comment on a post.
+- Send a message.
+- Receive a message.
+- Reconnect after network interruption.
+- Receive notifications.
+- Upload permitted attachments.
+
+### Meetings and Governance
+
+- Create meetings.
+- Manage attendance.
+- Submit RSVP responses.
+- Create polls.
+- Submit votes.
+- Enforce voting eligibility.
+- Review voting results.
+- Restrict unauthorised governance actions.
+
+### Community Finance
+
+- Create permitted finance records.
+- Record payments.
+- Generate receipts.
+- Review transaction history.
+- Verify role-based permissions.
+- Check reconciliation and reporting.
+- Verify audit records.
+
+Financial workflows must be tested for consistency, authorisation and appropriate error handling before being relied upon operationally.
+
+### Documents and Private Data
+
+- Upload a document.
+- Retrieve an authorised document.
+- Reject unauthorised document access.
+- Verify file-type restrictions.
+- Test file-size limits.
+- Confirm community data isolation.
+
+### Emergency Workflows
+
+- Submit an emergency alert.
+- Verify authorised recipients.
+- Process background notifications.
+- Record response status.
+- Confirm administrative resolution.
+
+Emergency workflows must not be presented as guaranteed emergency-response services.
+
+### Mobile Applications
+
+- Android installation and startup.
+- iOS installation and startup.
+- Authentication.
+- Navigation.
+- API connectivity.
+- Notifications.
+- Network interruption handling.
+- Session persistence.
+
+Android and iOS functionality should be tested separately on supported devices.
+
+---
+
+## 16. Production Troubleshooting
+
+This section describes initial diagnostic procedures for common infrastructure problems.
+
+### 16.1 API Not Responding
+
+Check:
+
+```bash
+sudo systemctl status cda-api --no-pager
+```
+
+Review logs:
+
+```bash
+sudo journalctl -u cda-api -n 100 --no-pager
+```
+
+Confirm the local listener:
+
+```bash
+sudo ss -lntp | grep ':4000'
+```
+
+Check the application health endpoint through Nginx:
+
+```bash
+curl -i http://127.0.0.1:8080/health
+```
+
+Possible causes include:
+
+- Invalid environment configuration.
+- Database connection failure.
+- Redis connection failure.
+- Missing application dependencies.
+- Incorrect file permissions.
+- Application startup errors.
+
+Do not restart repeatedly without first examining the error.
+
+### 16.2 Database Connection Failure
+
+Verify:
+
+- SQL Server is running.
+- The private database hostname resolves.
+- TCP 1433 is reachable from the application VM.
+- The application login exists.
+- The password is correct.
+- Database permissions are appropriate.
+- SQL encryption settings match the server configuration.
+
+The application must not use the SQL Server administrator account.
+
+Do not log database passwords or publish connection strings.
+
+### 16.3 Redis Connection Failure
+
+Check:
+
+```bash
+sudo systemctl status cda-redis --no-pager
+```
+
+Confirm the listener:
+
+```bash
+sudo ss -lntp | grep ':6380'
+```
+
+Review logs:
+
+```bash
+sudo journalctl -u cda-redis -n 100 --no-pager
+```
+
+Confirm that the application's Redis connection configuration matches the dedicated Redis service.
+
+Do not expose Redis to the public internet.
+
+### 16.4 Worker Not Processing Jobs
+
+Check:
+
+```bash
+sudo systemctl status cda-worker --no-pager
+```
+
+Review:
+
+```bash
+sudo journalctl -u cda-worker -n 100 --no-pager
+```
+
+Investigate:
+
+- Redis connectivity.
+- Queue configuration.
+- Worker startup errors.
+- Provider credentials.
+- Failed or stalled jobs.
+- Job retry behaviour.
+
+A healthy worker process does not guarantee successful external notification delivery.
+
+### 16.5 Website Unavailable
+
+Check Nginx:
+
+```bash
+sudo nginx -t
+```
+
+Inspect status:
+
+```bash
+sudo systemctl status nginx --no-pager
+```
+
+Check the internal application:
+
+```bash
+curl -i http://127.0.0.1:8080/health
+```
+
+Inspect Cloudflare Tunnel:
+
+```bash
+sudo systemctl status cloudflared --no-pager
+```
+
+If the internal endpoint works but the public domain fails, investigate Cloudflare routing, tunnel connectivity and DNS configuration.
+
+### 16.6 Storage Problems
+
+Check:
+
+```bash
+df -h
+```
+
+Inspect application storage:
+
+```bash
+sudo du -sh /var/lib/cda-connect/
+```
+
+Inspect Redis storage:
+
+```bash
+sudo du -sh /var/lib/cda-connect-redis/
+```
+
+Do not delete database backups, uploaded files or Redis persistence data without reviewing their purpose and retention requirements.
+
+---
+
+## 17. Updating CDA Connect
+
+CDA Connect uses a versioned native deployment approach.
+
+Application updates should preserve:
+
+- Existing database records.
+- Uploaded files.
+- Environment configuration.
+- JWT signing secrets.
+- Redis credentials.
+- Tunnel credentials.
+- Required background-service configuration.
+
+### 17.1 Upload a New Release
+
+From Windows PowerShell 7:
+
+```powershell
+.\Transfer-App.ps1 -Upload -Start
+```
+
+The deployment script transfers the updated application and initiates the installation procedure.
+
+### 17.2 Verify the Update
+
+After deployment:
+
+```bash
+sudo systemctl status \
+  cda-api \
+  cda-worker \
+  cda-redis \
+  nginx \
+  --no-pager
+```
+
+Check:
+
+```bash
+curl -fsS http://127.0.0.1:8080/health
+```
+
+Then:
+
+```bash
+curl -fsS https://cdaconnect.org/health
+```
+
+Review application logs and test critical workflows.
+
+### 17.3 Rollback
+
+The versioned release structure allows earlier application code to be retained for a reviewed rollback.
+
+However:
+
+**Application rollback is not database rollback.**
+
+Database schema changes may not be compatible with an earlier application version.
+
+Before performing a rollback:
+
+1. Identify the current release.
+2. Identify the previous compatible release.
+3. Review database migration compatibility.
+4. Confirm that required backups exist.
+5. Follow the documented deployment rollback procedure.
+6. Recheck application and database health.
+
+Do not rerun the fresh database installation script during ordinary application updates.
+
+---
+
+## 18. Known Limitations and Ongoing Development
+
+CDA Connect remains under active development.
+
+The following areas require continued implementation, integration or operational verification.
+
+### Application Functionality
+
+- Completion and integration of remaining administration workflows.
+- Finance-module hardening and reconciliation.
+- Document-management integration and permission testing.
+- Membership-card and QR-code workflows.
+- Mobile platform testing.
+- Notification delivery validation.
+- Community-level data isolation testing.
+
+### Infrastructure
+
+- Verification of native systemd services.
+- Production configuration review.
+- Monitoring and alert delivery.
+- SQL Server backup monitoring.
+- Off-server backup replication.
+- Full database restoration testing.
+- Recovery procedure documentation.
+- Security and access-control testing.
+
+### Product Development
+
+- Accessibility improvements.
+- Community discovery improvements.
+- Governance workflow enhancements.
+- Mobile experience improvements.
+- Performance optimisation.
+- Operational reporting.
+- Reliability improvements.
+
+This section distinguishes ongoing development from completed and independently verified functionality.
+
+---
+
+## 19. Repository Security and Development History
+
+CDA Connect has undergone security-related repository cleanup.
+
+Sensitive configuration and non-public information were removed from the publicly accessible source history.
+
+The public `main` branch currently represents a sanitised repository baseline.
+
+As a result, the visible public commit count may be lower than the earlier development history.
+
+This should not be interpreted as meaning that the application was originally developed in a single commit.
+
+### Repository Security Principles
+
+The repository should not contain:
+
+- Production passwords.
+- Database administrator credentials.
+- Private API keys.
+- JWT secrets.
+- Cloudflare Tunnel credentials.
+- Production environment files.
+- Private SSH keys.
+- Sensitive member information.
+- Confidential financial records.
+- Production database backups.
+
+### Important Security Note
+
+Removing secrets from Git history does not automatically invalidate previously exposed credentials.
+
+Any credentials that may have been exposed should be rotated or revoked.
+
+Repository branches, tags, forks and other retained copies should also be reviewed.
+
+### Development Evidence
+
+The repository provides source-code evidence of:
+
+- Frontend engineering.
+- Backend application development.
+- Database integration.
+- Real-time communication.
+- Background processing.
+- Deployment automation.
+- Infrastructure configuration.
+- Continuing technical development.
+
+Historical development screenshots and other dated records may provide additional context where earlier commits are no longer publicly visible.
+
+---
+
+## 20. Data Protection and Privacy
+
+CDA Connect processes information associated with users and community organisations.
+
+The application should be operated with appropriate privacy and security safeguards.
+
+These include:
+
+- Role-based access controls.
+- Community-level data isolation.
+- Secure authentication.
+- Protected file storage.
+- Appropriate retention practices.
+- Restricted administrative access.
+- Secure transport.
+- Audit logging.
+- Backup protection.
+- Controlled disclosure of personal information.
+
+Production data must not be copied into public demonstrations or GitHub repositories.
+
+Test and demonstration environments should use synthetic or appropriately anonymised data.
+
+Applicable data-protection requirements must be assessed for the jurisdictions in which the platform operates.
+
+---
+
+## 21. Development and Engineering Approach
+
+CDA Connect follows a modular application architecture.
+
+Development work includes:
+
+1. Identifying community requirements.
+2. Designing application workflows.
+3. Developing frontend components.
+4. Implementing backend APIs.
+5. Designing relational data structures.
+6. Integrating real-time services.
+7. Implementing background processing.
+8. Applying authentication and authorisation.
+9. Testing application behaviour.
+10. Preparing deployment and maintenance procedures.
+
+The engineering approach aims to maintain clear boundaries between user interfaces, application logic, database operations, background services and infrastructure.
+
+---
+
+## 22. Project Background
+
+The original concept behind CDA Connect emerged from practical experience with community administration.
+
+During my involvement in community leadership, I observed challenges involving communication, meeting coordination, attendance, physical records, community decisions and resident participation.
+
+An initial community-specific application concept was subsequently expanded into a reusable multi-community platform.
+
+The resulting CDA Connect product is intended to support different communities through a shared technical architecture while preserving community-specific administration and membership.
+
+The current platform represents the continuing development of that original idea into a broader digital product.
+
+---
+
+## 23. Project Ownership and Technical Contribution
+
+**Founder and Lead Developer:** Adekola Kazeem Ayannuga
+
+My technical contribution includes:
+
+- Product concept and requirements.
+- Application architecture.
+- Frontend engineering.
+- Backend API development.
+- Database design and integration.
+- Authentication and authorisation.
+- Real-time communication.
+- Background processing.
+- Mobile application delivery.
+- Deployment architecture.
+- Infrastructure configuration.
+- Technical documentation.
+- Continuing maintenance and development.
+
+CDA Connect is one of the independent software products documented through The Adekola Labs.
+
+---
+
+## 24. Technical References
+
+### Project
+
+**CDA Connect Website**
+
+https://cdaconnect.org
+
+**GitHub Repository**
+
+https://github.com/theadekola/cda-connect
+
+### Developer
+
+**The Adekola Labs**
+
+https://theadekola.online
+
+### Infrastructure Documentation
+
+**Nginx WebSocket Proxying**
+
+https://nginx.org/en/docs/http/websocket.html
+
+**Redis Documentation**
+
+https://redis.io/docs/latest/
+
+**Cloudflare Tunnel Documentation**
+
+https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+
+**Microsoft SQL Server Documentation**
+
+https://learn.microsoft.com/sql/
+
+**Node.js Documentation**
+
+https://nodejs.org/docs/latest/api/
+
+**BullMQ Documentation**
+
+https://docs.bullmq.io/
+
+**Capacitor Documentation**
+
+https://capacitorjs.com/docs
+
+---
+
+## 25. Project Disclaimer
+
+CDA Connect is an actively developed software platform.
+
+Documentation describes application functionality, architecture, implementation resources and deployment procedures.
+
+The existence of a documented feature or deployment component does not guarantee that it has been independently verified in every production environment.
+
+Actual service availability, feature readiness, security controls, backup execution and disaster-recovery capability must be established through testing and operational monitoring.
+
+Emergency-related features do not replace official emergency services.
+
+Financial workflows must be operated in accordance with applicable legal, regulatory and security requirements.
+
+---
+
+## 26. Contact
+
+**Adekola Kazeem Ayannuga**
+
+Founder and Lead Developer, CDA Connect
+
+**Website:** https://cdaconnect.org
+
+**Portfolio:** https://theadekola.online
+
+**GitHub:** https://github.com/theadekola
+
+---
+
+**CDA Connect**
+
+*Stronger Communities, Better Together.*
+
+Developed through **The Adekola Labs**.
