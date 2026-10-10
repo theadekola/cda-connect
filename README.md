@@ -333,7 +333,9 @@ Review the repository architecture and [SECURITY.md](SECURITY.md) before submitt
 
 ## Licence
 
-The repository does not currently contain an open-source licence. Public source availability does not itself grant permission to copy, modify or redistribute the software. Contact the owner about permitted use.
+CDA Connect is proprietary software distributed under the [CDA Connect Proprietary Software License](LICENSE). The source code is publicly available for viewing, technical evaluation, educational reference and portfolio demonstration. Public access does not grant permission to copy, modify, redistribute, sublicense, sell, commercially exploit or deploy the software without prior written authorisation from the copyright holder.
+
+For licensing enquiries or commercial permissions, contact the project owner through [The Adekola Labs](https://theadekola.online).
 
 ## Ownership and links
 
