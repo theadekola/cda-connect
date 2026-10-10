@@ -1,4 +1,3 @@
-warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
 # CDA Connect
 
 **Stronger Communities, Better Together**
@@ -347,4 +346,3 @@ The repository does not currently contain an open-source licence. Public source 
 ---
 
 **CDA Connect: Stronger Communities, Better Together.**
-
