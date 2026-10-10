@@ -12,5 +12,4 @@ description = "README deployment placeholder retained in reachable documentation
 condition = "AND"
 paths = ['''^README\.md$''']
 regexTarget = "match"
-regexes = ['''^DB_PASSWORD=<secure-secret>
-'']
+regexes = ["^DB_PASSWORD=<secure-secret>$"]
