@@ -221,7 +221,7 @@ The installer creates or validates `/etc/cda-connect/backend.env` and `/etc/cda-
 DB_SERVER=<private-sql-host>
 DB_NAME=CDAConnect
 DB_USER=community_app
-DB_PASSWORD=<secure-secret>
+DB_PASSWORD=...
 DB_ENCRYPT=true
 HOST=127.0.0.1
 PORT=4000
@@ -250,7 +250,7 @@ Expected permissions: `root root 600`. Configure:
 
 ```dotenv
 DB_ADMIN_USER=<dedicated-migration-user>
-DB_ADMIN_PASSWORD=<secure-migration-password>
+DB_ADMIN_PASSWORD=...
 MIGRATION_ADOPT_EXISTING=false
 ```
 
