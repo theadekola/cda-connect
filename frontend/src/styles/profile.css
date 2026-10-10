@@ -67,6 +67,29 @@
 .account-dashboard .settings-row-icon{background:var(--success-light);color:var(--cda-green-dark)}
 .account-dashboard .settings-back{display:flex;width:fit-content;margin:8px 0}
 .member-profile-photo{width:80px;height:80px;object-fit:cover;border-radius:50%;margin-bottom:16px}
+
+/* Public member profile */
+.app #main>.page:has(.member-public-profile){padding:0!important;max-width:none}
+.member-public-profile{width:min(100%,1040px);margin:0 auto;color:var(--text-primary)}
+.member-public-summary{overflow:hidden;background:#fff;border:1px solid var(--border);border-radius:0 0 22px 22px}
+.member-public-cover{display:grid;grid-template-columns:112px minmax(0,1fr);align-items:center;gap:18px;padding:28px;background:#fff}
+.member-public-avatar{display:grid;place-items:center;width:112px;height:112px;overflow:hidden;border:4px solid #fff;border-radius:50%;background:#e8f3ee;color:var(--cda-navy);font-size:26px;font-weight:800;box-shadow:0 7px 20px rgba(7,59,120,.16)}
+.member-public-avatar img{width:100%;height:100%;object-fit:cover}.member-public-avatar svg{width:42px;height:42px}
+.member-public-identity{min-width:0;padding:0 0 10px}.member-public-identity h1{margin:0 0 5px;color:var(--cda-navy);font-size:24px}.member-public-identity p{margin:0;color:var(--text-secondary)}
+.member-public-identity small{display:inline-flex;align-items:center;gap:6px;margin-top:7px}.member-public-identity small::before{content:"";width:8px;height:8px;border-radius:50%;background:#94a3b8}.member-public-identity small.is-online::before{background:var(--cda-success)}
+.member-public-actions{display:flex;flex-wrap:wrap;gap:10px;padding:4px 28px 18px}.member-public-actions>span{display:contents}.member-public-actions button{min-height:42px;color:var(--cda-navy)}
+.member-public-notice{margin:0;padding:0 28px 15px;color:var(--cda-green);font-size:13px}
+.member-public-activity{padding:22px 20px 80px}.member-public-activity>h2{margin:0 0 12px}.member-public-activity .activity-period{margin-top:20px}.member-public-activity .activity-period>h3{margin:0 0 9px;font-size:18px}
+
+@media(max-width:600px){
+ .member-public-summary{border-width:0 0 1px;border-radius:0}
+ .member-public-cover{grid-template-columns:88px minmax(0,1fr);gap:14px;padding:22px 16px 16px}
+ .member-public-avatar{width:88px;height:88px}
+ .member-public-identity{padding-bottom:8px}.member-public-identity h1{font-size:19px}.member-public-identity p{font-size:13px}
+ .member-public-actions{padding:4px 16px 14px}.member-public-actions button{flex:1;padding-inline:12px}
+ .member-public-notice{padding:0 16px 12px}
+ .member-public-activity{padding:18px 12px 90px}
+}
 .account-dashboard .settings-profile-info{flex:1}
 .profile-tabs{display:flex;gap:6px;border-bottom:1px solid #d7e1ec;margin-bottom:18px}.profile-tabs a{flex:1;text-align:center;padding:12px 8px;font-size:14px;color:#64748b;border-bottom:3px solid transparent;min-height:44px;box-sizing:border-box}.profile-tabs a[aria-current=page]{border-bottom-color:#008540;color:#073b78;font-weight:700}.profile-account{min-width:0}.profile-account .settings-back:has(svg){display:none}.profile-account .settings-row-text strong{font-size:14px}.profile-account .settings-row-text small{font-size:12px}
 .profile-layout{max-width:1040px;margin:auto;min-width:0}

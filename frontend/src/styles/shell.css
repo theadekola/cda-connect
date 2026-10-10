@@ -69,7 +69,8 @@
  .topbar .top-actions{flex-shrink:0}
 }
 @media(max-width:767px){
- .topbar .mobile-home-brand{width:min(160px,calc(100vw - 112px))}
+ .topbar .mobile-home-brand{width:min(148px,calc(100vw - 112px));height:40px;margin-left:-8px}
+ .topbar .mobile-home-brand img{width:148px;height:40px;object-fit:contain;transform:none}
 }
 @media(max-width:767px){
  .topbar .header-signout{display:none}

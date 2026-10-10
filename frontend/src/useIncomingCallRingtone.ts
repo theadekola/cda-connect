@@ -1,4 +1,6 @@
 import {useEffect} from 'react';
+import {Capacitor} from '@capacitor/core';
+import {NativeDevice} from './nativeDevice';
 
 let audioContext:AudioContext|undefined;
 
@@ -22,5 +24,5 @@ function chime(){
 
 export function useIncomingCallRingtone(active:boolean){
  useEffect(()=>{const unlock=()=>void context()?.resume();window.addEventListener('pointerdown',unlock,{once:true,passive:true});return()=>window.removeEventListener('pointerdown',unlock)},[]);
- useEffect(()=>{if(!active)return;let stopped=false;const play=async()=>{try{await context()?.resume();if(!stopped)chime()}catch{/* The next user interaction retries audio. */}};void play();const timer=window.setInterval(()=>void play(),1600);navigator.vibrate?.([500,250,500]);return()=>{stopped=true;window.clearInterval(timer);navigator.vibrate?.(0)}},[active]);
+ useEffect(()=>{if(!active)return;if(Capacitor.isNativePlatform()){void NativeDevice.startRingtone().catch(()=>{});navigator.vibrate?.([500,250,500]);return()=>{void NativeDevice.stopRingtone().catch(()=>{});navigator.vibrate?.(0)}}let stopped=false;const play=async()=>{try{await context()?.resume();if(!stopped)chime()}catch{/* The next user interaction retries audio. */}};void play();const timer=window.setInterval(()=>void play(),1600);navigator.vibrate?.([500,250,500]);return()=>{stopped=true;window.clearInterval(timer);navigator.vibrate?.(0)}},[active]);
 }

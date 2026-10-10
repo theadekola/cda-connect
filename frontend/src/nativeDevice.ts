@@ -1,5 +1,16 @@
 import {Capacitor,registerPlugin} from '@capacitor/core';
-export const NativeDevice=registerPlugin<{storage():Promise<{total:number;free:number}>;pushConfiguration():Promise<{configured:boolean;environment?:string}>}>('CdaDevice');
+export type NativeAudioRoute='earpiece'|'speaker'|'bluetooth';
+export type NativeAudioRoutes={available:NativeAudioRoute[];active:NativeAudioRoute;labels?:Partial<Record<NativeAudioRoute,string>>};
+export const NativeDevice=registerPlugin<{
+ storage():Promise<{total:number;free:number}>;
+ pushConfiguration():Promise<{configured:boolean;environment?:string}>;
+ beginCall(options:{speaker:boolean}):Promise<NativeAudioRoutes>;
+ audioRoutes():Promise<NativeAudioRoutes>;
+ setAudioRoute(options:{route:NativeAudioRoute}):Promise<NativeAudioRoutes>;
+ endCall():Promise<void>;
+ startRingtone():Promise<void>;
+ stopRingtone():Promise<void>;
+}>('CdaDevice');
 export async function storageEstimate(){
  if(!Capacitor.isNativePlatform())return await navigator.storage?.estimate?.()??{};
  const {total,free}=await NativeDevice.storage();
