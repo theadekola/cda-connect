@@ -112,6 +112,7 @@ async function stillEligible(user:string,data:any){if(data.sosStatusId){const ow
 
 async function deliverBatch(d:Delivery){let sent=0;const pool=await getPool();for(const entry of d.messages){const target:Target={notificationId:d.notificationId,userId:entry.userId,channel:'PUSH',destination:entry.token};
  const data=entry.message?.data||{};
+ if(data.type==='CALL_INCOMING'&&(!Number.isFinite(Number(data.expiresAt))||Number(data.expiresAt)<=Date.now()||!data.callId||await getRedis().get(`call:invitation:${data.callId}:${entry.userId}`)!==data.conversationId)){await finishDelivery(target,'SKIPPED','Call invitation expired or inactive');continue;}
  if(!await stillEligible(entry.userId,data)){await finishDelivery(target,'SKIPPED','Recipient no longer eligible');continue;}
  if(!data.sosId&&(!await deliveryAllowed(entry.userId,data.type||'',data.preference)||dndActive((await communicationSettings(entry.userId)).DoNotDisturbUntil))){await finishDelivery(target,'MUTED','Delivery muted');continue;}
  const app=(await pool.request().input('u',sql.UniqueIdentifier,entry.userId).query('SELECT NotificationPreviewsEnabled FROM UserAppPreferences WHERE UserId=@u')).recordset[0];if(data.type==='CHAT_MESSAGE'&&!app?.NotificationPreviewsEnabled)entry.message={...entry.message,body:'New message'};

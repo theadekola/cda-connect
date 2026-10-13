@@ -6,7 +6,7 @@ import {socketOrigin} from './api';
 import {useSession} from './auth';
 import {useIncomingCallRingtone} from './useIncomingCallRingtone';
 
-type Invite={conversationId:string;callerName?:string;conversationName?:string;mode?:'audio'|'video'};
+type Invite={conversationId:string;callerName?:string;conversationName?:string;mode?:'audio'|'video';expiresAt?:number};
 
 export function IncomingCallListener(){
  const currentSession=useSession(),location=useLocation(),navigate=useNavigate(),socket=useRef<Socket|undefined>(undefined),path=useRef(location.pathname),[invite,setInvite]=useState<Invite>();path.current=location.pathname;
@@ -17,6 +17,7 @@ export function IncomingCallListener(){
   return()=>{connected.off('call:incoming',incoming);connected.off('call:cancelled',dismiss);connected.off('call:answered',dismiss);connected.disconnect();socket.current=undefined};
  },[currentSession?.accessToken]);
  useIncomingCallRingtone(!!invite);
+ useEffect(()=>{if(!invite?.expiresAt)return;const timer=window.setTimeout(()=>setInvite(undefined),Math.max(0,invite.expiresAt-Date.now()));return()=>window.clearTimeout(timer)},[invite]);
  if(!invite)return null;const mode=invite.mode||'audio';
  return <section className="incoming-call-overlay" role="dialog" aria-modal="true" aria-label={`Incoming ${mode} call`}><div className="incoming-call-card">{mode==='video'?<Video size={34}/>:<Phone size={34}/>}<p>{mode==='video'?'Incoming video call':'Incoming voice call'}</p><strong>{invite.callerName||invite.conversationName||'CDA Connect member'}</strong>{invite.conversationName&&invite.callerName&&<small>{invite.conversationName}</small>}<div className="chat-call-controls"><button className="call-accept" onClick={()=>{const current=invite;setInvite(undefined);navigate(`/chat/${encodeURIComponent(current.conversationId)}?call=${mode}`)}}><Phone/><span>Answer</span></button><button className="call-end" onClick={()=>{socket.current?.emit('call:decline',{conversationId:invite.conversationId});setInvite(undefined)}}><PhoneOff/><span>Decline</span></button></div></div></section>;
 }

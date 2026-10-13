@@ -65,7 +65,11 @@ const schema = z.object({
   SMS_RESEND_SECONDS: z.coerce.number().int().min(30).max(600).default(60),
   ALLOW_PHONE_VERIFICATION_BYPASS: z.string().default('false').transform(v => v === 'true'),
   EMERGENCY_BATCH_SIZE: z.coerce.number().default(1000),
-  RTC_ICE_SERVERS: z.string().default('[{"urls":"stun:stun.l.google.com:19302"}]')
+  RTC_ICE_SERVERS: z.string().default('[{"urls":"stun:stun.l.google.com:19302"}]'),
+  RTC_TURN_URLS: z.string().optional(),
+  RTC_TURN_SECRET: z.string().optional(),
+  RTC_RELAY_ONLY: z.enum(['true','false']).default('false').transform(value=>value==='true'),
+  RTC_TURN_TTL_SECONDS: z.coerce.number().int().min(300).max(86400).default(3600)
 });
 
 export const env = schema.parse(process.env);

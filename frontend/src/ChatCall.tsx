@@ -7,15 +7,19 @@ import {NativeDevice,type NativeAudioRoute,type NativeAudioRoutes} from './nativ
 import {useIncomingCallRingtone} from './useIncomingCallRingtone';
 
 type CallMode='audio'|'video';
-type CallInvite={conversationId:string;mode?:CallMode;callerName?:string};
+type CallInvite={conversationId:string;mode?:CallMode;callerName?:string;expiresAt?:number};
 let icePromise:Promise<RTCIceServer[]>|undefined;
+let iceFetchedAt=0;
+let iceTransportPolicy:RTCIceTransportPolicy='all';
 
 function iceServers(){
- if(!icePromise)icePromise=api.get<{iceServers:RTCIceServer[]}>('/calls/ice').then(value=>value.iceServers).catch(()=>{
+ if(icePromise&&Date.now()-iceFetchedAt>=240_000)icePromise=undefined;
+ if(!icePromise){iceFetchedAt=Date.now();icePromise=api.get<{iceServers:RTCIceServer[];iceTransportPolicy?:RTCIceTransportPolicy}>('/calls/ice').then(value=>{iceTransportPolicy=value.iceTransportPolicy==='relay'?'relay':'all';return value.iceServers}).catch(()=>{
+  icePromise=undefined;
   if(import.meta.env.VITE_RTC_ICE_SERVERS){try{return JSON.parse(import.meta.env.VITE_RTC_ICE_SERVERS) as RTCIceServer[]}catch{/* Use the safe fallback below. */}}
-  if(import.meta.env.PROD)throw Error('Call relay is unavailable.');
+  if(import.meta.env.PROD){icePromise=undefined;throw Error('Call relay is unavailable.');}
   return [{urls:'stun:stun.l.google.com:19302'}];
- });
+ });}
  return icePromise;
 }
 function clock(seconds:number){return `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`}
@@ -29,8 +33,9 @@ export function ChatCall({socket,id,name,avatar,autoStart,callRequest}:{socket:S
  const stream=useRef<MediaStream|undefined>(undefined),peers=useRef(new Map<string,RTCPeerConnection>()),joining=useRef(false),generation=useRef(0),inCall=useRef(false),servers=useRef<RTCIceServer[]>([]),autoStarted=useRef(false),incomingRef=useRef<CallInvite|undefined>(undefined),connectedRef=useRef<number|undefined>(undefined),audioRouteRef=useRef<NativeAudioRoute>(initialRoute),routeMenuRef=useRef<HTMLDivElement>(null),webSinkIds=useRef<Partial<Record<NativeAudioRoute,string>>>({});
  incomingRef.current=incoming;connectedRef.current=connectedAt;
  useIncomingCallRingtone(!!incoming);
+ useEffect(()=>{if(!incoming?.expiresAt)return;const timer=window.setTimeout(()=>setIncoming(undefined),Math.max(0,incoming.expiresAt-Date.now()));return()=>window.clearTimeout(timer)},[incoming]);
  function reapplyAudioRoute(){if(Capacitor.isNativePlatform())window.setTimeout(()=>void NativeDevice.setAudioRoute({route:audioRouteRef.current}).then(applyRoutes).catch(()=>{}),120)}
- function connected(){if(!connectedRef.current){const now=Date.now();connectedRef.current=now;setConnectedAt(now);setElapsed(0)}setStatus('Connected');reapplyAudioRoute()}
+ function connected(peerSocketId:string){socket?.emit('call:connected',{conversationId:id,peerSocketId});if(!connectedRef.current){const now=Date.now();connectedRef.current=now;setConnectedAt(now);setElapsed(0)}setStatus('Connected');reapplyAudioRoute()}
  function applyRoutes(result:NativeAudioRoutes){const next:NativeAudioRoute[]=result.available.length?result.available:['earpiece','speaker'];audioRouteRef.current=result.active;setAudioRoutes(next);setAudioRoute(result.active);setAudioLabels(previous=>({...previous,...result.labels}))}
  async function openAudioRouteMenu(){
   if(Capacitor.isNativePlatform())applyRoutes(await NativeDevice.audioRoutes().catch(()=>({available:audioRoutes,active:audioRoute,labels:audioLabels})));
@@ -46,11 +51,11 @@ export function ChatCall({socket,id,name,avatar,autoStart,callRequest}:{socket:S
  function reset(notify=true){const wasJoining=joining.current,hadAudio=Boolean(stream.current)||inCall.current||wasJoining;generation.current++;joining.current=false;if(notify&&(inCall.current||wasJoining))socket?.emit('call:leave',{conversationId:id});inCall.current=false;for(const pc of peers.current.values())pc.close();peers.current.clear();stream.current?.getTracks().forEach(track=>track.stop());stream.current=undefined;if(hadAudio&&Capacitor.isNativePlatform())void NativeDevice.endCall().catch(()=>{});connectedRef.current=undefined;setConnectedAt(undefined);setElapsed(0);setLocal(undefined);setStreams({});setActive(false);setIncoming(undefined);setMuted(false);audioRouteRef.current=initialRoute;setAudioRoute(initialRoute);setAudioRoutes(nativeAudio?['earpiece','speaker']:['speaker']);setAudioLabels(defaultRouteLabels);setRouteMenu(false);setSinkId('')}
  async function peer(key:string,offer=false){
   let pc=peers.current.get(key);if(pc)return pc;
-  pc=new RTCPeerConnection({iceServers:servers.current});peers.current.set(key,pc);
+  pc=new RTCPeerConnection({iceServers:servers.current,iceTransportPolicy});peers.current.set(key,pc);
   stream.current?.getTracks().forEach(track=>pc!.addTrack(track,stream.current!));
   pc.onicecandidate=event=>{if(event.candidate)socket?.emit('call:signal',{conversationId:id,targetSocketId:key,signal:{candidate:event.candidate.toJSON()}})};
   pc.ontrack=event=>{setStreams(previous=>({...previous,[key]:event.streams[0]||new MediaStream([event.track])}))};
-  pc.onconnectionstatechange=()=>{if(pc!.connectionState==='failed')setStatus('Call could not connect. Check your network and try again.');else if(pc!.connectionState==='connected')connected()};
+  pc.onconnectionstatechange=()=>{if(pc!.connectionState==='failed')setStatus('Call could not connect. Check your network and try again.');else if(pc!.connectionState==='connected')connected(key)};
   if(offer){await pc.setLocalDescription(await pc.createOffer());socket?.emit('call:signal',{conversationId:id,targetSocketId:key,signal:{description:pc.localDescription}})}return pc;
  }
  async function start(callMode:CallMode){
@@ -71,10 +76,11 @@ export function ChatCall({socket,id,name,avatar,autoStart,callRequest}:{socket:S
   const declined=(result:{conversationId:string})=>{if(result.conversationId===id&&stream.current&&!peers.current.size)setStatus('Waiting for another participant.')};
   const cancelled=(result:{conversationId:string})=>{if(result.conversationId===id&&incomingRef.current){reset(false);setStatus('')}};
   const timedOut=(result:{conversationId:string})=>{if(result.conversationId===id&&(stream.current||joining.current)){reset(false);setStatus('No answer.')}};
+  const ended=(result:{conversationId:string})=>{if(result.conversationId===id){reset(false);setStatus('Call ended.')}};
   const left=(result:{conversationId:string;socketId:string})=>{if(result.conversationId!==id)return;peers.current.get(result.socketId)?.close();peers.current.delete(result.socketId);setStreams(previous=>{const next={...previous};delete next[result.socketId];return next});if(stream.current&&!peers.current.size)setStatus('Waiting for another participant.')};
   const disconnected=()=>{const callWasActive=inCall.current||joining.current||!!stream.current;if(!callWasActive){setIncoming(undefined);return}reset(false);setStatus('Call ended because the connection was lost.')};
-  socket.on('call:incoming',invite);socket.on('call:signal',signal);socket.on('call:participant-joined',joined);socket.on('call:participant-left',left);socket.on('call:declined',declined);socket.on('call:cancelled',cancelled);socket.on('call:timeout',timedOut);socket.on('disconnect',disconnected);
-  return()=>{socket.off('call:incoming',invite);socket.off('call:signal',signal);socket.off('call:participant-joined',joined);socket.off('call:participant-left',left);socket.off('call:declined',declined);socket.off('call:cancelled',cancelled);socket.off('call:timeout',timedOut);socket.off('disconnect',disconnected);reset()};
+  socket.on('call:incoming',invite);socket.on('call:signal',signal);socket.on('call:participant-joined',joined);socket.on('call:participant-left',left);socket.on('call:declined',declined);socket.on('call:cancelled',cancelled);socket.on('call:timeout',timedOut);socket.on('call:ended',ended);socket.on('disconnect',disconnected);
+  return()=>{socket.off('call:incoming',invite);socket.off('call:signal',signal);socket.off('call:participant-joined',joined);socket.off('call:participant-left',left);socket.off('call:declined',declined);socket.off('call:cancelled',cancelled);socket.off('call:timeout',timedOut);socket.off('call:ended',ended);socket.off('disconnect',disconnected);reset()};
  },[socket,id]);
  useEffect(()=>{if(socket?.connected&&autoStart&&!autoStarted.current){autoStarted.current=true;void start(autoStart)}},[socket?.connected,autoStart]);
  useEffect(()=>{if(socket?.connected&&callRequest)void start(callRequest.mode)},[socket?.connected,callRequest?.key]);
