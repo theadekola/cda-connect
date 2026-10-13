@@ -3,7 +3,7 @@ import {readFileSync,existsSync} from 'node:fs';
 import {connect} from 'node:http2';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env.js';
-export type NativeMessage={to:string;title?:string;body?:string;data?:Record<string,unknown>};
+export type NativeMessage={to:string;title?:string;body?:string;data?:Record<string,unknown>;channelId?:string;sound?:string;priority?:'normal'|'high'};
 export function nativePushReady(platform:string){return platform==='android'?Boolean(env.FCM_SERVICE_ACCOUNT_FILE&&existsSync(env.FCM_SERVICE_ACCOUNT_FILE)):Boolean(env.APNS_KEY_FILE&&existsSync(env.APNS_KEY_FILE)&&env.APNS_KEY_ID&&env.APNS_TEAM_ID)}
 let googleToken:{value:string;expires:number}|undefined;
 async function accessToken(){
@@ -21,7 +21,7 @@ export async function sendNativePush(message:NativeMessage){
  const payload=nativePayload(message);
  if(android){
   const account=JSON.parse(readFileSync(env.FCM_SERVICE_ACCOUNT_FILE!,'utf8'));
-  const response=await fetch('https://fcm.googleapis.com/v1/projects/'+encodeURIComponent(account.project_id)+'/messages:send',{method:'POST',signal:AbortSignal.timeout(20000),headers:{authorization:'Bearer '+await accessToken(),'content-type':'application/json'},body:JSON.stringify({message:{token:message.to.slice(4),...payload,android:{priority:'high',notification:{channel_id:'default'}}}})});
+  const response=await fetch('https://fcm.googleapis.com/v1/projects/'+encodeURIComponent(account.project_id)+'/messages:send',{method:'POST',signal:AbortSignal.timeout(20000),headers:{authorization:'Bearer '+await accessToken(),'content-type':'application/json'},body:JSON.stringify({message:{token:message.to.slice(4),...payload,android:{priority:message.priority==='normal'?'normal':'high',notification:{channel_id:message.channelId||'default',sound:message.sound||'default'}}}})});
   const result:any=await response.json();if(response.ok)return {status:'ok'};
   if(result.error?.details?.some((d:any)=>d.errorCode==='UNREGISTERED'))return {status:'error',details:{error:'DeviceNotRegistered'}};
   throw Error('Firebase delivery failed (HTTP '+response.status+')');
@@ -36,6 +36,6 @@ export async function sendNativePush(message:NativeMessage){
   const request=client.request({':method':'POST',':path':'/3/device/'+token,authorization:'bearer '+authorization,'apns-topic':env.APNS_BUNDLE_ID,'apns-push-type':'alert','apns-priority':'10'});let status=0,body='';
   request.on('response',headers=>{status=Number(headers[':status'])});request.setEncoding('utf8');request.on('data',chunk=>{body+=chunk});request.on('error',()=>{finish();reject(Error('Apple push request failed'))});
   request.on('end',()=>{finish();if(status===200){resolve({status:'ok'});return}let reason='';try{reason=JSON.parse(body).reason}catch{}if(status===410||reason==='Unregistered')resolve({status:'error',details:{error:'DeviceNotRegistered'}});else reject(Error('Apple push delivery failed (HTTP '+status+')'))});
-  request.end(JSON.stringify({...payload.data,aps:{alert:payload.notification,sound:'default'}}));
+  request.end(JSON.stringify({...payload.data,aps:{alert:payload.notification,sound:message.sound||'default'}}));
  });
 }

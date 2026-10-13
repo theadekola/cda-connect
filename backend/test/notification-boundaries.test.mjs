@@ -103,8 +103,25 @@ test('call signalling preserves media mode and supports ringing, decline and can
   assert.match(socket,/finishCallMessage/);
   assert.match(socket,/message:updated/);
   assert.match(socket,/e instanceof AppError \? e\.message : 'Unable to join call'/);
+  assert.match(socket,/CALL_RING_TIMEOUT_MS=45_000/);
+  assert.match(socket,/socket\.data\.callConversationId!==conversationId\|\|!socket\.rooms\.has\(room\)/);
+  assert.match(socket,/callSockets\.find\(callSocket=>Array\.isArray\(callSocket\.data\.callInvitees\)&&callSocket\.data\.callInvitees\.includes\(user\.id\)\)/);
+  assert.match(socket,/\.filter\(invitee=>invitee!==user\.id\)/);
+  assert.doesNotMatch(socket,/for\(const peerId of \[\.\.\.\(io\.sockets\.adapter\.rooms\.get\(room\)\?\?\[\]\)\]\)/);
+  assert.match(socket,/CLIENT_MESSAGE_TYPES=new Set\(\['TEXT','PHOTO','IMAGE','VIDEO','DOCUMENT','VOICE','AUDIO'\]\)/);
+  assert.match(socket,/if\(!CLIENT_MESSAGE_TYPES\.has\(d\.messageType\)\)/);
+  assert.match(socket,/type:'CALL_INCOMING'/);
+  const worker=await readFile(new URL('../src/workers/worker.ts',import.meta.url),'utf8');
+  assert.match(worker,/d\.data\?\.pushOnly!=='true'/);
+  assert.match(worker,/d\.data\?\.realtime==='true'\?0/);
+  assert.match(worker,/channelId:d\.data\?\.channelId\|\|'default'/);
   assert.match(chat,/calls\/ice/);
   assert.match(chat,/Cache-Control','private, no-store/);
+  assert.match(chat,/NODE_ENV==='production'.*!urls\.some\(url=>\/\^turns\?:\/i\.test\(url\)\)/);
+  const backendEnv=await readFile(new URL('../.env.example',import.meta.url),'utf8');
+  const deployEnv=await readFile(new URL('../../deploy/.env.example',import.meta.url),'utf8');
+  assert.match(backendEnv,/RTC_ICE_SERVERS=.*turn:.*turns:/);
+  assert.match(deployEnv,/RTC_ICE_SERVERS=.*turn:.*turns:/);
 });
 
 test('join checks do not open notification queue connections before a request is created',async()=>{

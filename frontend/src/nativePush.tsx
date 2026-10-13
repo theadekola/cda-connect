@@ -25,7 +25,7 @@ export function enableNativePush(prompt=true){
   let permission=await PushNotifications.checkPermissions();if(prompt&&permission.receive!=='granted')permission=await PushNotifications.requestPermissions();
   if(permission.receive!=='granted')throw Error('Allow notifications for CDA Connect in your phone settings.');
   const platform=Capacitor.getPlatform()==='ios'?'ios':'android';
-  if(platform==='android')await PushNotifications.createChannel({id:'default',name:'Community notifications',importance:4});
+  if(platform==='android'){await PushNotifications.createChannel({id:'default',name:'Community notifications',importance:4});await PushNotifications.createChannel({id:'calls',name:'Incoming calls',description:'Voice and video call alerts',importance:5,visibility:1,vibration:true})}
   const handles:PluginListenerHandle[]=[];let timer:ReturnType<typeof setTimeout>|undefined;
   try{
    const value=await new Promise<string>((resolve,reject)=>{

@@ -93,15 +93,15 @@ async function dispatchNotification(raw:unknown){
  }
  const muted=!d.data?.sosId&&(row.Enabled===false||row.Enabled===0||preference==='OFF'||preference==='0'||(d.conversationId&&await redis.scard(`presence:conversation:${d.conversationId}:user:${userId}`)>0));
  if(muted){await planDelivery(pushTarget,'MUTED','Outbound delivery preferences or conversation presence');continue;}
- if(firstForUser&&preference!=='DAILY'&&preference!=='WEEKLY')for(const channel of ['EMAIL',...(meetingSms?['SMS']:[])]){
+ if(firstForUser&&d.data?.pushOnly!=='true'&&preference!=='DAILY'&&preference!=='WEEKLY')for(const channel of ['EMAIL',...(meetingSms?['SMS']:[])]){
  const channelTarget={notificationId:d.notificationId,userId,channel};await planDelivery(channelTarget);if(!await deliveryNeedsQueue(channelTarget))continue;
  const queuedChannel=await ensureRunnable(notificationQueue,channel==='EMAIL'?'account-email':'account-sms',{notificationId:d.notificationId,userId,sosId:d.data?.sosId,sosStatusId:d.data?.sosStatusId,communityId:d.communityId,type:d.type,preference:d.preference,entityId:d.entityId,conversationId:d.conversationId,actorUserId:d.actorUserId},{jobId:`account_${channel.toLowerCase()}_${d.notificationId}_${userId}`,attempts:3,backoff:{type:'exponential',delay:5000},removeOnComplete:1000,removeOnFail:1000});await recordDeliveryJob(channelTarget,queuedChannel.job.id!);}
- if(preference==='DAILY'||preference==='WEEKLY'){
+ if(d.data?.realtime!=='true'&&(preference==='DAILY'||preference==='WEEKLY')){
  if(firstForUser)await pool.request().input('notification',sql.UniqueIdentifier,d.notificationId).input('user',sql.UniqueIdentifier,userId).input('frequency',sql.NVarChar(20),preference).input('title',sql.NVarChar(180),safe(d.title,180)).input('body',sql.NVarChar(500),privateBody).input('data',sql.NVarChar(2000),JSON.stringify(navigation)).query(`IF NOT EXISTS(SELECT 1 FROM NotificationDigestItems WITH(UPDLOCK,HOLDLOCK) WHERE NotificationId=@notification AND UserId=@user) INSERT INTO NotificationDigestItems(NotificationId,UserId,Frequency,Title,Body,Data) VALUES(@notification,@user,@frequency,@title,@body,@data)`);
  await planDelivery(pushTarget,'SKIPPED','Deferred to '+preference+' digest');continue;}
  if(!token){await planDelivery(pushTarget,'NO_DEVICE','No push subscription');continue;}
- await planDelivery(pushTarget);if(!await deliveryNeedsQueue(pushTarget))continue;const delay=!d.data?.sosId&&row.QuietHoursEnabled?quietDelay(row.TimeZone,row.QuietStart,row.QuietEnd):0;
- const entry={userId,token,message:{to:token,sound:'default',title:safe(d.title,180),body:privateBody,data:navigation,channelId:'default',priority:d.priority??'normal'}};immediate.push(entry);
+ await planDelivery(pushTarget);if(!await deliveryNeedsQueue(pushTarget))continue;const delay=d.data?.realtime==='true'?0:!d.data?.sosId&&row.QuietHoursEnabled?quietDelay(row.TimeZone,row.QuietStart,row.QuietEnd):0;
+ const entry={userId,token,message:{to:token,sound:'default',title:safe(d.title,180),body:privateBody,data:navigation,channelId:d.data?.channelId||'default',priority:d.priority??'normal'}};immediate.push(entry);
  const queuedPush=await ensureRunnable(notificationQueue,'notification-delivery',{notificationId:d.notificationId,eventId:d.eventId,batch:0,messages:[entry]},{jobId:`push_delivery_${d.notificationId}_${userId}_${destinationHash(token)}`,delay,attempts:4,backoff:{type:'exponential',delay:2000},removeOnComplete:1000,removeOnFail:1000});await recordDeliveryJob(pushTarget,queuedPush.job.id!);
  }
  await pool.request().input('id',sql.UniqueIdentifier,d.notificationId).query(`UPDATE NotificationOutbox SET Status='DISPATCHED',DispatchedAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME() WHERE NotificationId=@id AND Status<>'COMPLETED'`);
