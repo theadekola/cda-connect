@@ -1,3 +1,4 @@
+import {safeReturnPath} from './navigation';
 import {useState} from 'react';
 import {Link,useParams,useNavigate,Navigate} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
@@ -8,9 +9,9 @@ import {ErrorBox,Loading} from './ui';
 import {CommunityLogo} from './Communities';
 import './discovery.css';
 export function inviteCode(){const code=new URLSearchParams(window.location.search).get('invite')||'';return /^[A-Z0-9]{6,20}$/i.test(code)?code.toUpperCase():''}
-function cardReturn(){const current=window.location.pathname+window.location.hash;const candidate=new URLSearchParams(window.location.search).get('returnTo')||current;return /^\/community\/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\/membership-card#member=[A-Za-z0-9_-]{32}$/.test(candidate)?candidate:''}
-export function authDestination(){const card=cardReturn();if(card)return card;const code=inviteCode();return code?'/invite/'+code:'/home'}
-export function authLink(path:string){const card=cardReturn();if(card)return path+'?returnTo='+encodeURIComponent(card);const code=inviteCode();return path+(code?'?invite='+encodeURIComponent(code):'')}
+function returnPath(){const params=new URLSearchParams(window.location.search);return safeReturnPath(params.get('returnTo')||'')||safeReturnPath(window.location.pathname+window.location.search+window.location.hash)}
+export function authDestination(){const path=returnPath();if(path)return path;const code=inviteCode();return code?'/invite/'+code:'/home'}
+export function authLink(path:string){const destination=returnPath();if(destination)return path+'?returnTo='+encodeURIComponent(destination);const code=inviteCode();return path+(code?'?invite='+encodeURIComponent(code):'')}
 export function CommunityCreated({community}:{community:RecordData}){
  const [message,setMessage]=useState(''),[error,setError]=useState<unknown>();const code=str(community.JoinCode),url='https://cdaconnect.org/invite/'+encodeURIComponent(code);
  async function copy(value:string,label:string){try{await navigator.clipboard.writeText(value);setMessage(label+' copied.');setError(undefined)}catch{setError(Error('Copy is unavailable. Select and copy the text below.'))}}

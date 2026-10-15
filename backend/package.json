@@ -42,6 +42,7 @@
     "@types/node": "^24.2.1",
     "@types/nodemailer": "^8.0.1",
     "@types/web-push": "^3.6.4",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2"
   },
@@ -50,4 +51,3 @@
     "node": ">=22.13"
   }
 }
-

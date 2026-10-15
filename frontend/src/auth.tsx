@@ -12,12 +12,12 @@ import {disconnectPush} from './push';
 import {authenticateBiometric,biometricLock,getBiometricEnabled} from './sessionSecurity';
 export const useSession=()=>useSyncExternalStore(session.subscribe,session.get,()=>null);
 export function Protected(){
- const current=useSession(),locked=useSyncExternalStore(biometricLock.subscribe,biometricLock.get,()=>false),nav=useNavigate(),ending=useRef(false);
+ const current=useSession(),locked=useSyncExternalStore(biometricLock.subscribe,biometricLock.get,()=>false),nav=useNavigate(),ending=useRef(false),[foreground,setForeground]=useState(true);
  const endSession=useCallback(async()=>{if(ending.current)return;ending.current=true;const revoke=Promise.allSettled([disconnectPush(),api.send('/auth/logout',{})]);await Promise.race([revoke,new Promise(resolve=>window.setTimeout(resolve,2000))]);session.set(null);nav('/login',{replace:true})},[nav]);
- useEffect(()=>{if(!current||!Capacitor.isNativePlatform())return;let disposed=false,handle:{remove:()=>Promise<void>}|undefined;void NativeApp.addListener('appStateChange',state=>{if(!state.isActive)biometricLock.lock()}).then(value=>{if(disposed)void value.remove();else handle=value});return()=>{disposed=true;void handle?.remove()}},[current]);
+ useEffect(()=>{if(!current||!Capacitor.isNativePlatform())return;let disposed=false,handle:{remove:()=>Promise<void>}|undefined;void NativeApp.addListener('appStateChange',state=>{setForeground(state.isActive);if(!state.isActive)biometricLock.lock()}).then(value=>{if(disposed)void value.remove();else handle=value});return()=>{disposed=true;void handle?.remove()}},[current]);
  if(!current)return <Navigate to={authLink("/login")} replace/>;
- if(getBiometricEnabled()&&locked)return <BiometricGate onSignOut={()=>endSession()}/>;
- return <Outlet/>;
+ const showLock=getBiometricEnabled()&&locked;
+ return <><div hidden={showLock} inert={showLock}><Outlet/></div>{showLock&&<div style={{position:'fixed',inset:0,zIndex:10000,overflow:'auto',background:'var(--surface, #fff)'}} role="dialog" aria-modal="true" aria-label="Unlock CDA Connect">{foreground?<BiometricGate onSignOut={()=>endSession()}/>:<Loading label="App locked" fullscreen/>}</div>}</>;
 }
 function BiometricGate({onSignOut}:{onSignOut:()=>Promise<void>}){
  const[busy,setBusy]=useState(false),[error,setError]=useState(''),attempted=useRef(false);

@@ -1,8 +1,8 @@
+import {authenticatedSocket} from './socketSession';
 import {useEffect,useRef,useState} from 'react';
 import {Phone,PhoneOff,Video} from 'lucide-react';
-import {io,type Socket} from 'socket.io-client';
+import {type Socket} from 'socket.io-client';
 import {useLocation,useNavigate} from 'react-router-dom';
-import {socketOrigin} from './api';
 import {useSession} from './auth';
 import {useIncomingCallRingtone} from './useIncomingCallRingtone';
 
@@ -10,12 +10,12 @@ type Invite={conversationId:string;callerName?:string;conversationName?:string;m
 
 export function IncomingCallListener(){
  const currentSession=useSession(),location=useLocation(),navigate=useNavigate(),socket=useRef<Socket|undefined>(undefined),path=useRef(location.pathname),[invite,setInvite]=useState<Invite>();path.current=location.pathname;
- useEffect(()=>{if(!currentSession)return;const connected=io(socketOrigin(),{auth:{token:currentSession.accessToken}});socket.current=connected;
+ useEffect(()=>{if(!currentSession)return;const connection=authenticatedSocket(),connected=connection.socket;socket.current=connected;
   const incoming=(next:Invite)=>{if(path.current===`/chat/${next.conversationId}`)return;setInvite({...next,mode:next.mode==='video'?'video':'audio'})};
   const dismiss=(result:{conversationId:string})=>setInvite(value=>value?.conversationId===result.conversationId?undefined:value);
-  connected.on('call:incoming',incoming);connected.on('call:cancelled',dismiss);connected.on('call:answered',dismiss);
-  return()=>{connected.off('call:incoming',incoming);connected.off('call:cancelled',dismiss);connected.off('call:answered',dismiss);connected.disconnect();socket.current=undefined};
- },[currentSession?.accessToken]);
+  connected.connect();connected.on('call:incoming',incoming);connected.on('call:cancelled',dismiss);connected.on('call:answered',dismiss);
+  return()=>{connected.off('call:incoming',incoming);connected.off('call:cancelled',dismiss);connected.off('call:answered',dismiss);connection.dispose();socket.current=undefined};
+ },[currentSession?.user.Id]);
  useIncomingCallRingtone(!!invite);
  useEffect(()=>{if(!invite?.expiresAt)return;const timer=window.setTimeout(()=>setInvite(undefined),Math.max(0,invite.expiresAt-Date.now()));return()=>window.clearTimeout(timer)},[invite]);
  if(!invite)return null;const mode=invite.mode||'audio';

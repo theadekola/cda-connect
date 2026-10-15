@@ -18,7 +18,7 @@ const groups=[
   ['feed','Feed',Newspaper],['announcements','Announcements',Megaphone],['conversations','Chat',MessageCircle],['events','Events',CalendarDays],['marketplace','Marketplace',Store],['services','Services',Briefcase]
  ]],
  ['Community life',[
-  ['meetings','Meetings',CalendarDays],['issues','Report issue',TriangleAlert],['polls','Polls',Vote],['finance','My finances',Wallet],['membership-card','Membership card',Contact],['documents','Documents',Folder],['members','Members',Users],['alerts','Emergency',ShieldCheck],['excos','Executive team',Users]
+  ['meetings','Meetings',CalendarDays],['issues','Report issue',TriangleAlert],['polls','Polls',Vote],['governance','Governance',ClipboardCheck],['decisions','Decision register',ClipboardCheck],['finance','My finances',Wallet],['membership-card','Membership card',Contact],['documents','Documents',Folder],['members','Members',Users],['alerts','Emergency',ShieldCheck],['excos','Executive team',Users]
  ]]
 ] as const;
 export function CommunityNavigation({id,title,menu=false,compose=false}:{id:string;title:string;menu?:boolean;compose?:boolean}){return <div className="community-section-heading"><Link className="button secondary" aria-label={menu||compose?'Back to feed':'Open community menu'} to={'/community/'+id+(menu||compose?'/feed':'/menu')}>{compose?<ArrowLeft size={21}/>:<Menu size={21}/>}</Link><h1>{title}</h1>{title==='Feed'&&<Link className="button secondary feed-create-button" aria-label="Create post" title="Create post" to={'/community/'+id+'/create-post'}><SquarePen size={21}/></Link>}</div>}

@@ -38,6 +38,23 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="cdaconnect.org" />
+                <data android:pathPrefix="/invite/" />
+                <data android:pathPrefix="/post/" />
+                <data android:pathPrefix="/community/" />
+                <data android:pathPrefix="/chat/" />
+                <data android:pathPrefix="/poll/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="org.cdaconnect.app" android:host="open" />
+            </intent-filter>
 
         </activity>
 
