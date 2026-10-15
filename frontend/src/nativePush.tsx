@@ -16,6 +16,24 @@ export async function nativePushStatus(){
  const platform=Capacitor.getPlatform()==='ios'?'ios':'android';
  return {ready:build.configured&&server[platform],environment:build.environment,message:!build.configured?'Android push setup is pending. Add the Firebase app configuration and rebuild.':!server[platform]?'Push delivery setup is pending on the server.':'',enabled:nativeEnabled()&&(await PushNotifications.checkPermissions()).receive==='granted'};
 }
+let tokenListener:PluginListenerHandle|undefined,tokenOwner='';
+let tokenUpdates=Promise.resolve();
+async function persistToken(value:string,userId:string,platform:'android'|'ios',environment?:string){
+ if(session.get()?.user.Id!==userId||optedOut())return;
+ const token=(platform==='android'?'fcm:':environment==='sandbox'?'apns-sandbox:':'apns:')+value,previous=saved();
+ await api.send('/users/devices',{deviceToken:token,platform,deviceName:'CDA Connect '+platform});
+ if(session.get()?.user.Id!==userId||optedOut()){await api.send('/users/devices',{deviceToken:token},'DELETE');return}
+ localStorage.setItem(key,JSON.stringify({token,userId}));
+ if(previous?.userId===userId&&previous.token!==token)await api.send('/users/devices',{deviceToken:previous.token},'DELETE').catch(()=>{});
+}
+async function watchToken(userId:string,platform:'android'|'ios',environment?:string){
+ if(tokenOwner===userId&&tokenListener)return;
+ await tokenListener?.remove();tokenOwner=userId;
+ tokenListener=await PushNotifications.addListener('registration',event=>{
+  tokenUpdates=tokenUpdates.catch(()=>{}).then(()=>persistToken(event.value,userId,platform,environment));
+  void tokenUpdates.catch(()=>{});
+ });
+}
 let registering:Promise<void>|undefined;
 export function enableNativePush(prompt=true){
  if(registering)return registering;
@@ -24,8 +42,10 @@ export function enableNativePush(prompt=true){
   const config=await nativePushStatus();if(!config.ready)throw Error(config.message);
   let permission=await PushNotifications.checkPermissions();if(prompt&&permission.receive!=='granted')permission=await PushNotifications.requestPermissions();
   if(permission.receive!=='granted')throw Error('Allow notifications for CDA Connect in your phone settings.');
+  savePreference(true);
   const platform=Capacitor.getPlatform()==='ios'?'ios':'android';
   if(platform==='android'){await PushNotifications.createChannel({id:'default',name:'Community notifications',importance:4});await PushNotifications.createChannel({id:'calls',name:'Incoming calls',description:'Voice and video call alerts',importance:5,visibility:1,vibration:true})}
+  await watchToken(userId,platform,config.environment);
   const handles:PluginListenerHandle[]=[];let timer:ReturnType<typeof setTimeout>|undefined;
   try{
    const value=await new Promise<string>((resolve,reject)=>{
@@ -33,16 +53,15 @@ export function enableNativePush(prompt=true){
     void(async()=>{handles.push(await PushNotifications.addListener('registration',token=>resolve(token.value)));handles.push(await PushNotifications.addListener('registrationError',()=>reject(Error('Device push registration failed. Check Firebase or Apple push configuration.'))));await PushNotifications.register()})().catch(reject);
    });
    if(session.get()?.user.Id!==userId)throw Error('Your account changed. Please retry.');
-   const token=(platform==='android'?'fcm:':config.environment==='sandbox'?'apns-sandbox:':'apns:')+value;
-   const previous=saved();
-   await api.send('/users/devices',{deviceToken:token,platform,deviceName:'CDA Connect '+platform});
-   if(previous?.userId===userId&&previous.token!==token)await api.send('/users/devices',{deviceToken:previous.token},'DELETE');
-   localStorage.setItem(key,JSON.stringify({token,userId}));
+   await tokenUpdates;
+   if(saved()?.userId!==userId)await persistToken(value,userId,platform,config.environment);
   }finally{clearTimeout(timer);await Promise.all(handles.map(handle=>handle.remove()))}
  })().finally(()=>{registering=undefined});return registering;
 }
 export async function disconnectNativePush(){
  if(registering)await registering.catch(()=>{});
+ await tokenListener?.remove();tokenListener=undefined;tokenOwner='';
+ await tokenUpdates.catch(()=>{});
  const existing=saved();if(!existing)return;
  await api.send('/users/devices',{deviceToken:existing.token},'DELETE');
  await PushNotifications.unregister();await PushNotifications.removeAllDeliveredNotifications();localStorage.removeItem(key);

@@ -44,6 +44,8 @@ const schema = z.object({
   APNS_KEY_ID: z.string().optional(),
   APNS_TEAM_ID: z.string().optional(),
   APNS_BUNDLE_ID: z.string().default('org.cdaconnect.app'),
+  IOS_APP_ID: z.string().optional(),
+  ANDROID_APP_LINK_SHA256: z.string().optional(),
   PUSH_PROVIDER_URL: z.string().optional(),
   PUSH_PROVIDER_TOKEN: z.string().optional(),
   EMAIL_PROVIDER_URL: z.string().optional(),

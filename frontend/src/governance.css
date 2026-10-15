@@ -1,0 +1,11 @@
+.governance-page{max-width:960px;margin:auto;min-width:0;overflow-wrap:anywhere}
+.governance-page .card{margin:16px 0;min-width:0}
+.governance-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.governance-tabs a{padding:12px;border-radius:10px;background:#edf4fa;color:#073b78}
+.governance-tabs a[aria-current=page]{background:#073b78;color:#fff}
+.governance-page .choice{display:flex;gap:10px;align-items:center;min-height:44px}
+.governance-page .choice input{width:auto;flex:none}
+.governance-page progress{width:100%;max-width:100%}
+.governance-page fieldset{min-width:0}
+.governance-receipt{word-break:break-all;padding:12px;background:#eef8f2}
+@media(max-width:600px){.governance-page .card{padding:14px}.governance-tabs a{flex:1;text-align:center}}

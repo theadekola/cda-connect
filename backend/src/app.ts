@@ -1,4 +1,5 @@
 import {operationalHealth} from './services/operationalHealth.js';
+import {appleAssociation,androidAssociation} from './services/linkAssociations.js';
 import {allowMediaEmbedding} from './middleware/mediaResourcePolicy.js';
 import {protectCookieMutation,trustedRequestOrigins} from './services/sessionCookies.js';
 import express from 'express';
@@ -32,6 +33,12 @@ app.use('/api/',protectCookieMutation);
 app.use((_req,res,next)=>{res.set('Permissions-Policy','camera=(self), microphone=(self), geolocation=(self), payment=(), usb=()');next()});
 if (env.STORAGE_DRIVER === 'local') app.use('/uploads', express.static(path.resolve('uploads'),{setHeaders:allowMediaEmbedding}));
 app.use('/api/', distributedRateLimit);
+app.get('/.well-known/apple-app-site-association',(_req,res)=>{
+ try{res.set('Cache-Control','public, max-age=300').json(appleAssociation(env.IOS_APP_ID||(env.APNS_TEAM_ID?env.APNS_TEAM_ID+'.'+env.APNS_BUNDLE_ID:'')))}catch{res.status(503).set('Cache-Control','no-store').json({error:'iOS app links are not configured'})}
+});
+app.get('/.well-known/assetlinks.json',(_req,res)=>{
+ try{res.set('Cache-Control','public, max-age=300').json(androidAssociation(env.ANDROID_APP_LINK_SHA256||''))}catch{res.status(503).set('Cache-Control','no-store').json({error:'Android app links are not configured'})}
+});
 
 app.get('/health', async (_req, res) => {
   const checks: Record<string, string> = { api: 'ok' };
