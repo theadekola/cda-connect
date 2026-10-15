@@ -45,6 +45,15 @@
 .app:has(.conversation-page) .workspace{padding-bottom:0}
 .app:has(.conversation-page) #main{padding:0;min-height:0}
 .conversation-page{height:var(--chat-viewport,100dvh);display:flex;flex-direction:column;min-width:0;overflow:hidden;background:#f4f7fb}
+/* Do not transform the chat shell during route transitions. Its viewport and
+   fixed call controls must stay anchored when the software keyboard opens. */
+.app #main.route-changing>.conversation-page{animation:none!important}
+@media(max-width:767px){
+ html.chat-viewport-active,html.chat-viewport-active body{height:100%;overflow:hidden;overscroll-behavior:none}
+ html.chat-viewport-active body{position:fixed;inset:0;width:100%}
+ .app:has(.conversation-page) .workspace,.app:has(.conversation-page) #main{height:100%;overflow:hidden}
+ .conversation-page{position:fixed;top:var(--chat-viewport-top,0px);left:0;right:0}
+}
 .conversation-header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:#073B78;color:white;flex-shrink:0;position:relative}
 .conversation-header button,.conversation-header a{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;background:transparent;border:0;color:inherit;padding:8px}
 .conversation-avatar{width:38px;height:38px;flex:0 0 38px;border-radius:50%;background:#fff;color:#073B78;display:grid;place-items:center;overflow:hidden}.conversation-avatar img{width:100%;height:100%;object-fit:cover}
@@ -54,7 +63,7 @@
 .chat-message-avatar{width:34px;height:34px;flex:0 0 34px;margin-bottom:10px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#dfeefa;color:#073B78;font-size:13px;font-weight:700}.chat-message-avatar img{width:100%;height:100%;object-fit:cover}
 .conversation-page .message.mine{background:#eaf3ff;color:#172033}.conversation-page .message strong{font-size:12px;color:#073B78}.conversation-page .message small{display:block;text-align:right;font-size:11px;color:#66758b;margin-top:5px}
 .chat-date{text-align:center;font-size:12px;color:#66758b;margin:12px 0}.chat-empty{text-align:center;font-size:14px;color:#66758b;padding:24px}
-.chat-composer-area{flex-shrink:0;background:white;padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:1px solid #dfe7ef}.chat-composer-area>p{font-size:13px;margin:4px 8px 8px}
+.chat-composer-area{flex-shrink:0;background:white;padding:8px 12px calc(8px + var(--chat-bottom-inset,env(safe-area-inset-bottom)));border-top:1px solid #dfe7ef}.chat-composer-area>p{font-size:13px;margin:4px 8px 8px}
 .conversation-page .composer{display:flex;align-items:center;gap:4px;padding:0;margin:0;position:static;border:0;background:transparent}.conversation-page .composer textarea{flex:1;min-width:0;width:0;min-height:44px;max-height:180px;resize:none;border-radius:22px;font-size:16px;padding:10px 14px}
 .conversation-page .composer button{min-width:44px;width:44px;min-height:44px;padding:10px;display:grid;place-items:center;border:0;background:transparent;color:#073B78}.conversation-page .composer .chat-send{background:#073B78;color:white;border-radius:50%}
 .chat-draft-file{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:6px}.chat-draft-file span{overflow-wrap:anywhere}.chat-draft-file button{min-width:44px;min-height:44px}
