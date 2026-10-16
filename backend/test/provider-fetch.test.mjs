@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+const {providerFetch}=await import('../dist/services/providerFetch.js');
+test('provider work has a deadline and refuses redirects',async()=>{globalThis.fetch=async(url,options)=>{assert.equal(options.redirect,'error');assert.ok(options.signal instanceof AbortSignal);return new Response('{}')};assert.equal((await providerFetch('https://provider.example.test',{})).status,200)});
+test('provider timeouts and network failures return safe errors',async()=>{for(const [name,status]of [['TimeoutError',504],['TypeError',502]]){globalThis.fetch=async()=>{const error=Error('secret-provider-details');error.name=name;throw error};await assert.rejects(providerFetch('https://provider.example.test',{}),error=>error.status===status&&!error.message.includes('secret-provider-details'))}});

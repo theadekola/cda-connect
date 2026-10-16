@@ -11,12 +11,13 @@ export const session={get:()=>current,subscribe:(fn:()=>void)=>{listeners.add(fn
 export async function restoreSession(){const revision=sessionRevision;try{await refreshSession()}catch{if(revision===sessionRevision)session.set(null)}}
 export async function refreshSession(){if(!refreshPromise){const revision=sessionRevision;const refresh=async()=>{const data=await perform<Session>('/auth/refresh',{method:'POST',body:'{}'},false);if(revision===sessionRevision)session.set(data)};refreshPromise=(async()=>{if(navigator.locks)await navigator.locks.request('cda-refresh',refresh);else await refresh()})().finally(()=>{refreshPromise=null})}return refreshPromise}
 export class ApiError extends Error{constructor(public status:number,message:string){super(message)}}
-function base(){const configured=import.meta.env.VITE_API_URL;const value=Capacitor.isNativePlatform()&&(!configured||configured.startsWith('/'))?'https://cdaconnect.org/api/v1':configured;if(!value)throw new ApiError(0,'Set VITE_API_URL before connecting to your backend.');const url=new URL(value,window.location.origin);if(import.meta.env.PROD&&url.protocol!=='https:')throw new ApiError(0,'Production API URL must use HTTPS.');return value.replace(/\/$/,'')}
+function base(){const configured=import.meta.env.VITE_API_URL;const value=Capacitor.isNativePlatform()&&(!configured||configured.startsWith('/'))?'https://api.cdaconnect.org/api/v1':configured;if(!value)throw new ApiError(0,'Set VITE_API_URL before connecting to your backend.');const url=new URL(value,window.location.origin);if(import.meta.env.PROD&&url.protocol!=='https:')throw new ApiError(0,'Production API URL must use HTTPS.');return value.replace(/\/$/,'')}
 async function perform<T>(path:string,options:RequestInit={},retry=true):Promise<T>{
  const token=current?.accessToken;const headers=new Headers(options.headers);headers.set('x-cda-client','app');if(token)headers.set('Authorization','Bearer '+token);if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json');
  let response:Response;try{response=await fetch(base()+path,{...options,headers,cache:'no-store',credentials:'include',signal:options.signal??AbortSignal.timeout(20000)})}catch(e){if(e instanceof ApiError)throw e;throw new ApiError(0,'Unable to connect. Check your network and retry.')}
+ if(response.status===401&&retry&&current&&current.accessToken!==token)throw new ApiError(401,'Your sign-in changed. Retry this action.');
  if(response.status===401&&retry&&current&&!['/auth/refresh','/auth/login','/auth/register','/auth/logout'].includes(path)){
-  try{await refreshSession()}catch(e){session.set(null);throw e}
+  try{await refreshSession()}catch(e){if(e instanceof ApiError&&[401,403].includes(e.status)&&current?.accessToken===token)session.set(null);throw e}
   if(!current)throw new ApiError(401,'Your session has ended.');return perform<T>(path,options,false);
  }
  if(!response.ok){const data=await response.json().catch(()=>({}));throw new ApiError(response.status,data.error||'The request could not be completed.')}
@@ -29,4 +30,4 @@ export function rows(value:unknown):RecordData[]{if(Array.isArray(value))return 
 export const str=(v:unknown)=>v===null||v===undefined?'':String(v);
 
 
-export function publicOrigin(){return new URL(import.meta.env.VITE_PUBLIC_ORIGIN||base(),window.location.origin).origin}
+export function publicOrigin(){const configured=import.meta.env.VITE_PUBLIC_ORIGIN;if(configured)return new URL(configured,window.location.origin).origin;const origin=new URL(base(),window.location.origin);return origin.hostname==='api.cdaconnect.org'?'https://cdaconnect.org':origin.origin}

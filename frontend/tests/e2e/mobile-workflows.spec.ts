@@ -98,3 +98,27 @@ test('unknown community section shows navigation instead of calling an absent AP
  await page.goto('/community/'+community+'/missing-section');await expect(page.getByRole('heading',{name:'Community page not found'})).toBeVisible();expect(missing).toEqual([]);
  await page.getByRole('link',{name:'Return to community menu'}).click();await expect(page).toHaveURL('/community/'+community+'/menu');
 });
+
+test('saved direct conversations remain visible when the member list fails',async({page})=>{
+ await setup(page);await page.route('**/api/v1/communities/'+community+'/conversations',r=>r.fulfill({headers,json:[{Id:chat,Type:'DIRECT',DirectUserId:'other',DirectName:'Known Contact',LastMessage:'Existing conversation'}]}));await page.route('**/api/v1/communities/'+community+'/members',r=>r.fulfill({headers,status:503,json:{error:'Roster unavailable'}}));
+ await page.goto('/community/'+community+'/conversations');await expect(page.getByText('Known Contact',{exact:true})).toBeVisible();await page.getByText('Known Contact',{exact:true}).click();await expect(page).toHaveURL('/chat/'+chat);
+});
+
+test('AI fallback shows authorised sources when generation is not configured',async({page})=>{
+ await setup(page);await page.route('**/api/v1/communities/'+community+'/assistant/ask',r=>r.fulfill({headers,json:{answer:'Read the authorised sources below.',providerConfigured:false,context:{documents:[{Title:'Community rules',Body:'Keep our neighbourhood clean.'}]}}}));
+ await page.goto('/ai');await page.getByRole('combobox').selectOption(community);await page.getByLabel('What would you like to know?').fill('What are the rules?');await page.getByRole('button',{name:'Ask AI'}).click();await expect(page.getByText('Community rules',{exact:true})).toBeVisible();await expect(page.getByText('Keep our neighbourhood clean.',{exact:true})).toBeVisible();
+});
+
+test('service contacts, verification, editing and removal are connected',async({page})=>{
+ await setup(page);let provider:any={Id:proposal,Name:'Test Electrician',Description:'Local help',CreatedBy:user.Id,Phone:'+441234567890',Email:'provider@example.test',Website:'https://provider.example.test',Category:'Electrical',Area:'Test area',Rating:4,ReviewCount:1,IsVerified:false},removed=false;const calls:any[]=[];
+ await page.route('**/api/v1/communities/'+community+'/capabilities',r=>r.fulfill({headers,json:{permissions:['DIRECTORY_MANAGE']}}));
+ await page.route('**/api/v1/communities/'+community+'/services**',async r=>{const method=r.request().method();if(method==='GET')return r.fulfill({headers,json:removed?[]:[provider]});calls.push({method,path:new URL(r.request().url()).pathname,body:r.request().postDataJSON()});if(method==='DELETE'){removed=true;return r.fulfill({headers,status:204})}const data=r.request().postDataJSON();provider=new URL(r.request().url()).pathname.endsWith('/verification')?{...provider,IsVerified:data.isVerified}:{...provider,Name:data.name,IsVerified:false};return r.fulfill({headers,json:provider})});
+ await page.goto('/community/'+community+'/services');await expect(page.getByRole('link',{name:'Call +441234567890'})).toHaveAttribute('href','tel:+441234567890');await expect(page.getByRole('link',{name:'Email provider'})).toHaveAttribute('href','mailto:provider@example.test');await expect(page.getByRole('link',{name:'Visit website'})).toHaveAttribute('href','https://provider.example.test');
+ await page.getByRole('button',{name:'Verify service',exact:true}).click();await expect(page.getByText('Verified by community')).toBeVisible();await page.getByRole('button',{name:'Edit service',exact:true}).click();await page.getByLabel('Service name',{exact:true}).fill('Updated Electrician');await page.getByRole('button',{name:'Save service',exact:true}).click();await expect(page.getByRole('heading',{name:'Updated Electrician'})).toBeVisible();
+ page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Remove service',exact:true}).click();await expect(page.getByText('No services listed yet.')).toBeVisible();expect(calls.map(c=>c.method)).toEqual(['PATCH','PATCH','DELETE']);
+});
+
+test('service ratings call the review API and display reviews',async({page})=>{
+ await setup(page);let saved:any;await page.route('**/api/v1/communities/'+community+'/services',r=>r.fulfill({headers,json:[{Id:proposal,Name:'Test provider',CreatedBy:'another-member',Category:'Plumbing'}]}));await page.route('**/api/v1/services/'+proposal+'/reviews',async r=>{if(r.request().method()==='POST'){saved=r.request().postDataJSON();return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:[{Id:'review',FirstName:'Test',LastName:'Reviewer',Rating:4,Comment:'Helpful service'}]})});
+ await page.goto('/community/'+community+'/services');await page.getByRole('button',{name:'Reviews & rating'}).click();await expect(page.getByText('Helpful service')).toBeVisible();await page.getByRole('combobox',{name:'Rating',exact:true}).selectOption('4');await page.getByLabel('Review',{exact:true}).fill('Reliable and helpful');await page.getByRole('button',{name:'Save my review'}).click();await expect.poll(()=>saved?.rating).toBe(4);expect(saved.comment).toBe('Reliable and helpful');
+});

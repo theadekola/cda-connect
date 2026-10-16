@@ -1,3 +1,4 @@
+import {servicesRouter} from './routes/services.js';
 import {operationalHealth} from './services/operationalHealth.js';
 import {appleAssociation,androidAssociation} from './services/linkAssociations.js';
 import {allowMediaEmbedding} from './middleware/mediaResourcePolicy.js';
@@ -60,6 +61,7 @@ app.use('/api/v1', contentRouter);
 app.use('/api/v1', chatRouter);
 app.use('/api/v1', feedRouter);
 app.use('/api/v1', platformRouter);
+app.use('/api/v1', servicesRouter);
 app.use('/api/v1', safetyRouter);
 app.use('/api/v1', advancedRouter);
 app.use(notFound);

@@ -38,6 +38,9 @@ if not env.exists():
         f.write(f'bind 127.0.0.1\nport 6380\nprotected-mode yes\ndaemonize no\nsupervised no\nlogfile ""\ndir /var/lib/cda-connect-redis\nappendonly yes\nappendfsync everysec\nmaxmemory-policy noeviction\nrequirepass {password}\n')
     redis.chmod(0o640)
 PY
+python3 "$source_dir/deploy/setup-ai.py" --defaults
+chown root:root /etc/cda-connect/ai.env
+chmod 600 /etc/cda-connect/ai.env
 chown root:root /etc/cda-connect/backend.env
 chmod 600 /etc/cda-connect/backend.env
 chown root:redis /etc/cda-connect/redis.conf
@@ -69,6 +72,8 @@ const countries=await locations();
 if(Object.keys(countries).length<200 || !countries.NG)throw Error('Incomplete community location data');
 JS
 rsync -a "$source_dir/frontend/dist" "$release/frontend/"
+install -d -m 755 "$release/ai_service"
+rsync -a --exclude='.env*' --exclude='__pycache__' "$source_dir/ai_service/" "$release/ai_service/"
 # Keep content-versioned chunks available to tabs opened before this deployment.
 # Legacy unversioned files must not be reused across releases.
 if [ -d /opt/cda-connect/current/frontend/dist/assets ]; then
@@ -76,7 +81,7 @@ if [ -d /opt/cda-connect/current/frontend/dist/assets ]; then
 fi
 chown -R root:root "$release"
 chmod -R u=rwX,go=rX "$release"
-for unit in cda-api.service cda-worker.service cda-redis.service; do
+for unit in cda-api.service cda-worker.service cda-redis.service cda-ai.service; do
   install -m 644 "$source_dir/deploy/$unit" "/etc/systemd/system/$unit"
 done
 # Save this application's previous Nginx config; do not modify other sites.
@@ -110,24 +115,25 @@ ln -s "$release" /opt/cda-connect/current.next
 mv -Tf /opt/cda-connect/current.next /opt/cda-connect/current
 systemctl daemon-reload
 systemctl enable --now cda-redis.service
-systemctl enable cda-api.service cda-worker.service
-systemctl restart cda-api.service cda-worker.service
+systemctl enable cda-api.service cda-worker.service cda-ai.service
+systemctl restart cda-ai.service cda-api.service cda-worker.service
 healthy=false
 for attempt in $(seq 1 45); do
-  if curl --connect-timeout 2 --max-time 10 --silent --fail http://127.0.0.1:4000/health >/dev/null; then healthy=true; break; fi
+  if curl --connect-timeout 2 --max-time 10 --silent --fail http://127.0.0.1:4000/health >/dev/null && curl --connect-timeout 2 --max-time 10 --silent --fail http://127.0.0.1:8001/health >/dev/null; then healthy=true; break; fi
   sleep 2
 done
 if ! $healthy; then
   if [ -n "$previous" ] && [ -d "$previous" ]; then
     ln -s "$previous" /opt/cda-connect/current.rollback
     mv -Tf /opt/cda-connect/current.rollback /opt/cda-connect/current
+    if [ -d "$previous/ai_service" ]; then systemctl restart cda-ai.service; else systemctl stop cda-ai.service; fi
     systemctl restart cda-api.service cda-worker.service
-  else systemctl stop cda-api.service cda-worker.service; fi
+  else systemctl stop cda-ai.service cda-api.service cda-worker.service; fi
   echo 'API health check failed. Inspect journalctl -u cda-api. Previous code restored when available.' >&2
   exit 1
 fi
 systemctl enable --now nginx
 systemctl reload nginx
 curl --connect-timeout 2 --max-time 10 --fail http://127.0.0.1:8080/health
-systemctl --no-pager --full status cda-api cda-worker cda-redis
+systemctl --no-pager --full status cda-api cda-worker cda-redis cda-ai
 echo "Installed native release $release. Cloudflare Tunnel origin: http://127.0.0.1:8080"

@@ -106,7 +106,7 @@ authRouter.post('/password-reset/complete',asyncHandler(async(req,res)=>{
   await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).input('hash',sql.NVarChar(500),passwordHash).query("UPDATE Users SET PasswordHash=@hash,PasswordChangedAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid AND AccountStatus='ACTIVE'; UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RevokedAt IS NULL");
   res.json({success:true});
 }));
-authRouter.post('/refresh',asyncHandler(async(req,res)=>{try{const {refreshToken,...result}=await rotateSession(refreshCookie(req));setRefreshCookie(res,refreshToken);res.json(result)}catch(e){clearRefreshCookie(res);throw e}}));
+authRouter.post('/refresh',asyncHandler(async(req,res)=>{try{const {refreshToken,...result}=await rotateSession(refreshCookie(req));setRefreshCookie(res,refreshToken);res.json(result)}catch(e){if(e instanceof AppError&&[401,403].includes(e.status))clearRefreshCookie(res);throw e}}));
 authRouter.post('/logout',asyncHandler(async(req,res)=>{const pool=await getPool();await pool.request().input('hash',sql.NVarChar(64),hashToken(refreshCookie(req))).query('UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE FamilyId=(SELECT FamilyId FROM UserSessions WHERE RefreshTokenHash=@hash)');clearRefreshCookie(res);res.status(204).end()}));
 
 authRouter.get('/security',requireAuth,asyncHandler(async(req,res)=>{

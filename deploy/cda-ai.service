@@ -1,0 +1,21 @@
+[Unit]
+Description=CDA Connect private FastAPI AI service
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=cda-app
+Group=cda-app
+WorkingDirectory=/opt/cda-connect/current/ai_service
+EnvironmentFile=/etc/cda-connect/ai.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/cda-connect/current/ai_service/.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8001 --workers 1 --no-access-log
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+[Install]
+WantedBy=multi-user.target

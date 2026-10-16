@@ -47,3 +47,8 @@ frontend/.playwright-browsers/
 frontend/android/app/google-services.json
 frontend/ios/App/App/GoogleService-Info.plist
 *.p8
+
+# Python AI service environments and bytecode stay on the host.
+**/.venv/
+**/__pycache__/
+*.pyc
