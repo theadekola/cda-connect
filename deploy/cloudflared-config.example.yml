@@ -6,4 +6,6 @@ credentials-file: /etc/cloudflared/REPLACE_WITH_EXISTING_TUNNEL_ID.json
 ingress:
   - hostname: cdaconnect.org
     service: http://127.0.0.1:8080
+  - hostname: www.cdaconnect.org
+    service: http://127.0.0.1:8080
   - service: http_status:404

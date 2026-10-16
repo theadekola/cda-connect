@@ -122,7 +122,7 @@
 /* An opaque, viewport-fixed edge gives WebKit a solid status-bar sample.
    Keep this outside animated page containers and apply it on public routes too. */
 .app-status-surface{display:none}
-html.ios-installed{--app-status-height:max(12px,env(safe-area-inset-top));background:#fff}
+html.ios-installed{--app-status-height:env(safe-area-inset-top,0px);background:#fff}
 html.ios-installed .app-status-surface{display:block;position:fixed;top:0;left:0;right:0;height:var(--app-status-height);z-index:11000;background:#fff;pointer-events:none}
 html.ios-installed.authenticated-screen .app-status-surface{background:#073b78}
 @media(max-width:767px){
