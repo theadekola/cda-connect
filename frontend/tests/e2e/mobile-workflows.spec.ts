@@ -76,3 +76,25 @@ test('an eligible ordinary member can cast one formal vote without manager contr
  });
  await page.goto('/community/'+community+'/governance');await page.getByRole('radio',{name:'Approve',exact:true}).check();await page.getByRole('button',{name:'Cast vote',exact:true}).click();await expect(page.getByText('Your vote has been recorded.',{exact:true})).toBeVisible();await expect(page.getByText('Vote receipt: vote-receipt',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Cast vote',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Finalize results'})).toHaveCount(0);
 });
+
+test('inactive installed app signs out on resume and requires credentials',async({page})=>{
+ await setup(page);await page.addInitScript(()=>localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000)));
+ await page.route('**/api/v1/auth/logout',route=>route.fulfill({status:204}));
+ await page.goto('/home');await expect(page).toHaveURL(/\/login/);
+ await expect(page.getByLabel('Email address')).toBeVisible();
+ await expect(page.getByText('Your session has ended. Sign in with your email and password.')).toBeVisible();
+});
+
+test('login retains its new session when startup restoration finishes late',async({page})=>{
+ await setup(page,false);let release:()=>void=()=>{};const delayed=new Promise<void>(resolve=>{release=resolve});
+ await page.route('**/api/v1/auth/refresh',async route=>{await delayed;await route.fulfill({status:401,json:{error:'Signed out'}})});
+ await page.goto('/login');await page.getByLabel('Email address').fill(user.Email);await page.getByLabel('Password',{exact:true}).fill('Password123!');
+ await page.getByRole('button',{name:'Log in',exact:true}).click();await expect(page).toHaveURL('/home');
+ release();await expect(page.locator('.app')).toBeVisible();await expect(page).toHaveURL('/home');
+});
+
+test('unknown community section shows navigation instead of calling an absent API',async({page})=>{
+ await setup(page);const missing:string[]=[];page.on('request',request=>{if(request.url().includes('/api/v1/communities/'+community+'/missing-section'))missing.push(request.url())});
+ await page.goto('/community/'+community+'/missing-section');await expect(page.getByRole('heading',{name:'Community page not found'})).toBeVisible();expect(missing).toEqual([]);
+ await page.getByRole('link',{name:'Return to community menu'}).click();await expect(page).toHaveURL('/community/'+community+'/menu');
+});

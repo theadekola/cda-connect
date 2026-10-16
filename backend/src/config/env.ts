@@ -16,6 +16,7 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES: z.string().default('15m'),
+  SESSION_MAX_HOURS: z.coerce.number().int().positive().max(24).default(12),
   JWT_REFRESH_EXPIRES_DAYS: z.coerce.number().default(30),
   PUBLIC_BASE_URL: z.string().default('http://localhost:4000'),
   OPEN_METEO_API_KEY: z.string().optional(),
