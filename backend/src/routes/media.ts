@@ -1,3 +1,4 @@
+import {providerFetch} from '../services/providerFetch.js';
 import {documentVisibility} from '../services/documentAccess.js';
 import {allowMediaEmbedding} from '../middleware/mediaResourcePolicy.js';
 import {randomUUID} from 'node:crypto';
@@ -72,7 +73,7 @@ mediaRouter.post('/media/transcribe', upload.single('file'), asyncHandler(async 
   fd.append('task', 'transcribe');
   const audioBytes = Uint8Array.from(req.file.buffer);
   fd.append('file', new Blob([audioBytes], { type: req.file.mimetype }), req.file.originalname);
-  const r = await fetch(env.LANGUAGE_SERVICE_URL, { method: 'POST', headers: env.LANGUAGE_SERVICE_API_KEY ? { Authorization: `Bearer ${env.LANGUAGE_SERVICE_API_KEY}` } : {}, body: fd });
+  const r = await providerFetch(env.LANGUAGE_SERVICE_URL, { signal:AbortSignal.timeout(15000),redirect:'error',method: 'POST', headers: env.LANGUAGE_SERVICE_API_KEY ? { Authorization: `Bearer ${env.LANGUAGE_SERVICE_API_KEY}` } : {}, body: fd });
   if (!r.ok) throw new AppError(502, 'Transcription provider failed');
   const data: any = await r.json();
   res.json({ transcript: data.transcript ?? data.text ?? '' });

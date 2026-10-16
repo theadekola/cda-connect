@@ -1,3 +1,4 @@
+import {providerFetch} from '../services/providerFetch.js';
 import {notificationDestination} from '../services/notificationDestination.js';
 import {requireFinancePermission,paymentReviewerRoles} from '../services/financeAccess.js';
 import {recentActivity} from '../services/recentActivity.js';
@@ -164,9 +165,9 @@ advancedRouter.post('/communities/:communityId/assistant/ask',asyncHandler(async
   const context={decisions:decisions.recordset,meetings:meetings.recordset,announcements:announcements.recordset,documents:docs.recordset};
   const { env } = await import('../config/env.js');
   if(!env.AI_SERVICE_URL){return res.json({answer:'AI provider is not configured yet. I can still show the authorised community context used to answer this question.',context,providerConfigured:false});}
-  const rr=await fetch(env.AI_SERVICE_URL,{method:'POST',headers:{'content-type':'application/json',...(env.AI_SERVICE_API_KEY?{'authorization':`Bearer ${env.AI_SERVICE_API_KEY}`}:{})},body:JSON.stringify({question,mode,context,instructions:'Answer only from supplied context. Do not infer private information. If the answer is unavailable, say so.'})});
+  const rr=await providerFetch(env.AI_SERVICE_URL,{signal:AbortSignal.timeout(15000),redirect:'error',method:'POST',headers:{'content-type':'application/json',...(env.AI_SERVICE_API_KEY?{'authorization':`Bearer ${env.AI_SERVICE_API_KEY}`}:{})},body:JSON.stringify({question,mode,context,instructions:'Answer only from supplied context. Do not infer private information. If the answer is unavailable, say so.'})});
   if(!rr.ok)throw new AppError(502,'AI provider failed'); const data:any=await rr.json();
-  res.json({answer:data.answer??data.output??String(data),providerConfigured:true});
+  res.json({answer:data.answer??data.output??'The provider returned no answer.',providerConfigured:data.providerConfigured!==false,...(data.providerConfigured===false?{context}:{})});
 }));
 
 advancedRouter.get('/me/personal-activity',asyncHandler(async(req,res)=>{const q=z.object({kind:z.enum(['ALL','POST','COMMENT','REACTION','GROUP','MEETING','EVENT']).default('ALL'),cursor:z.string().max(500).optional()}).parse(req.query);res.json(await personalActivity(req.user!.id,q.kind,q.cursor));}));

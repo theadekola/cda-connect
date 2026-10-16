@@ -20,5 +20,9 @@ command -v pnpm >/dev/null
 command -v npm >/dev/null
 # Build as the deployment user, before requesting root access to install services.
 (cd backend && pnpm install --frozen-lockfile && pnpm run build && pnpm test)
-(cd frontend && npm ci && VITE_API_URL=/api/v1 VITE_SOCKET_URL= npm run build && npm test)
+(cd frontend && npm ci && VITE_API_URL=https://api.cdaconnect.org/api/v1 VITE_SOCKET_URL=https://api.cdaconnect.org VITE_PUBLIC_ORIGIN=https://cdaconnect.org npm run build && npm test)
+python3 -c 'import sys; assert sys.version_info >= (3, 11), "Python 3.11+ is required for the AI service"'
+python3 -m venv ai_service/.venv
+ai_service/.venv/bin/python -m pip install -r ai_service/requirements.txt
+ai_service/.venv/bin/python -m unittest discover -s ai_service -p 'test_*.py'
 sudo bash deploy/install-native.sh "$PWD"
