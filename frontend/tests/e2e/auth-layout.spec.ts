@@ -6,6 +6,18 @@ async function publicPage(page:Page){
  await page.route('**/api/v1/auth/refresh',route=>route.fulfill({status:401,json:{message:'Signed out'}}));
 }
 
+test('Apple install icon is served as PNG and status bar uses standard mode',async({page})=>{
+ await publicPage(page);await page.goto('/');
+ await expect(page.locator('meta[name="apple-mobile-web-app-status-bar-style"]')).toHaveAttribute('content','default');
+ const icon=page.locator('link[rel="apple-touch-icon"]');
+ await expect(icon).toHaveAttribute('href','/apple-touch-icon-v2.png');
+ const response=await page.request.get((await icon.getAttribute('href'))!);
+ expect(response.ok()).toBe(true);expect(response.headers()['content-type']).toContain('image/png');
+ expect((await response.body()).subarray(1,4).toString()).toBe('PNG');
+ const fallback=await page.request.get('/apple-touch-icon.png');expect(fallback.ok()).toBe(true);
+ expect(await fallback.body()).toEqual(await response.body());
+});
+
 test('desktop welcome and login branding sit in the white content panel',async({page})=>{
  await publicPage(page);await page.setViewportSize({width:1440,height:900});
  for(const path of ['/','/login']){
