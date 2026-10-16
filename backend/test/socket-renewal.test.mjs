@@ -17,7 +17,7 @@ const {getRedis}=await import('../dist/config/redis.js');
 const http=createServer(),io=new Server(http);configureSocket(io);await new Promise(resolve=>http.listen(0,'127.0.0.1',resolve));
 const token=(seconds,sessionId='family',id='member')=>jwt.sign({id,email:'member@example.test',sessionId,purpose:'access'},process.env.JWT_ACCESS_SECRET,{expiresIn:seconds});
 async function open(access){const socket=client('http://127.0.0.1:'+http.address().port,{auth:{token:access},transports:['websocket'],reconnection:false});await new Promise((resolve,reject)=>{socket.once('connect',resolve);socket.once('connect_error',reject)});return socket}
-after(async()=>{await io.close();await Promise.all([queues.emergencyQueue.disconnect(),queues.notificationQueue.disconnect(),queues.backgroundQueue.disconnect()]);getRedis().disconnect();Object.assign(Redis.prototype,originalRedis);sql.ConnectionPool.prototype.connect=originalConnect;sql.Request.prototype.query=originalQuery});
+after(async()=>{await new Promise(resolve=>io.close(resolve));await Promise.all([queues.emergencyQueue.disconnect(),queues.notificationQueue.disconnect(),queues.backgroundQueue.disconnect()]);getRedis().disconnect();Object.assign(Redis.prototype,originalRedis);sql.ConnectionPool.prototype.connect=originalConnect;sql.Request.prototype.query=originalQuery});
 test('credential renewal preserves socket identity and call rooms beyond the old token expiry',async()=>{
  const socket=await open(token(2));try{const id=socket.id,server=io.sockets.sockets.get(id);await server.join('call:existing');
   const response=await socket.timeout(1000).emitWithAck('session:refresh',{token:token(20)});assert.equal(response.ok,true);

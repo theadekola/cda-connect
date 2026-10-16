@@ -6,12 +6,14 @@ import jwt from 'jsonwebtoken';
 import { verifyAccess } from './utils/auth.js';
 import { getPool, sql } from './config/db.js';
 import { getRedis } from './config/redis.js';
-import { enqueueCommunityNotification } from './queues/index.js';
+import type {CommunityNotificationRequest} from './queues/index.js';
 import {AppError} from './utils/errors.js';
 
 let activeSocketServer:Server|undefined;
 const CALL_RING_TIMEOUT_MS=45_000;
 const CLIENT_MESSAGE_TYPES=new Set(['TEXT','PHOTO','IMAGE','VIDEO','DOCUMENT','VOICE','AUDIO']);
+// Opening a socket must not initialize unrelated notification workers/connections.
+async function enqueueCommunityNotification(message:CommunityNotificationRequest){const queues=await import('./queues/index.js');return queues.enqueueCommunityNotification(message)}
 export function disconnectUserSockets(userId:string){activeSocketServer?.in(`user:${userId}`).disconnectSockets(true)}
 export function disconnectCommunitySockets(communityId:string){activeSocketServer?.in(`community:${communityId}`).disconnectSockets(true)}
 
