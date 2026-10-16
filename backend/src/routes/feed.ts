@@ -24,7 +24,8 @@ export const sanitizeNotificationPreview=(text:string,max=120)=>Array.from(text
 
 feedRouter.get('/communities/:communityId/feed',asyncHandler(async(req,res)=>{
  await requireCommunityMember(req.user!.id,req.params.communityId); const pool=await getPool();
- const r=await pool.request().input('c',sql.UniqueIdentifier,req.params.communityId).input('u',sql.UniqueIdentifier,req.user!.id).query(`SELECT p.Id,p.CommunityId,p.CreatedBy,p.Body,p.PostType,p.IsSensitive,p.MediaUrl,p.MediaType,COALESCE((SELECT AllowDownloads FROM PrivacySafetySettings WHERE UserId=p.CreatedBy),0) AllowDownloads,p.DocumentName,p.Caption,p.Transcript,p.OriginalLanguage,p.IsPinned,p.IsAnnouncement,p.CreatedAt,p.UpdatedAt,u.FirstName,u.LastName,u.ProfileImage,(SELECT TOP 1 cm.Id FROM CommunityMembers cm WHERE cm.CommunityId=p.CommunityId AND cm.UserId=p.CreatedBy AND cm.Status='ACTIVE') MembershipId,
+ const search=z.string().trim().max(200).default('').parse(req.query.q);const paged=req.query.limit!==undefined;const limit=paged?z.coerce.number().int().min(1).max(50).parse(req.query.limit):20,offset=paged?z.coerce.number().int().min(0).max(100000).default(0).parse(req.query.offset):0;
+ const r=await pool.request().input('c',sql.UniqueIdentifier,req.params.communityId).input('u',sql.UniqueIdentifier,req.user!.id).input('offset',sql.Int,offset).input('take',sql.Int,limit+1).input('search',sql.NVarChar(1000),'%'+search.replace(/[\[\]%_]/g,x=>'['+x+']')+'%').query(`SELECT p.Id,p.CommunityId,p.CreatedBy,p.Body,p.PostType,p.IsSensitive,p.MediaUrl,p.MediaType,COALESCE((SELECT AllowDownloads FROM PrivacySafetySettings WHERE UserId=p.CreatedBy),0) AllowDownloads,p.DocumentName,p.Caption,p.Transcript,p.OriginalLanguage,p.IsPinned,p.IsAnnouncement,p.CreatedAt,p.UpdatedAt,u.FirstName,u.LastName,u.ProfileImage,(SELECT TOP 1 cm.Id FROM CommunityMembers cm WHERE cm.CommunityId=p.CommunityId AND cm.UserId=p.CreatedBy AND cm.Status='ACTIVE') MembershipId,
  (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id) ReactionCount,
  (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='LIKE') LikeCount,
  (SELECT COUNT(*) FROM PostReactions r WHERE r.PostId=p.Id AND r.ReactionType='CELEBRATE') CelebrateCount,
@@ -34,8 +35,9 @@ feedRouter.get('/communities/:communityId/feed',asyncHandler(async(req,res)=>{
  (SELECT COUNT(*) FROM PostSaves s WHERE s.PostId=p.Id AND s.UserId=@u) MySaved,
  (SELECT COUNT(*) FROM PostShares sh WHERE sh.PostId=p.Id) ShareCount,
  (SELECT STRING_AGG(h.Tag,',') FROM PostHashtags h WHERE h.PostId=p.Id) Hashtags
- FROM CommunityPosts p JOIN Users u ON u.Id=p.CreatedBy WHERE p.CommunityId=@c AND p.IsDeleted=0 AND ${visibleContent("p.CreatedBy","p.Body")} ORDER BY p.IsPinned DESC,p.CreatedAt DESC`);
- res.json(applyCommunityPreferences(r.recordset,await readCommunityPreferences(req.user!.id)).map(x=>({...x,MySaved:!!x.MySaved,IsPinned:!!x.IsPinned,IsAnnouncement:!!x.IsAnnouncement,Hashtags:x.Hashtags?String(x.Hashtags).split(','):[]})));
+ FROM CommunityPosts p JOIN Users u ON u.Id=p.CreatedBy WHERE p.CommunityId=@c AND p.IsDeleted=0 AND ${visibleContent("p.CreatedBy","p.Body")} AND (@search='%%' OR p.Body LIKE @search) ORDER BY p.IsPinned DESC,p.CreatedAt DESC,p.Id DESC ${paged?'OFFSET @offset ROWS FETCH NEXT @take ROWS ONLY':''}`);
+ const items=applyCommunityPreferences(paged?r.recordset.slice(0,limit):r.recordset,await readCommunityPreferences(req.user!.id)).map(x=>({...x,MySaved:!!x.MySaved,IsPinned:!!x.IsPinned,IsAnnouncement:!!x.IsAnnouncement,Hashtags:x.Hashtags?String(x.Hashtags).split(','):[]}));
+ res.json(paged?{items,nextOffset:r.recordset.length>limit&&offset+limit<=100000?offset+limit:null}:items);
 }));
 
 feedRouter.post('/communities/:communityId/feed',asyncHandler(async(req,res)=>{

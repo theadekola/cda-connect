@@ -1,3 +1,4 @@
+import {newRequestId} from './requestId';
 import {ContactManager} from './EmergencyContacts';
 import {useState,type FormEvent} from 'react';
 import {Link,useSearchParams} from 'react-router-dom';
@@ -7,12 +8,12 @@ import {api,str,rows,type RecordData} from './api';
 import {Loading,ErrorBox} from './ui';
 import './emergency.css';
 export function Emergency({id,community,permissions}:{id:string;community:RecordData;permissions:string[]}){
- const base='/communities/'+id,[params,setParams]=useSearchParams(),view=params.get('view')||'',alertId=params.get('alert'),[requestKey,setRequestKey]=useState(()=>crypto.randomUUID()),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>(),[notice,setNotice]=useState('');const manage=permissions.includes('EMERGENCY_MANAGE'),send=permissions.includes('EMERGENCY_SEND');
+ const base='/communities/'+id,[params,setParams]=useSearchParams(),view=params.get('view')||'',alertId=params.get('alert'),[requestKey,setRequestKey]=useState(()=>newRequestId()),[busy,setBusy]=useState(false),[error,setError]=useState<unknown>(),[notice,setNotice]=useState('');const manage=permissions.includes('EMERGENCY_MANAGE'),send=permissions.includes('EMERGENCY_SEND');
  const q=useQuery({queryKey:[base+'/emergency/dashboard'],queryFn:()=>api.get<RecordData>(base+'/emergency/dashboard')});
  const all=useQuery({queryKey:[base+'/alerts'],queryFn:()=>api.get<RecordData[]>(base+'/alerts'),enabled:view==='all'||!!alertId});
  const requests=useQuery({queryKey:[base+'/sos'],queryFn:()=>api.get<RecordData[]>(base+'/sos'),});
  const alerts=rows(q.data?.alerts),contacts=rows(q.data?.contacts),active=alerts.filter(a=>a.Active&&a.RequiresAcknowledgement),chosen=rows(all.data).find(a=>a.Id===alertId)||alerts.find(a=>a.Id===alertId),uk=['GB','UK','UNITED KINGDOM','GREAT BRITAIN'].includes(str(community.Country).toUpperCase());
- function go(next:string){if(next==='sos')setRequestKey(crypto.randomUUID());setParams(next?{view:next}:{});setError(undefined);setNotice('');window.scrollTo({top:0})}
+ function go(next:string){if(next==='sos')setRequestKey(newRequestId());setParams(next?{view:next}:{});setError(undefined);setNotice('');window.scrollTo({top:0})}
  const number=(kind:string,fallback:string)=>str(contacts.find(c=>str(c.ContactType).toLowerCase()===kind)?.Phone)||(uk?fallback:'');
  async function act(path:string,body:RecordData,message:string,method='POST'){if(busy)return;setBusy(true);setError(undefined);try{await api.send(path,body,method);await q.refetch();if(all.isEnabled)await all.refetch();await requests.refetch();setNotice(message)}catch(e){setError(e)}finally{setBusy(false)}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);if(view==='contacts')await act(base+'/emergency-contacts',{name:f.get('name'),phone:f.get('phone'),contactType:f.get('type'),isOfficial:false},'Contact saved.');else if(view==='send'&&send)await act(base+'/alerts',{title:f.get('title'),message:f.get('message'),alertType:f.get('type'),severity:f.get('severity'),affectedArea:f.get('area'),requiresAcknowledgement:f.get("acknowledgement")==="on"},'Alert saved and notification delivery queued.');else await act(base+'/sos',{requestKey,message:f.get('message'),approximateArea:f.get('area')},'SOS saved. Notification delivery is pending; check its delivery counts below. If no responders are targeted, contact emergency services directly.')}

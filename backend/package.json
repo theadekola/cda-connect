@@ -25,7 +25,7 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
-    "multer": "^2.3.0",
+    "multer": "^2.4.0",
     "nodemailer": "^10.0.13",
     "sharp": "^0.35.5",
     "socket.io": "^4.8.4",
