@@ -115,3 +115,6 @@
 .sidebar nav a.active .notification-badge{box-shadow:0 0 0 2px var(--cda-blue)}
 .notification-button{position:relative}
 .notification-button .notification-badge{position:absolute;top:-6px;right:-7px}
+
+/* Paint the installed iOS status area with the same solid colour as headers. */
+@media(display-mode:standalone){html.authenticated-screen{background:#073b78}html.authenticated-screen body{background:var(--background,#f8fafc)}}

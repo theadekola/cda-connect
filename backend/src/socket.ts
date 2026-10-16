@@ -1,3 +1,4 @@
+import {env} from './config/env.js';
 import {communicationSettings,allowCall,requireCallParticipants} from './services/communications.js';
 import {requireConversationContact} from './services/privacy.js';
 import type { Server } from 'socket.io';
@@ -35,8 +36,8 @@ export function configureSocket(io: Server) {
     try {
       const token = socket.handshake.auth?.token as string;
       socket.data.user = verifyAccess(token);
-      const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, socket.data.user.id).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
-        .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME())");
+      const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, socket.data.user.id).input('maxHours',sql.Int,env.SESSION_MAX_HOURS).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
+        .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() AND (SELECT MIN(origin.CreatedAt) FROM UserSessions origin WHERE origin.FamilyId=@family)>DATEADD(hour,-@maxHours,SYSUTCDATETIME()))");
       if (!account.recordset[0]) return next(new Error('unauthorized'));
       socket.data.tokenExpiresAt = (jwt.decode(token) as jwt.JwtPayload).exp! * 1000;
       next();
@@ -49,7 +50,7 @@ export function configureSocket(io: Server) {
     const scheduleExpiry=()=>{clearTimeout(expiryTimer);expiryTimer=setTimeout(()=>socket.disconnect(true),Math.max(0,socket.data.tokenExpiresAt-Date.now()));expiryTimer.unref()};
     scheduleExpiry();
     socket.on('session:refresh',(_payload,ack)=>{if(typeof ack==='function')ack({ok:true})});
-    const sessionTimer=setInterval(async()=>{try{const rows=await(await getPool()).request().input('u',sql.UniqueIdentifier,user.id).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null).query('SELECT TOP 1 Id FROM UserSessions WHERE UserId=@u AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME()');if(!rows.recordset[0])socket.disconnect(true)}catch{socket.disconnect(true)}},15000);sessionTimer.unref();
+    const sessionTimer=setInterval(async()=>{try{const rows=await(await getPool()).request().input('u',sql.UniqueIdentifier,user.id).input('maxHours',sql.Int,env.SESSION_MAX_HOURS).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null).query('SELECT TOP 1 Id FROM UserSessions WHERE UserId=@u AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() AND (SELECT MIN(origin.CreatedAt) FROM UserSessions origin WHERE origin.FamilyId=@family)>DATEADD(hour,-@maxHours,SYSUTCDATETIME())');if(!rows.recordset[0])socket.disconnect(true)}catch{socket.disconnect(true)}},15000);sessionTimer.unref();
     socket.once('disconnect', () => {clearTimeout(expiryTimer);clearInterval(sessionTimer)});
     socket.use(async (_packet, next) => {
       try {
@@ -58,8 +59,8 @@ export function configureSocket(io: Server) {
         const token=renewal?_packet[1].token:socket.handshake.auth.token;
         const identity=verifyAccess(token);
         if(identity.id!==user.id||identity.sessionId!==socket.data.user.sessionId)throw new Error('Session identity changed');
-        const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, user.id).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
-          .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME())");
+        const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, user.id).input('maxHours',sql.Int,env.SESSION_MAX_HOURS).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
+          .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() AND (SELECT MIN(origin.CreatedAt) FROM UserSessions origin WHERE origin.FamilyId=@family)>DATEADD(hour,-@maxHours,SYSUTCDATETIME()))");
         if (!account.recordset[0]) throw new Error('unauthorized');
         if(renewal){socket.handshake.auth.token=token;socket.data.tokenExpiresAt=(jwt.decode(token) as jwt.JwtPayload).exp!*1000;scheduleExpiry()}
         next();

@@ -12,10 +12,10 @@
 .app-loading-fullscreen::before{content:"";width:148px;height:48px;margin-bottom:12px;background:url('/brand-wordmark.webp') center/contain no-repeat}
 .auth-transition-overlay{position:fixed;inset:0;z-index:999}
 
-.welcome,.auth-page,.app #main.route-changing>:is(.page,.conversation-page,.community-page){animation:cda-page-enter .2s cubic-bezier(.2,.75,.35,1) both}
+.app #main.route-changing>:is(.page,.conversation-page,.community-page){animation:cda-page-enter .2s cubic-bezier(.2,.75,.35,1) both}
 html{scroll-behavior:smooth}
 
 @media(prefers-reduced-motion:reduce){
  .app-spinner,.button-spinner{animation-duration:1.4s!important}
- .welcome,.auth-page,.app #main.route-changing>:is(.page,.conversation-page,.community-page){animation:none!important}
+ .app #main.route-changing>:is(.page,.conversation-page,.community-page){animation:none!important}
 }
