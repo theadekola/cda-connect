@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+const {boundedAIContext}=await import('../dist/services/aiContext.js');
+test('AI excerpts respect the UTF-8 budget without mutating authorised source records',()=>{const body='𐐀'.repeat(12000),context={documents:Array.from({length:12},(_,i)=>({Id:String(i),Title:'Source '+i,Body:body})),meetings:[]};const result=boundedAIContext(context);assert.ok(Buffer.byteLength(JSON.stringify(result))<=100000);assert.ok(result.documents.length>0);assert.ok(result.documents[0].Body.length<=4000);assert.equal(context.documents[0].Body,body);assert.deepEqual(result.meetings,[])});
