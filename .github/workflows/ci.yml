@@ -38,6 +38,7 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - run: pnpm --dir backend build
       - run: pnpm --dir backend test
+        timeout-minutes: 5
       - run: bash -n deploy/start-ubuntu.sh deploy/install-native.sh
       - run: node backend/scripts/migrate.mjs validate
       - run: node backend/scripts/integration-database.mjs prepare
@@ -89,6 +90,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - name: Test repository metadata scanning
+        run: node --test scripts/test/*.test.mjs
       - name: Check current tree for private operational metadata
         run: node scripts/check-public-repo.mjs
       - name: Scan complete history (including reachable old commits)

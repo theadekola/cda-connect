@@ -45,3 +45,20 @@ test('registration uses email verification only and separates its actions',async
  expect(body).toEqual({email:'member@example.com'});const verify=page.getByRole('button',{name:'Verify email'}),change=page.getByRole('button',{name:'Change email or request another code'});
  await expect(verify).toBeVisible();await expect(change).toBeVisible();const first=await verify.boundingBox(),second=await change.boundingBox();expect(second!.y-(first!.y+first!.height)).toBeGreaterThanOrEqual(10);
 });
+
+for(const width of [390,430])test(`installed iOS authentication has an opaque status edge and readable registration heading at ${width}px`,async({page})=>{
+ await publicPage(page);await page.setViewportSize({width,height:844});await page.addInitScript(()=>{Object.defineProperty(navigator,'standalone',{value:true});Object.defineProperty(navigator,'userAgent',{value:'Mozilla/5.0 (iPhone; CPU iPhone OS 27_2 like Mac OS X)'})});
+ for(const path of ['/','/login','/register','/forgot-password']){
+  await page.goto(path);await page.addStyleTag({content:'html.ios-installed{--app-status-height:54px!important}'});
+  const edge=page.locator('.app-status-surface');await expect(edge).toBeVisible();
+  expect(await edge.evaluate(el=>{const css=getComputedStyle(el);return {position:css.position,background:css.backgroundColor,filter:css.backdropFilter,opacity:css.opacity}})).toEqual({position:'fixed',background:'rgb(255, 255, 255)',filter:'none',opacity:'1'});
+  const bounds=await edge.boundingBox();expect(bounds!.y).toBe(0);expect(bounds!.height).toBe(54);expect(bounds!.width).toBe(width);
+  if(path==='/register'){
+   const heading=page.locator('.mobile-auth-heading'),hero=page.locator('.auth-visual');await expect(heading).toBeVisible();await expect(hero.locator('h1')).toBeHidden();
+   expect((await heading.boundingBox())!.y).toBeGreaterThan((await hero.boundingBox())!.y+(await hero.boundingBox())!.height);
+   await expect(page.getByRole('button',{name:'Send verification code'})).toBeVisible();
+  }
+  await page.evaluate(()=>window.scrollTo(0,500));expect((await edge.boundingBox())!.y).toBe(0);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ }
+});
