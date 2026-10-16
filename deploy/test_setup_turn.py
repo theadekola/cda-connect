@@ -9,8 +9,8 @@ spec.loader.exec_module(setup)
 
 class TurnSetupTests(unittest.TestCase):
     def test_nat_mapping_and_authentication(self):
-        config = setup.relay_config("relay.test.invalid", "8.8.8.8", "10.10.10.10", "a"*64, True)
-        self.assertIn("external-ip=8.8.8.8/10.10.10.10\n", config)
+        config = setup.relay_config("relay.test.invalid", "8.8.8.8", "192.0.2.10", "a"*64, True)
+        self.assertIn("external-ip=8.8.8.8/192.0.2.10\n", config)
         self.assertIn("use-auth-secret\n", config)
         self.assertIn("tls-listening-port=5349\n", config)
         self.assertIn("denied-peer-ip=10.0.0.0-10.255.255.255\n", config)
@@ -23,7 +23,7 @@ class TurnSetupTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             setup.shared_secret("bad\nno-auth")
         with self.assertRaises(ValueError):
-            setup.relay_config("relay.test.invalid", "192.168.1.1", "10.10.10.10", "a"*64, False)
+            setup.relay_config("relay.test.invalid", str(setup.ipaddress.ip_network("192.168.0.0/16").network_address + 1), "192.0.2.10", "a"*64, False)
 
     def test_environment_update_preserves_other_settings_and_removes_duplicate_turn_keys(self):
         original = "DB_NAME=KeepMe\nJWT_ACCESS_SECRET=keep-me\nRTC_TURN_SECRET=old\nexport RTC_TURN_SECRET=duplicate\n# comment\n"

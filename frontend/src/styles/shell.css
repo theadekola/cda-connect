@@ -118,3 +118,24 @@
 
 /* Paint the installed iOS status area with the same solid colour as headers. */
 @media(display-mode:standalone){html.authenticated-screen{background:#073b78}html.authenticated-screen body{background:var(--background,#f8fafc)}}
+
+/* An opaque, viewport-fixed edge gives WebKit a solid status-bar sample.
+   Keep this outside animated page containers and apply it on public routes too. */
+.app-status-surface{display:none}
+html.ios-installed{--app-status-height:max(12px,env(safe-area-inset-top));background:#fff}
+html.ios-installed .app-status-surface{display:block;position:fixed;top:0;left:0;right:0;height:var(--app-status-height);z-index:11000;background:#fff;pointer-events:none}
+html.ios-installed.authenticated-screen .app-status-surface{background:#073b78}
+@media(max-width:767px){
+ html.ios-installed .welcome,html.ios-installed .auth-page{border-top:var(--app-status-height) solid #fff}
+ html.ios-installed .welcome-entry{min-height:calc(100svh - var(--app-status-height))}
+ html.ios-installed .login-page .auth-panel{padding-top:0;min-height:calc(100dvh - var(--app-status-height))}
+ html.ios-installed .login-page .auth-back{top:12px}
+}
+@media(max-width:767px){
+ html.ios-installed .app .workspace>.topbar{padding-top:calc(8px + var(--app-status-height))}
+ html.ios-installed .conversation-header{padding-top:calc(10px + var(--app-status-height))}
+ html.ios-installed .post-author-header{padding-top:calc(12px + var(--app-status-height))}
+ html.ios-installed .admin-topbar{height:auto;min-height:68px;padding-top:var(--app-status-height)}
+}
+html.ios-installed:has(.chat-call-panel) .app-status-surface{background:#030a13}
+html.ios-installed:has(.media-viewer) .app-status-surface{background:#080b10}

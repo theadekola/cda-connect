@@ -1198,3 +1198,13 @@ button:disabled{background:#CBD5E1;color:var(--text-secondary);opacity:1}
 .session-gate>button{width:min(100%,360px)}
 .session-gate-signout{background:transparent}
 .session-notice{padding:12px 14px;border:1px solid #bfdbfe;border-radius:10px;background:var(--info-light,#eff6ff);color:var(--cda-navy,#073b78)}
+
+/* Keep authentication copy on the readable white panel on phones. */
+.mobile-auth-heading{display:none}
+@media(max-width:767px){
+ .auth-page:not(.login-page) .auth-visual-content{display:none}
+ .auth-page:not(.login-page) .auth-visual{height:clamp(160px,25svh,230px);min-height:0;padding:0;background-position:center 58%}
+ .auth-page:not(.login-page) .auth-panel{background:#fff;padding-top:24px;padding-bottom:max(32px,env(safe-area-inset-bottom))}
+ .auth-page .mobile-auth-heading{display:block;max-width:360px;margin:22px 0 12px;font-size:clamp(23px,6vw,28px);line-height:1.2;letter-spacing:-.025em;color:var(--cda-navy)}
+ .auth-page:not(.login-page) .auth-panel h2{margin:0 0 24px;font-size:1.35rem;line-height:1.3}
+}
