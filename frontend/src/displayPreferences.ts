@@ -1,0 +1,1 @@
+export function applyDisplayPreferences(){try{const p=JSON.parse(localStorage.getItem('cda-display')||'{}');document.documentElement.classList.toggle('cda-large-text',Boolean(p.largeText));document.documentElement.classList.toggle('cda-reduce-motion',Boolean(p.reduceMotion))}catch{}}

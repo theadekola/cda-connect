@@ -7,7 +7,8 @@ export async function currentPosition(precise=false){
 // Only current coordinates from this device are sent directly to the lookup provider.
 export async function currentNamedPosition(precise=false){
  const position=await currentPosition(precise);
- const response=await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?'+new URLSearchParams({latitude:String(position.latitude),longitude:String(position.longitude),localityLanguage:'en'}),{credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(12000)});
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+ let response:Response;try{response=await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?'+new URLSearchParams({latitude:String(position.latitude),longitude:String(position.longitude),localityLanguage:'en'}),{credentials:'omit',referrerPolicy:'no-referrer',signal:controller.signal});}finally{clearTimeout(timer)}
  if(!response.ok)throw Error('Your location name could not be found. Please try again or enter your city.');
  const data=await response.json();
  const label=[data.locality||data.city,data.city,data.principalSubdivision,data.countryName].filter((v,i,a)=>typeof v==='string'&&v&&a.indexOf(v)===i).join(', ');

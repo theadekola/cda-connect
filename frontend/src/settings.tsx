@@ -4,7 +4,7 @@ import {ChangePassword} from './ChangePassword';
 import {SecuritySettings} from './SecuritySettings';
 import {StorageSettings} from './storage';
 import {LanguageSettings} from './language';
-import {getLocale} from './i18n';
+import {getLocale,interfaceText} from './i18n';
 import {CommunityPreferences} from './communityPreferences';
 import {NotificationSettings} from './notificationSettings';
 import {CommunicationsSettings} from './communications';
@@ -27,7 +27,7 @@ const groups=[
  {name:'Communication',items:[['communications','Email, SMS & messaging',MessageCircle],['community','Your community experience',Users]]},
  {name:'Data & security',items:[['data','Manage your data and storage',Cloud],['security','Password, 2FA & active sessions',LockKeyhole],['support','Get help and contact support',HelpCircle],['about','App version and information',Info]]},
 ] as const;
-function SettingsLink({id,description,Icon}:{id:string;description:string;Icon:typeof UserRound}){return <Link className={'settings-row'+(id==='delete'?' settings-danger':'')} to={'/settings/'+id}><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{settingsTitles[id]}</strong><small>{description}</small></span><ChevronRight size={18}/></Link>}
+function SettingsLink({id,description,Icon}:{id:string;description:string;Icon:typeof UserRound}){return <Link className={'settings-row'+(id==='delete'?' settings-danger':'')} to={'/settings/'+id}><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{interfaceText(settingsTitles[id])}</strong><small>{interfaceText(description)}</small></span><ChevronRight size={18}/></Link>}
 function AdminPageButton(){const nav=useNavigate();return <span className="settings-admin-action"><button className="settings-admin-link" type="button" onClick={()=>nav('/super-admin')}><ShieldCheck size={16}/>Admin page</button></span>}
 
 export function SettingsPage(){
@@ -37,7 +37,7 @@ export function SettingsPage(){
  if(section)return <Page title={settingsTitles[section]||'Settings'}><div className="settings-detail"><SettingsDetail key={section} section={section}/></div></Page>;
  return <Page title="Settings"><div className="settings-dashboard">
 
-  {groups.map(group=><section className="settings-group" key={group.name}><div className="settings-group-title"><h2>{group.name}</h2>{group.name==='Account settings'&&isSuperAdmin&&<AdminPageButton/>}</div><div className="settings-list">{group.items.map(([id,description,Icon])=><SettingsLink key={id} id={id} description={description} Icon={Icon}/>)}</div></section>)}
+  {groups.map(group=><section className="settings-group" key={group.name}><div className="settings-group-title"><h2>{interfaceText(group.name)}</h2>{group.name==='Account settings'&&isSuperAdmin&&<AdminPageButton/>}</div><div className="settings-list">{group.items.map(([id,description,Icon])=><SettingsLink key={id} id={id} description={description} Icon={Icon}/>)}</div></section>)}
  </div></Page>;
 }
 
@@ -61,6 +61,4 @@ function SettingsDetail({section}:{section:string}){
  return <p>This settings page does not exist. Use the header back button to return.</p>;
 }
 
-export function applyDisplayPreferences(){try{const p=JSON.parse(localStorage.getItem('cda-display')||'{}');document.documentElement.classList.toggle('cda-large-text',Boolean(p.largeText));document.documentElement.classList.toggle('cda-reduce-motion',Boolean(p.reduceMotion))}catch{}}
-
-
+export {applyDisplayPreferences} from './displayPreferences';

@@ -70,12 +70,26 @@ jobs:
       - run: npm --prefix frontend run typecheck
       - run: npm --prefix frontend test
       - run: npm --prefix frontend run build
+      - run: npm --prefix frontend run check:bundle
       - run: npm audit --prefix frontend --audit-level high
       - run: node frontend/node_modules/playwright/cli.js install chromium
       - run: node frontend/node_modules/playwright/cli.js test --config frontend/playwright.config.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with: {name: visual-failures, path: frontend/test-results, retention-days: 7}
+  ios:
+    runs-on: macos-latest
+    env:
+      VITE_API_URL: https://cdaconnect.org/api/v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22.16'}
+      - run: npm ci --prefix frontend
+      - working-directory: frontend
+        run: |
+          npm run cap:sync:ios
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build
   android:
     runs-on: ubuntu-latest
     env:
