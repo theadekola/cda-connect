@@ -22,3 +22,9 @@ test('feed renders available posts while linked requests are slow and loads anot
  await page.route('**/api/v1/communities/'+community+'/**',async r=>{const url=new URL(r.request().url()),p=url.pathname;if(p.endsWith('/feed')){requests.push(url.search);const next=url.searchParams.get('offset')!=='0';return r.fulfill({headers,json:{items:[{Id:next?'post-2':'post-1',CreatedBy:user.Id,FirstName:'Jordan',Body:next?'Second page post':'First page immediately',PostType:'TEXT',CreatedAt:'2026-10-16T09:00:00Z'}],nextOffset:next?null:20}})}if(p.endsWith('/meetings')){await gate;return r.fulfill({headers,json:[]})}return r.fallback()});
  try{await page.goto('/community/'+community+'/feed');await expect(page.getByText('First page immediately')).toBeVisible();await page.getByRole('button',{name:'Load more posts',exact:true}).click();await expect(page.getByText('Second page post')).toBeVisible();expect(requests.some(url=>url.includes('limit=20')&&url.includes('offset=20'))).toBe(true)}finally{release()}
 });
+
+test('translated page headings do not duplicate the navigation header',async({page})=>{
+ await setup(page);await page.addInitScript(()=>localStorage.setItem('cda-interface-language','fr'));
+ await page.route('**/api/v1/users/language-preferences',r=>r.fulfill({headers,json:{AppLanguage:'fr',TranslationLanguage:'fr',translationAvailable:false}}));
+ await page.goto('/settings');await expect(page.locator('.topbar-title')).toHaveText('Paramètres');await expect(page.locator('.page-heading h1')).toHaveCount(0);
+});

@@ -124,3 +124,10 @@ test('service ratings call the review API and display reviews',async({page})=>{
  await setup(page);let saved:any;await page.route('**/api/v1/communities/'+community+'/services',r=>r.fulfill({headers,json:[{Id:proposal,Name:'Test provider',CreatedBy:'another-member',Category:'Plumbing'}]}));await page.route('**/api/v1/services/'+proposal+'/reviews',async r=>{if(r.request().method()==='POST'){saved=r.request().postDataJSON();return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:[{Id:'review',FirstName:'Test',LastName:'Reviewer',Rating:4,Comment:'Helpful service'}]})});
  await page.goto('/community/'+community+'/services');await page.getByRole('button',{name:'Reviews & rating'}).click();await expect(page.getByText('Helpful service')).toBeVisible();await page.getByRole('combobox',{name:'Rating',exact:true}).selectOption('4');await page.getByLabel('Review',{exact:true}).fill('Reliable and helpful');await page.getByRole('button',{name:'Save my review'}).click();await expect.poll(()=>saved?.rating).toBe(4);expect(saved.comment).toBe('Reliable and helpful');
 });
+
+test('shared invitation waits for a slow session restore before choosing the sign-in route',async({page})=>{
+ await setup(page);await page.route('**/api/v1/auth/refresh',async route=>{await new Promise(resolve=>setTimeout(resolve,500));await route.fulfill({headers,json:{accessToken:'fixture-access',user}})});
+ await page.route('**/api/v1/communities',route=>route.fulfill({headers,json:[]}));
+ await page.route('**/api/v1/communities/invite/ABCDEF',route=>route.fulfill({headers,json:{Id:community,Name:'Example CDA',MemberCount:12}}));
+ await page.goto('/invite/ABCDEF');await expect(page.getByRole('heading',{name:'Example CDA',exact:true})).toBeVisible();await expect(page).toHaveURL('/invite/ABCDEF');await expect(page.getByRole('button',{name:'Request to join',exact:true})).toBeVisible();
+});

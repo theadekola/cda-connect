@@ -7,3 +7,5 @@ test('interface extraction includes conditional controls without translating use
  assert.deepEqual(strings,['Saving…','Save','Saving…','Save','Welcome back','Privacy & safety','Home']);
  assert.ok(!strings.includes('/home'));assert.ok(!strings.includes('user.message'));
 });
+
+test('Page title keys stay canonical for header matching while remaining in the translation catalog',()=>{const edits=interfaceEdits('<Page title={editing?"Edit community":"Create community"}><h2>Settings</h2></Page>');assert.deepEqual(edits.map(edit=>edit.text),['Edit community','Create community','Settings']);assert.deepEqual(edits.map(edit=>edit.translate!==false),[false,false,true])});

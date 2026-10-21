@@ -129,7 +129,7 @@ for(const width of [390,768,1440])test(`issue page, private evidence, assignment
  await page.getByRole('button',{name:'Open evidence'}).click();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByText('Private evidence content',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Close evidence'}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.getByLabel('Assign to').selectOption('COMMITTEE');await page.getByRole('button',{name:'Assign',exact:true}).click();await expect(page.getByText('Assigned to: Committee')).toBeVisible();expect(patch.assignmentGroup).toBe('COMMITTEE');
  await page.getByLabel('Resolution note',{exact:true}).fill('Repaired and checked');await page.getByLabel('Add evidence',{exact:true}).setInputFiles({name:'resolution.txt',mimeType:'text/plain',buffer:Buffer.from('Repair complete')});await expect(page.getByText('resolution.txt',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Mark resolved'}).click();await expect(page.getByText('Report resolved.',{exact:true})).toBeVisible();expect(patch.resolutionEvidence).toHaveLength(1);await expect(page.getByRole('button',{name:'Open evidence'})).toHaveCount(2);
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);if(width===390)await page.screenshot({path:test.info().outputPath('resolved-issue.png'),fullPage:true});
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);if(width===390)await page.screenshot({path:test.info().outputPath('resolved-issue.png'),fullPage:true});
 });
 
 for(const width of [390,768,1440])test(`weather uses live device location without a popup at ${width}px`,async({page,context})=>{

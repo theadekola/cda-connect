@@ -1,9 +1,9 @@
 import {safeReturnPath} from './navigation';
-import {useState} from 'react';
+import {useState,useEffect} from 'react';
 import {Link,useParams,useNavigate,Navigate} from 'react-router-dom';
 import {useQuery} from '@tanstack/react-query';
 import {ShieldCheck,Share2,Copy,Users} from 'lucide-react';
-import {api,str,type RecordData} from './api';
+import {api,str,waitForSessionRestore,type RecordData} from './api';
 import {AuthLayout,useSession} from './auth';
 import {ErrorBox,Loading} from './ui';
 import {CommunityLogo} from './Communities';
@@ -20,10 +20,12 @@ export function CommunityCreated({community}:{community:RecordData}){
 }
 export function CommunityInvite(){
  const {code=''}=useParams(),s=useSession(),nav=useNavigate(),[busy,setBusy]=useState(false),[pending,setPending]=useState(false),[error,setError]=useState<unknown>();
+ const [restoring,setRestoring]=useState(!s);
+ useEffect(()=>{let disposed=false;if(restoring){const done=()=>{if(!disposed)setRestoring(false)};void waitForSessionRestore().then(done,done)}return()=>{disposed=true}},[restoring]);
  const memberships=useQuery({queryKey:['invite-memberships',s?.user.Id],queryFn:()=>api.get<RecordData[]>('/communities'),enabled:!!s});
  const valid=/^[A-Z0-9]{6,20}$/i.test(code),q=useQuery({queryKey:['invite',code],queryFn:()=>api.get<RecordData>('/communities/invite/'+encodeURIComponent(code)),enabled:valid,retry:false});
  if(!valid)return <AuthLayout title="Community invitation"><p>This invite link is invalid.</p><Link to="/communities">Find communities</Link></AuthLayout>;
- if(q.isPending)return <Loading/>;
+ if(q.isPending||(!s&&restoring))return <Loading/>;
  if(q.error)return <AuthLayout title="Community invitation"><ErrorBox error={q.error}/><Link to="/communities">Find communities</Link></AuthLayout>;
  if(s&&Array.isArray(memberships.data)&&memberships.data.some(c=>c.Id===q.data.Id))return <Navigate to={'/community/'+q.data.Id+'/feed'} replace/>;
  if(!s)return <Navigate to={'/register?invite='+encodeURIComponent(code)} replace/>;
