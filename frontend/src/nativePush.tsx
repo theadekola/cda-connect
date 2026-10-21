@@ -14,7 +14,7 @@ export function nativeEnabled(){return saved()?.userId===session.get()?.user.Id&
 export async function nativePushStatus(){
  const [build,server]=await Promise.all([NativeDevice.pushConfiguration(),api.get<{android:boolean;ios:boolean}>('/users/devices/push-config')]);
  const platform=Capacitor.getPlatform()==='ios'?'ios':'android';
- return {ready:build.configured&&server[platform],environment:build.environment,message:!build.configured?'Android push setup is pending. Add the Firebase app configuration and rebuild.':!server[platform]?'Push delivery setup is pending on the server.':'',enabled:nativeEnabled()&&(await PushNotifications.checkPermissions()).receive==='granted'};
+ return {ready:build.configured&&server[platform],environment:build.environment,message:!build.configured?(platform==='ios'?'iOS push setup is pending. Enable the Apple push capability and rebuild.':'Android push setup is pending. Add the Firebase app configuration and rebuild.'):!server[platform]?'Push delivery setup is pending on the server.':'',enabled:nativeEnabled()&&(await PushNotifications.checkPermissions()).receive==='granted'};
 }
 let tokenListener:PluginListenerHandle|undefined,tokenOwner='';
 let tokenUpdates=Promise.resolve();

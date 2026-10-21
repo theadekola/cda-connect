@@ -13,7 +13,7 @@ for(const width of [390,768,1440])test(`language changes immediately, persists, 
  await page.route('**/api/v1/users/language-preferences',async r=>{if(r.request().method()==='PATCH'){code=r.request().postDataJSON().value;await new Promise(resolve=>setTimeout(resolve,350));return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:{AppLanguage:code,translationAvailable:false}})});
  await page.goto('/settings/language/app');await page.getByRole('radio',{name:/Français/}).check();
  await expect(page.locator('html')).toHaveAttribute('lang','fr');await expect(page.getByRole('heading',{name:'Langue de l’application'})).toBeVisible();await expect(page.getByRole('link',{name:'Accueil',exact:true}).first()).toBeVisible();
- await expect(page.getByRole('radio',{name:/Français/})).toBeChecked();
+ await expect(page.getByRole('radio',{name:/Français/})).toBeChecked();await expect(page.getByText('Enregistrement…',{exact:true})).toBeVisible();
  await page.getByRole('radio',{name:/العربية/}).check();await expect(page.locator('html')).toHaveAttribute('dir','rtl');await expect(page.getByRole('radio',{name:/العربية/})).toBeChecked();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.reload();await expect(page.locator('html')).toHaveAttribute('lang','ar');await expect(page.locator('html')).toHaveAttribute('dir','rtl');
 });

@@ -8,7 +8,7 @@ const manifest=read('../android/app/src/main/AndroidManifest.xml'),gradle=read('
 
 test('Google Play account deletion resource is public and provides an external request path',()=>{
  assert.match(main,/path="\/account-deletion" element={<AccountDeletionPage\/>}/);
- assert.match(main,/publicPath=.*'\/account-deletion'/);
+ assert.match(main,/function isPublicPath\(pathname:string\).*'\/account-deletion'/);
  assert.match(deletion,/CDA Connect is provided by AAT Tech Ltd/);
  assert.match(deletion,/mailto:support@cdaconnect\.org/);
  assert.match(deletion,/What is deleted or retained/);
