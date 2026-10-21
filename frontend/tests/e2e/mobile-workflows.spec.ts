@@ -45,6 +45,8 @@ for(const width of [390,1440])test(`governance proposal, decision and progress f
  await page.getByRole('link',{name:'Decision register',exact:true}).first().click();await expect(page.getByText('Replace damaged lights.',{exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('biometric locking preserves the mounted chat draft across background and unlock',async({page})=>{
+ page.on('pageerror',error=>console.error('Biometric workflow page error:',error));
+ page.on('console',message=>{if(message.type()==='error'&&!message.text().startsWith('Failed to load resource:'))console.error('Biometric workflow browser error:',message.text())});
  await setup(page);await page.addInitScript(()=>{
   const w=window as any,callbacks=new Map<string,Set<Function>>();w.CapacitorCustomPlatform={name:'android'};
   localStorage.setItem('cda-biometric-unlock','true');

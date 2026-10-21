@@ -74,3 +74,11 @@ for(const width of [390,430])test(`installed iOS authentication has an opaque st
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  }
 });
+
+test('translated two-factor login keeps verification separate from the welcome screen',async({page})=>{
+ await publicPage(page);await page.addInitScript(()=>localStorage.setItem('cda-interface-language','fr'));
+ await page.route('**/api/v1/auth/login',route=>route.fulfill({json:{requiresTwoFactor:true,challengeToken:'fixture-challenge'}}));
+ await page.goto('/login');await page.locator('input[name="email"]').fill('member@example.test');await page.locator('input[name="password"]').fill('Password123!');
+ await page.getByRole('button',{name:'Connexion',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Vérifiez votre connexion',exact:true})).toBeVisible();await expect(page.locator('.login-intro')).toHaveCount(0);await expect(page.locator('.verification-digits input')).toHaveCount(6);await expect(page.locator('.verification-digits input').first()).toBeVisible();await page.locator('.verification-digits input').first().fill('123456');await expect(page.locator('input[name="code"]')).toHaveValue('123456');
+});
