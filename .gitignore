@@ -52,3 +52,6 @@ frontend/ios/App/App/GoogleService-Info.plist
 **/.venv/
 **/__pycache__/
 *.pyc
+
+# Atomic translation-generation checkpoints are not release assets.
+frontend/src/interfacePacks/*.json.tmp

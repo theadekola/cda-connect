@@ -9,6 +9,8 @@ let current:Session|null=null;let sessionRevision=0;
 const listeners=new Set<()=>void>();let refreshPromise:Promise<void>|null=null;
 export const session={get:()=>current,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn)}},set:(value:Session|null)=>{sessionRevision++;current=value?{accessToken:value.accessToken,user:value.user,sessionExpiresAt:value.sessionExpiresAt}:null;listeners.forEach(fn=>fn())}};
 export async function restoreSession(){const revision=sessionRevision;try{await refreshSession()}catch{if(revision===sessionRevision)session.set(null)}}
+// Shared links can wait for startup restoration without sending another refresh.
+export function waitForSessionRestore(){return refreshPromise??Promise.resolve()}
 export async function refreshSession(){if(!refreshPromise){const revision=sessionRevision;const refresh=async()=>{const data=await perform<Session>('/auth/refresh',{method:'POST',body:'{}'},false);if(revision===sessionRevision)session.set(data)};refreshPromise=(async()=>{if(navigator.locks)await navigator.locks.request('cda-refresh',refresh);else await refresh()})().finally(()=>{refreshPromise=null})}return refreshPromise}
 export class ApiError extends Error{constructor(public status:number,message:string){super(message)}}
 function base(){const configured=import.meta.env.VITE_API_URL;const value=Capacitor.isNativePlatform()&&(!configured||configured.startsWith('/'))?'https://cdaconnect.org/api/v1':configured;if(!value)throw new ApiError(0,'Set VITE_API_URL before connecting to your backend.');const url=new URL(value,window.location.origin);if(import.meta.env.PROD&&url.protocol!=='https:')throw new ApiError(0,'Production API URL must use HTTPS.');return value.replace(/\/$/,'')}

@@ -45,6 +45,8 @@ for(const width of [390,1440])test(`governance proposal, decision and progress f
  await page.getByRole('link',{name:'Decision register',exact:true}).first().click();await expect(page.getByText('Replace damaged lights.',{exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('biometric locking preserves the mounted chat draft across background and unlock',async({page})=>{
+ page.on('pageerror',error=>console.error('Biometric workflow page error:',error));
+ page.on('console',message=>{if(message.type()==='error'&&!message.text().startsWith('Failed to load resource:'))console.error('Biometric workflow browser error:',message.text())});
  await setup(page);await page.addInitScript(()=>{
   const w=window as any,callbacks=new Map<string,Set<Function>>();w.CapacitorCustomPlatform={name:'android'};
   localStorage.setItem('cda-biometric-unlock','true');
@@ -79,8 +81,13 @@ test('an eligible ordinary member can cast one formal vote without manager contr
 
 test('inactive installed app signs out on resume and requires credentials',async({page})=>{
  await setup(page);await page.addInitScript(()=>localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000)));
- await page.route('**/api/v1/auth/logout',route=>route.fulfill({status:204}));
- await page.goto('/home');await expect(page).toHaveURL(/\/login/);
+ let releaseLogout!:()=>void;const pendingLogout=new Promise<void>(resolve=>{releaseLogout=resolve});
+ await page.route('**/api/v1/auth/logout',async route=>{await pendingLogout;await route.fulfill({status:204})});
+ try{
+  await page.goto('/home');await expect(page.getByText('Signing out...', {exact:true})).toBeVisible({timeout:1000});
+  await expect(page.locator('.home-activities')).toBeHidden();
+ }finally{releaseLogout()}
+ await expect(page).toHaveURL(/\/login/);
  await expect(page.getByLabel('Email address')).toBeVisible();
  await expect(page.getByText('Your session has ended. Sign in with your email and password.')).toBeVisible();
 });
@@ -121,4 +128,58 @@ test('service contacts, verification, editing and removal are connected',async({
 test('service ratings call the review API and display reviews',async({page})=>{
  await setup(page);let saved:any;await page.route('**/api/v1/communities/'+community+'/services',r=>r.fulfill({headers,json:[{Id:proposal,Name:'Test provider',CreatedBy:'another-member',Category:'Plumbing'}]}));await page.route('**/api/v1/services/'+proposal+'/reviews',async r=>{if(r.request().method()==='POST'){saved=r.request().postDataJSON();return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:[{Id:'review',FirstName:'Test',LastName:'Reviewer',Rating:4,Comment:'Helpful service'}]})});
  await page.goto('/community/'+community+'/services');await page.getByRole('button',{name:'Reviews & rating'}).click();await expect(page.getByText('Helpful service')).toBeVisible();await page.getByRole('combobox',{name:'Rating',exact:true}).selectOption('4');await page.getByLabel('Review',{exact:true}).fill('Reliable and helpful');await page.getByRole('button',{name:'Save my review'}).click();await expect.poll(()=>saved?.rating).toBe(4);expect(saved.comment).toBe('Reliable and helpful');
+});
+
+test('shared invitation waits for a slow session restore before choosing the sign-in route',async({page})=>{
+ await setup(page);await page.route('**/api/v1/auth/refresh',async route=>{await new Promise(resolve=>setTimeout(resolve,500));await route.fulfill({headers,json:{accessToken:'fixture-access',user}})});
+ await page.route('**/api/v1/communities',route=>route.fulfill({headers,json:[]}));
+ await page.route('**/api/v1/communities/invite/ABCDEF',route=>route.fulfill({headers,json:{Id:community,Name:'Example CDA',MemberCount:12}}));
+ await page.goto('/invite/ABCDEF');await expect(page.getByRole('heading',{name:'Example CDA',exact:true})).toBeVisible();await expect(page).toHaveURL('/invite/ABCDEF');await expect(page.getByRole('button',{name:'Request to join',exact:true})).toBeVisible();
+});
+
+for(const platform of ['android','ios'])test(`native ${platform} keeps a late biometric result covered until foreground resume`,async({page})=>{
+ await setup(page);await page.addInitScript(({platform})=>{
+  const w=window as any,listeners=new Map<string,{event:string;callback:Function}>();let next=0;
+  w.CapacitorCustomPlatform={name:platform};localStorage.setItem('cda-biometric-unlock','true');w.biometricCalls=0;
+  const methods={App:['getLaunchUrl','getState'],SystemBars:['setStyle'],Network:['getStatus'],BiometricAuthNative:['checkBiometry','internalAuthenticate']};
+  w.Capacitor={PluginHeaders:Object.entries(methods).map(([name,values])=>({name,methods:[...values.map(name=>({name,rtype:'promise'})),{name:'addListener',rtype:'callback'},{name:'removeListener',rtype:'callback'}]})),nativeCallback:(plugin:string,method:string,args:any,callback:Function)=>{
+   if(method==='addListener'){const id=String(++next);listeners.set(id,{event:plugin+args.eventName,callback});return id}
+   listeners.delete(args.callbackId);return '';
+  },nativePromise:async(plugin:string,method:string)=>{
+   if(method==='checkBiometry')return{isAvailable:true,deviceIsSecure:true,biometryType:1};
+   if(method==='internalAuthenticate'){w.biometricCalls++;if(w.biometricCalls===1)await new Promise<void>(resolve=>w.finishBiometric=resolve);return {}}
+   if(method==='getStatus')return{connected:true,connectionType:'wifi'};
+   if(method==='getState')return{isActive:true};return {};
+  }};
+  w.testAppState=(isActive:boolean)=>{for(const listener of listeners.values())if(listener.event==='AppappStateChange')listener.callback({isActive})};
+ },{platform});
+ await page.goto('/chat/'+chat);await expect.poll(()=>page.evaluate(()=>(window as any).biometricCalls)).toBe(1);
+ await page.evaluate(()=>{(window as any).testAppState(false);(window as any).finishBiometric()});
+ await expect(page.getByRole('dialog',{name:'Unlock CDA Connect'})).toBeVisible();await expect(page.getByText('App locked',{exact:true})).toBeVisible();await expect(page.getByLabel('Message',{exact:true})).toBeHidden();
+ await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toBeVisible();expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(1);
+ await page.getByLabel('Message',{exact:true}).fill('Keep this draft');await page.evaluate(()=>(window as any).testAppState(false));await expect(page.getByLabel('Message',{exact:true})).toBeHidden();await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toHaveValue('Keep this draft');expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(2);
+});
+
+test('session expiry keeps push cleanup authenticated while private screens are covered',async({page})=>{
+ await setup(page);
+ await page.addInitScript(()=>{
+  localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000));
+  const w=window as any;let release:()=>void;const lookup=new Promise<void>(resolve=>{release=resolve});
+  w.releasePushLookup=()=>release();
+  if(!('PushManager' in window))w.PushManager=class {};
+  Object.defineProperty(navigator.serviceWorker,'getRegistration',{value:async()=>{await lookup;return{pushManager:{getSubscription:async()=>({endpoint:'https://push.example.test/device',toJSON:()=>({endpoint:'https://push.example.test/device'}),unsubscribe:async()=>true})}}}});
+ });
+ let removed=false,logoutStarted=false,releaseLogout!:()=>void;const logout=new Promise<void>(resolve=>{releaseLogout=resolve});
+ await page.route('**/api/v1/auth/logout',async route=>{logoutStarted=true;await logout;await route.fulfill({status:204})});
+ await page.route('**/api/v1/users/web-push/subscribe',async route=>{
+  if(route.request().method()!=='DELETE')return route.fulfill({headers,json:{}});
+  expect(logoutStarted).toBe(false);expect(route.request().headers().authorization).toBe('Bearer fixture-access');removed=true;
+  await route.fulfill({headers,status:204});releaseLogout();
+ });
+ try{
+  await page.goto('/home');await expect(page.getByText('Signing out...', {exact:true})).toBeVisible({timeout:1000});
+  await expect(page.locator('.home-activities')).toBeHidden();
+  await page.evaluate(()=>(window as any).releasePushLookup());
+  await expect.poll(()=>removed).toBe(true);await expect(page).toHaveURL(/\/login/);
+ }finally{releaseLogout()}
 });

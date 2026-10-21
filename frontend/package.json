@@ -17,7 +17,8 @@
     "ios": "cap open ios",
     "cap:sync:android": "npm run build && cap sync android && node scripts/configure-communications-native.mjs",
     "cap:sync:ios": "npm run build && cap sync ios && node scripts/configure-communications-native.mjs",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "language:prepare": "node scripts/prepare-interface-packs.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",
@@ -51,7 +52,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.0"
+    "vite": "^7.3.7"
   },
   "overrides": {
     "xcode": {

@@ -1,7 +1,14 @@
-import ts from 'typescript';
-import fs from 'node:fs';
-import path from 'node:path';
 import type {Plugin} from 'vite';
-const attrs=new Set(['title','subtitle','label','placeholder','description','text','aria-label']);
-function jsxText(raw:string){return raw.includes('\n')?raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).join(' '):raw}
-export function languagePlugin():Plugin{return{name:'cda-interface-language',enforce:'pre',resolveId(id){if(id==='virtual:cda-interface-pack')return '\0cda-interface-pack'},load(id){if(id!=='\0cda-interface-pack')return;const strings=new Set<string>();for(const file of fs.readdirSync(path.resolve('src'))){if(!file.endsWith('.tsx'))continue;const tree=ts.createSourceFile(file,fs.readFileSync(path.resolve('src',file),'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);function visit(n:ts.Node){if(ts.isJsxText(n)){const text=jsxText(n.getFullText(tree));if(text.trim())strings.add(text)}if(ts.isJsxAttribute(n)&&attrs.has(n.name.getText(tree))&&n.initializer&&ts.isStringLiteral(n.initializer))strings.add(n.initializer.text);ts.forEachChild(n,visit)}visit(tree)}return 'export default '+JSON.stringify([...strings].sort())},transform(code,id){if(!id.replaceAll('\\','/').includes('/src/')||!id.endsWith('.tsx'))return;const tree=ts.createSourceFile(id,code,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),edits:{start:number;end:number;text:string}[]=[];function visit(n:ts.Node){if(ts.isJsxText(n)){const text=jsxText(code.slice(n.pos,n.end));if(text.trim())edits.push({start:n.pos,end:n.end,text:'{__cdaText('+JSON.stringify(text)+')}'})}if(ts.isJsxAttribute(n)&&attrs.has(n.name.getText(tree))&&n.initializer&&ts.isStringLiteral(n.initializer))edits.push({start:n.initializer.getStart(tree),end:n.initializer.end,text:'{__cdaText('+JSON.stringify(n.initializer.text)+')}' });ts.forEachChild(n,visit)}visit(tree);if(!edits.length)return;for(const e of edits.sort((a,b)=>b.start-a.start))code=code.slice(0,e.start)+e.text+code.slice(e.end);return{code:"import {interfaceText as __cdaText} from '/src/i18n';\n"+code,map:null}}}}
+import {interfaceEdits} from './interfaceCatalog.mjs';
+export function languagePlugin():Plugin{return{
+ name:'cda-interface-language',enforce:'pre',
+ transform(code,id){
+  if(!id.replaceAll('\\','/').includes('/src/')||!id.endsWith('.tsx'))return;
+  const edits=interfaceEdits(code,id).filter(edit=>edit.translate!==false);if(!edits.length)return;
+  for(const edit of edits.sort((a,b)=>b.start-a.start)){
+   const translated='__cdaText('+JSON.stringify(edit.text)+')';
+   code=code.slice(0,edit.start)+(edit.attribute?'{'+translated+'}':translated)+code.slice(edit.end);
+  }
+  return{code:"import {interfaceText as __cdaText} from '/src/i18n';\n"+code,map:null};
+ }
+}}
