@@ -169,11 +169,11 @@ test('session expiry keeps push cleanup authenticated while private screens are 
   if(!('PushManager' in window))w.PushManager=class {};
   Object.defineProperty(navigator.serviceWorker,'getRegistration',{value:async()=>{await lookup;return{pushManager:{getSubscription:async()=>({endpoint:'https://push.example.test/device',toJSON:()=>({endpoint:'https://push.example.test/device'}),unsubscribe:async()=>true})}}}});
  });
- let removed=false,releaseLogout!:()=>void;const logout=new Promise<void>(resolve=>{releaseLogout=resolve});
- await page.route('**/api/v1/auth/logout',async route=>{await logout;await route.fulfill({status:204})});
+ let removed=false,logoutStarted=false,releaseLogout!:()=>void;const logout=new Promise<void>(resolve=>{releaseLogout=resolve});
+ await page.route('**/api/v1/auth/logout',async route=>{logoutStarted=true;await logout;await route.fulfill({status:204})});
  await page.route('**/api/v1/users/web-push/subscribe',async route=>{
   if(route.request().method()!=='DELETE')return route.fulfill({headers,json:{}});
-  expect(route.request().headers().authorization).toBe('Bearer fixture-access');removed=true;
+  expect(logoutStarted).toBe(false);expect(route.request().headers().authorization).toBe('Bearer fixture-access');removed=true;
   await route.fulfill({headers,status:204});releaseLogout();
  });
  try{

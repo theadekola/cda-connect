@@ -14,7 +14,19 @@ import {authenticateBiometric,biometricLock,getBiometricEnabled} from './session
 export const useSession=()=>useSyncExternalStore(session.subscribe,session.get,()=>null);
 export function Protected(){
  const current=useSession(),locked=useSyncExternalStore(biometricLock.subscribe,biometricLock.get,()=>false),nav=useNavigate(),ending=useRef(false),[foreground,setForeground]=useState(true),[closing,setClosing]=useState(false);
- const endSession=useCallback(async()=>{if(ending.current)return;ending.current=true;setClosing(true);biometricLock.lock();const revoke=Promise.allSettled([disconnectPush(),api.send('/auth/logout',{})]);await Promise.race([revoke,new Promise(resolve=>window.setTimeout(resolve,2000))]);session.set(null);nav('/login',{replace:true,state:{notice:'Your session has ended. Sign in with your email and password.'}})},[nav]);
+ const endSession=useCallback(async()=>{
+  if(ending.current)return;
+  ending.current=true;setClosing(true);biometricLock.lock();
+  const delay=(ms:number)=>new Promise(resolve=>window.setTimeout(resolve,ms));
+  // Removing device registrations needs the active session. Bound that work
+  // before revoking it so a slow push service cannot delay sign-out forever.
+  const revoke=(async()=>{
+   await Promise.race([Promise.allSettled([disconnectPush()]),delay(1000)]);
+   await api.send('/auth/logout',{});
+  })();
+  await Promise.race([Promise.allSettled([revoke]),delay(2000)]);
+  session.set(null);nav('/login',{replace:true,state:{notice:'Your session has ended. Sign in with your email and password.'}});
+ },[nav]);
  useEffect(()=>{if(!current)return;return watchSessionActivity(()=>void endSession(),current.sessionExpiresAt)},[current?.user.Id,current?.sessionExpiresAt,endSession]);
  useEffect(()=>{
   if(!current||!Capacitor.isNativePlatform())return;
