@@ -14,9 +14,18 @@ import {authenticateBiometric,biometricLock,getBiometricEnabled} from './session
 export const useSession=()=>useSyncExternalStore(session.subscribe,session.get,()=>null);
 export function Protected(){
  const current=useSession(),locked=useSyncExternalStore(biometricLock.subscribe,biometricLock.get,()=>false),nav=useNavigate(),ending=useRef(false),[foreground,setForeground]=useState(true);
- const endSession=useCallback(async()=>{if(ending.current)return;ending.current=true;const revoke=Promise.allSettled([disconnectPush(),api.send('/auth/logout',{})]);await Promise.race([revoke,new Promise(resolve=>window.setTimeout(resolve,2000))]);session.set(null);nav('/login',{replace:true,state:{notice:'Your session has ended. Sign in with your email and password.'}})},[nav]);
+ const endSession=useCallback(async()=>{if(ending.current)return;ending.current=true;biometricLock.lock();const revoke=Promise.allSettled([disconnectPush(),api.send('/auth/logout',{})]);session.set(null);nav('/login',{replace:true,state:{notice:'Your session has ended. Sign in with your email and password.'}});await Promise.race([revoke,new Promise(resolve=>window.setTimeout(resolve,2000))])},[nav]);
  useEffect(()=>{if(!current)return;return watchSessionActivity(()=>void endSession(),current.sessionExpiresAt)},[current?.user.Id,current?.sessionExpiresAt,endSession]);
- useEffect(()=>{if(!current||!Capacitor.isNativePlatform())return;let disposed=false,handle:{remove:()=>Promise<void>}|undefined;void NativeApp.addListener('appStateChange',state=>{setForeground(state.isActive);if(!state.isActive)biometricLock.lock()}).then(value=>{if(disposed)void value.remove();else handle=value});return()=>{disposed=true;void handle?.remove()}},[current]);
+ useEffect(()=>{
+  if(!current||!Capacitor.isNativePlatform())return;
+  let disposed=false,stateChanged=false,handle:{remove:()=>Promise<void>}|undefined;
+  const apply=(active:boolean)=>{biometricLock.setForeground(active);setForeground(active)};
+  void NativeApp.addListener('appStateChange',state=>{if(!disposed){stateChanged=true;apply(state.isActive)}}).then(value=>{if(disposed)void value.remove();else handle=value});
+  // A new signed-in view may have missed state events while login was mounted.
+  // A late snapshot must never override a newer background/resume event.
+  void NativeApp.getState().then(state=>{if(!disposed&&!stateChanged&&typeof state.isActive==='boolean')apply(state.isActive)}).catch(()=>{});
+  return()=>{disposed=true;void handle?.remove()};
+ },[current?.user.Id]);
  if(!current)return <Navigate to={authLink("/login")} state={ending.current?{notice:'Your session has ended. Sign in with your email and password.'}:undefined} replace/>;
  const showLock=getBiometricEnabled()&&locked;
  return <><div hidden={showLock} inert={showLock}><Outlet/></div>{showLock&&<div style={{position:'fixed',inset:0,zIndex:10000,overflow:'auto',background:'var(--surface, #fff)'}} role="dialog" aria-modal="true" aria-label="Unlock CDA Connect">{foreground?<BiometricGate onSignOut={()=>endSession()}/>:<Loading label="App locked" fullscreen/>}</div>}</>;

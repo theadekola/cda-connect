@@ -81,10 +81,13 @@ test('an eligible ordinary member can cast one formal vote without manager contr
 
 test('inactive installed app signs out on resume and requires credentials',async({page})=>{
  await setup(page);await page.addInitScript(()=>localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000)));
- await page.route('**/api/v1/auth/logout',route=>route.fulfill({status:204}));
- await page.goto('/home');await expect(page).toHaveURL(/\/login/);
- await expect(page.getByLabel('Email address')).toBeVisible();
- await expect(page.getByText('Your session has ended. Sign in with your email and password.')).toBeVisible();
+ let releaseLogout!:()=>void;const pendingLogout=new Promise<void>(resolve=>{releaseLogout=resolve});
+ await page.route('**/api/v1/auth/logout',async route=>{await pendingLogout;await route.fulfill({status:204})});
+ try{
+  await page.goto('/home');await expect(page).toHaveURL(/\/login/,{timeout:1000});
+  await expect(page.getByLabel('Email address')).toBeVisible();
+  await expect(page.getByText('Your session has ended. Sign in with your email and password.')).toBeVisible();
+ }finally{releaseLogout()}
 });
 
 test('login retains its new session when startup restoration finishes late',async({page})=>{
@@ -130,4 +133,27 @@ test('shared invitation waits for a slow session restore before choosing the sig
  await page.route('**/api/v1/communities',route=>route.fulfill({headers,json:[]}));
  await page.route('**/api/v1/communities/invite/ABCDEF',route=>route.fulfill({headers,json:{Id:community,Name:'Example CDA',MemberCount:12}}));
  await page.goto('/invite/ABCDEF');await expect(page.getByRole('heading',{name:'Example CDA',exact:true})).toBeVisible();await expect(page).toHaveURL('/invite/ABCDEF');await expect(page.getByRole('button',{name:'Request to join',exact:true})).toBeVisible();
+});
+
+for(const platform of ['android','ios'])test(`native ${platform} keeps a late biometric result covered until foreground resume`,async({page})=>{
+ await setup(page);await page.addInitScript(({platform})=>{
+  const w=window as any,listeners=new Map<string,{event:string;callback:Function}>();let next=0;
+  w.CapacitorCustomPlatform={name:platform};localStorage.setItem('cda-biometric-unlock','true');w.biometricCalls=0;
+  const methods={App:['getLaunchUrl','getState'],SystemBars:['setStyle'],Network:['getStatus'],BiometricAuthNative:['checkBiometry','internalAuthenticate']};
+  w.Capacitor={PluginHeaders:Object.entries(methods).map(([name,values])=>({name,methods:[...values.map(name=>({name,rtype:'promise'})),{name:'addListener',rtype:'callback'},{name:'removeListener',rtype:'callback'}]})),nativeCallback:(plugin:string,method:string,args:any,callback:Function)=>{
+   if(method==='addListener'){const id=String(++next);listeners.set(id,{event:plugin+args.eventName,callback});return id}
+   listeners.delete(args.callbackId);return '';
+  },nativePromise:async(plugin:string,method:string)=>{
+   if(method==='checkBiometry')return{isAvailable:true,deviceIsSecure:true,biometryType:1};
+   if(method==='internalAuthenticate'){w.biometricCalls++;if(w.biometricCalls===1)await new Promise<void>(resolve=>w.finishBiometric=resolve);return {}}
+   if(method==='getStatus')return{connected:true,connectionType:'wifi'};
+   if(method==='getState')return{isActive:true};return {};
+  }};
+  w.testAppState=(isActive:boolean)=>{for(const listener of listeners.values())if(listener.event==='AppappStateChange')listener.callback({isActive})};
+ },{platform});
+ await page.goto('/chat/'+chat);await expect.poll(()=>page.evaluate(()=>(window as any).biometricCalls)).toBe(1);
+ await page.evaluate(()=>{(window as any).testAppState(false);(window as any).finishBiometric()});
+ await expect(page.getByRole('dialog',{name:'Unlock CDA Connect'})).toBeVisible();await expect(page.getByText('App locked',{exact:true})).toBeVisible();await expect(page.getByLabel('Message',{exact:true})).toBeHidden();
+ await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toBeVisible();expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(1);
+ await page.getByLabel('Message',{exact:true}).fill('Keep this draft');await page.evaluate(()=>(window as any).testAppState(false));await expect(page.getByLabel('Message',{exact:true})).toBeHidden();await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toHaveValue('Keep this draft');expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(2);
 });
