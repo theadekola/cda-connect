@@ -7,7 +7,8 @@ export function updateNativeChrome(authenticated:boolean){
  if(!Capacitor.isNativePlatform())return;
  pending=pending.catch(()=>{}).then(async()=>{
   await SystemBars.setStyle({bar:SystemBarType.StatusBar,style:authenticated?SystemBarsStyle.Dark:SystemBarsStyle.Light});
-  await SystemBars.setStyle({bar:SystemBarType.NavigationBar,style:SystemBarsStyle.Light});
+  // iOS ignores the bar selector: a second call would overwrite its status style.
+  if(Capacitor.getPlatform()==='android')await SystemBars.setStyle({bar:SystemBarType.NavigationBar,style:SystemBarsStyle.Light});
  });
  void pending.catch(()=>{});
 }
