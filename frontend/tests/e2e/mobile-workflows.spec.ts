@@ -84,10 +84,12 @@ test('inactive installed app signs out on resume and requires credentials',async
  let releaseLogout!:()=>void;const pendingLogout=new Promise<void>(resolve=>{releaseLogout=resolve});
  await page.route('**/api/v1/auth/logout',async route=>{await pendingLogout;await route.fulfill({status:204})});
  try{
-  await page.goto('/home');await expect(page).toHaveURL(/\/login/,{timeout:1000});
-  await expect(page.getByLabel('Email address')).toBeVisible();
-  await expect(page.getByText('Your session has ended. Sign in with your email and password.')).toBeVisible();
+  await page.goto('/home');await expect(page.getByText('Signing out...', {exact:true})).toBeVisible({timeout:1000});
+  await expect(page.locator('.home-activities')).toBeHidden();
  }finally{releaseLogout()}
+ await expect(page).toHaveURL(/\/login/);
+ await expect(page.getByLabel('Email address')).toBeVisible();
+ await expect(page.getByText('Your session has ended. Sign in with your email and password.')).toBeVisible();
 });
 
 test('login retains its new session when startup restoration finishes late',async({page})=>{
@@ -156,4 +158,28 @@ for(const platform of ['android','ios'])test(`native ${platform} keeps a late bi
  await expect(page.getByRole('dialog',{name:'Unlock CDA Connect'})).toBeVisible();await expect(page.getByText('App locked',{exact:true})).toBeVisible();await expect(page.getByLabel('Message',{exact:true})).toBeHidden();
  await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toBeVisible();expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(1);
  await page.getByLabel('Message',{exact:true}).fill('Keep this draft');await page.evaluate(()=>(window as any).testAppState(false));await expect(page.getByLabel('Message',{exact:true})).toBeHidden();await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toHaveValue('Keep this draft');expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(2);
+});
+
+test('session expiry keeps push cleanup authenticated while private screens are covered',async({page})=>{
+ await setup(page);
+ await page.addInitScript(()=>{
+  localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000));
+  const w=window as any;let release:()=>void;const lookup=new Promise<void>(resolve=>{release=resolve});
+  w.releasePushLookup=()=>release();
+  if(!('PushManager' in window))w.PushManager=class {};
+  Object.defineProperty(navigator.serviceWorker,'getRegistration',{value:async()=>{await lookup;return{pushManager:{getSubscription:async()=>({endpoint:'https://push.example.test/device',toJSON:()=>({endpoint:'https://push.example.test/device'}),unsubscribe:async()=>true})}}}});
+ });
+ let removed=false,releaseLogout!:()=>void;const logout=new Promise<void>(resolve=>{releaseLogout=resolve});
+ await page.route('**/api/v1/auth/logout',async route=>{await logout;await route.fulfill({status:204})});
+ await page.route('**/api/v1/users/web-push/subscribe',async route=>{
+  if(route.request().method()!=='DELETE')return route.fulfill({headers,json:{}});
+  expect(route.request().headers().authorization).toBe('Bearer fixture-access');removed=true;
+  await route.fulfill({headers,status:204});releaseLogout();
+ });
+ try{
+  await page.goto('/home');await expect(page.getByText('Signing out...', {exact:true})).toBeVisible({timeout:1000});
+  await expect(page.locator('.home-activities')).toBeHidden();
+  await page.evaluate(()=>(window as any).releasePushLookup());
+  await expect.poll(()=>removed).toBe(true);await expect(page).toHaveURL(/\/login/);
+ }finally{releaseLogout()}
 });

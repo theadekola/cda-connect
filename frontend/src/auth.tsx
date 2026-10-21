@@ -13,8 +13,8 @@ import {disconnectPush} from './push';
 import {authenticateBiometric,biometricLock,getBiometricEnabled} from './sessionSecurity';
 export const useSession=()=>useSyncExternalStore(session.subscribe,session.get,()=>null);
 export function Protected(){
- const current=useSession(),locked=useSyncExternalStore(biometricLock.subscribe,biometricLock.get,()=>false),nav=useNavigate(),ending=useRef(false),[foreground,setForeground]=useState(true);
- const endSession=useCallback(async()=>{if(ending.current)return;ending.current=true;biometricLock.lock();const revoke=Promise.allSettled([disconnectPush(),api.send('/auth/logout',{})]);session.set(null);nav('/login',{replace:true,state:{notice:'Your session has ended. Sign in with your email and password.'}});await Promise.race([revoke,new Promise(resolve=>window.setTimeout(resolve,2000))])},[nav]);
+ const current=useSession(),locked=useSyncExternalStore(biometricLock.subscribe,biometricLock.get,()=>false),nav=useNavigate(),ending=useRef(false),[foreground,setForeground]=useState(true),[closing,setClosing]=useState(false);
+ const endSession=useCallback(async()=>{if(ending.current)return;ending.current=true;setClosing(true);biometricLock.lock();const revoke=Promise.allSettled([disconnectPush(),api.send('/auth/logout',{})]);await Promise.race([revoke,new Promise(resolve=>window.setTimeout(resolve,2000))]);session.set(null);nav('/login',{replace:true,state:{notice:'Your session has ended. Sign in with your email and password.'}})},[nav]);
  useEffect(()=>{if(!current)return;return watchSessionActivity(()=>void endSession(),current.sessionExpiresAt)},[current?.user.Id,current?.sessionExpiresAt,endSession]);
  useEffect(()=>{
   if(!current||!Capacitor.isNativePlatform())return;
@@ -27,6 +27,7 @@ export function Protected(){
   return()=>{disposed=true;void handle?.remove()};
  },[current?.user.Id]);
  if(!current)return <Navigate to={authLink("/login")} state={ending.current?{notice:'Your session has ended. Sign in with your email and password.'}:undefined} replace/>;
+ if(closing)return <Loading label="Signing out..." fullscreen/>;
  const showLock=getBiometricEnabled()&&locked;
  return <><div hidden={showLock} inert={showLock}><Outlet/></div>{showLock&&<div style={{position:'fixed',inset:0,zIndex:10000,overflow:'auto',background:'var(--surface, #fff)'}} role="dialog" aria-modal="true" aria-label="Unlock CDA Connect">{foreground?<BiometricGate onSignOut={()=>endSession()}/>:<Loading label="App locked" fullscreen/>}</div>}</>;
 }
