@@ -54,8 +54,8 @@ test('registration uses email verification only and separates its actions',async
  await page.route('**/api/v1/auth/email-verification/request',async route=>{body=route.request().postDataJSON();await route.fulfill({status:202,json:{success:true}})});
  await page.goto('/register');await expect(page.getByRole('button',{name:'SMS',exact:true})).toHaveCount(0);
  await page.getByLabel('Email address').fill('MEMBER@Example.COM');await page.getByRole('button',{name:'Send verification code'}).click();
- expect(body).toEqual({email:'member@example.com'});const verify=page.getByRole('button',{name:'Verify email'}),change=page.getByRole('button',{name:'Change email or request another code'});
- await expect(verify).toBeVisible();await expect(change).toBeVisible();const first=await verify.boundingBox(),second=await change.boundingBox();expect(second!.y-(first!.y+first!.height)).toBeGreaterThanOrEqual(10);
+ const verify=page.getByRole('button',{name:'Verify email'}),change=page.getByRole('button',{name:'Change email or request another code'});
+ await expect(verify).toBeVisible();expect(body).toEqual({email:'member@example.com'});await expect(change).toBeVisible();const first=await verify.boundingBox(),second=await change.boundingBox();expect(second!.y-(first!.y+first!.height)).toBeGreaterThanOrEqual(10);
 });
 
 for(const width of [390,430])test(`installed iOS authentication has an opaque status edge and readable registration heading at ${width}px`,async({page})=>{
