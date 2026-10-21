@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {verifyPublic} from '../../deploy/verify-public.mjs';
+import {verifyPublic,publicCheckOptions} from '../../deploy/verify-public.mjs';
 const html='<meta name="apple-mobile-web-app-status-bar-style" content="default"><link href="/apple-touch-icon-v2.png"><script src="/assets/app-abcdefgh.js"></script>';
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json'}});
 const mock=async(value)=>{
@@ -28,3 +28,5 @@ test('production verification rejects stale deployment, wrong login route and mi
  for(const name of ['Deployed JavaScript matches this release','Same-origin sign-in API validation','iOS universal links','Android app links'])assert.equal(results.find(result=>result.name===name).ok,false,name);
 });
 test('production verification refuses origins containing credentials',async()=>{await assert.rejects(verifyPublic('https://user:secret@app.example.test'),/without a path or credentials/)});
+
+test('native diagnostics work with the default origin and reject unknown CLI flags',()=>{assert.deepEqual(publicCheckOptions(['--native']),{origin:'https://cdaconnect.org',native:true});assert.deepEqual(publicCheckOptions(['https://app.example.test','--native']),{origin:'https://app.example.test',native:true});assert.throws(()=>publicCheckOptions(['--wrong']),/Usage/)});

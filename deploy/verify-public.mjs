@@ -42,10 +42,14 @@ export async function verifyPublic(origin,{fetcher=fetch,native=false,localHtml}
  ])await check(name,async()=>{const response=await request(path);if(response.status!==200||!valid(await response.json()))throw Error()});
  return results;
 }
+export function publicCheckOptions(args){
+ if(args.some(arg=>arg.startsWith('--')&&arg!=='--native')||args.filter(arg=>!arg.startsWith('--')).length>1)throw Error('Usage: node deploy/verify-public.mjs [https://cdaconnect.org] [--native]');
+ return{origin:args.find(arg=>!arg.startsWith('--'))||'https://cdaconnect.org',native:args.includes('--native')};
+}
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const origin=process.argv[2]||'https://cdaconnect.org';let localHtml;
+ const {origin,native}=publicCheckOptions(process.argv.slice(2));let localHtml;
  try{localHtml=await readFile(new URL('../frontend/dist/index.html',import.meta.url),'utf8')}catch(error){if(error.code!=='ENOENT')throw error}
- const results=await verifyPublic(origin,{native:process.argv.includes('--native'),localHtml});
+ const results=await verifyPublic(origin,{native,localHtml});
  for(const result of results)console.log(`${result.ok?'PASS':'FAIL'} ${result.name}`);
  console.log('Device calls, push delivery, signing and store declarations require separate verification.');
  if(results.some(result=>!result.ok))process.exitCode=1;
