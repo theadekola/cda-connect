@@ -19,6 +19,16 @@ async function setup(page:Page,signedIn=true){
   return route.fulfill({headers,json});
  });
 }
+
+// Start from a settled signed-in screen. Pause only after navigation so the
+// sign-out assertions cannot race startup imports or the two-second deadline.
+async function expireIdleSession(page:Page){
+ await page.clock.install({time:new Date('2026-10-23T08:00:00Z')});
+ await page.goto('/home');await expect(page.locator('.home-activities')).toBeVisible();
+ await page.clock.pauseAt(new Date('2026-10-23T08:31:00Z'));
+ await expect(page.getByText('Signing out...', {exact:true})).toBeVisible();
+ await expect(page.locator('.home-activities')).toBeHidden();
+}
 test('signed-out shared post returns to the post after login',async({page})=>{
  await setup(page,false);await page.goto('/post/'+proposal+'#comments');await expect(page).toHaveURL(/\/login\?returnTo=/);
  await page.getByLabel('Email address').fill(user.Email);await page.getByLabel('Password',{exact:true}).fill('Password123!');await page.getByRole('button',{name:'Log in',exact:true}).click();await expect(page).toHaveURL('/post/'+proposal+'#comments');
@@ -80,12 +90,13 @@ test('an eligible ordinary member can cast one formal vote without manager contr
 });
 
 test('inactive installed app signs out on resume and requires credentials',async({page})=>{
- await setup(page);await page.addInitScript(()=>localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000)));
+ await setup(page);
  let releaseLogout!:()=>void;const pendingLogout=new Promise<void>(resolve=>{releaseLogout=resolve});
  await page.route('**/api/v1/auth/logout',async route=>{await pendingLogout;await route.fulfill({status:204})});
  try{
-  await page.goto('/home');await expect(page.getByText('Signing out...', {exact:true})).toBeVisible({timeout:1000});
-  await expect(page.locator('.home-activities')).toBeHidden();
+  await expireIdleSession(page);
+  // Even a stuck logout response must not retain the local session.
+  await page.clock.runFor(2000);await expect(page).toHaveURL(/\/login/);
  }finally{releaseLogout()}
  await expect(page).toHaveURL(/\/login/);
  await expect(page.getByLabel('Email address')).toBeVisible();
@@ -163,7 +174,6 @@ for(const platform of ['android','ios'])test(`native ${platform} keeps a late bi
 test('session expiry keeps push cleanup authenticated while private screens are covered',async({page})=>{
  await setup(page);
  await page.addInitScript(()=>{
-  localStorage.setItem('cda-last-activity',String(Date.now()-31*60*1000));
   const w=window as any;let release:()=>void;const lookup=new Promise<void>(resolve=>{release=resolve});
   w.releasePushLookup=()=>release();
   if(!('PushManager' in window))w.PushManager=class {};
@@ -177,8 +187,7 @@ test('session expiry keeps push cleanup authenticated while private screens are 
   await route.fulfill({headers,status:204});releaseLogout();
  });
  try{
-  await page.goto('/home');await expect(page.getByText('Signing out...', {exact:true})).toBeVisible({timeout:1000});
-  await expect(page.locator('.home-activities')).toBeHidden();
+  await expireIdleSession(page);
   await page.evaluate(()=>(window as any).releasePushLookup());
   await expect.poll(()=>removed).toBe(true);await expect(page).toHaveURL(/\/login/);
  }finally{releaseLogout()}
