@@ -1,25 +1,20 @@
 // Only developer-authored interface strings are sent. Never send a user record.
 // CDA_INTERFACE_TRANSLATION_URL must implement {task,text,targetLanguage} -> {text}.
 // Run once per language, review the JSON, and commit it before making a release.
-import {readFile,readdir,mkdir,writeFile,rename} from 'node:fs/promises';
+import {readFile,mkdir,writeFile,rename} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve,dirname} from 'node:path';
-import {interfaceEdits} from '../interfaceCatalog.mjs';
+import {translationCatalog,languages as supported} from '../translationCatalog.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const supported=['fr','es','ar','ha','yo','ig','pt','de'];
 const language=process.argv[2];
 if(language&&!supported.includes(language))throw Error('Choose one of: '+supported.join(', '));
-const strings=new Set();
-for(const file of (await readdir(resolve(root,'src'))).sort())if(file.endsWith('.tsx')){
- for(const edit of interfaceEdits(await readFile(resolve(root,'src',file),'utf8'),file))strings.add(edit.text.trim());
-}
-const catalog=[...strings].sort();
+const {catalog,corePacks}=await translationCatalog(root);
 if(!language){console.log(`${catalog.length} static interface strings. Run with a language code to prepare a reviewed pack.`);process.exit(0)}
 if(!process.env.CDA_INTERFACE_TRANSLATION_URL)throw Error('Set CDA_INTERFACE_TRANSLATION_URL to your translation provider endpoint.');
 const url=new URL(process.env.CDA_INTERFACE_TRANSLATION_URL);
 if(url.protocol!=='https:'||url.username||url.password)throw Error('Use an HTTPS translation endpoint without credentials in its URL.');
 const dir=resolve(root,'src/interfacePacks'),file=resolve(dir,language+'.json');
-let previous={};try{previous=JSON.parse(await readFile(file,'utf8'))}catch(error){if(error.code!=='ENOENT')throw error}
+let previous={...corePacks[language]};try{previous={...previous,...JSON.parse(await readFile(file,'utf8'))}}catch(error){if(error.code!=='ENOENT')throw error}
 await mkdir(dir,{recursive:true});
 const output=Object.create(null);
 for(const text of catalog){

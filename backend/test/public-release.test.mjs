@@ -11,8 +11,8 @@ const mock=async(value)=>{
  if(url.pathname==='/api/v1/auth/login')return json({field:'email'},400);
  if(url.pathname==='/manifest.webmanifest')return json({theme_color:'#FFFFFF',icons:[{src:'/icon-192.png'}]});
  if(url.pathname.endsWith('.png'))return new Response(new Uint8Array(1500),{headers:{'content-type':'image/png'}});
- if(url.pathname.endsWith('apple-app-site-association'))return json({applinks:{details:[{appIDs:['TEAM.org.cdaconnect.app']}]}});
- if(url.pathname.endsWith('assetlinks.json'))return json([{target:{sha256_cert_fingerprints:['AA:BB']}}]);
+ if(url.pathname.endsWith('apple-app-site-association'))return json({applinks:{details:[{appIDs:['TESTTEAM12.org.cdaconnect.app']}]}});
+ if(url.pathname.endsWith('assetlinks.json'))return json([{relation:['delegate_permission/common.handle_all_urls'],target:{namespace:'android_app',package_name:'org.cdaconnect.app',sha256_cert_fingerprints:[Array(32).fill('AB').join(':')]}}]);
  return new Response('',{status:404});
 };
 test('production verification detects healthy same-origin routing and the exact built bundle',async()=>{
@@ -30,3 +30,25 @@ test('production verification rejects stale deployment, wrong login route and mi
 test('production verification refuses origins containing credentials',async()=>{await assert.rejects(verifyPublic('https://user:secret@app.example.test'),/without a path or credentials/)});
 
 test('native diagnostics work with the default origin and reject unknown CLI flags',()=>{assert.deepEqual(publicCheckOptions(['--native']),{origin:'https://cdaconnect.org',native:true});assert.deepEqual(publicCheckOptions(['https://app.example.test','--native']),{origin:'https://app.example.test',native:true});assert.throws(()=>publicCheckOptions(['--wrong']),/Usage/)});
+
+test('source verification accepts rebuilt asset names but rejects mismatched HTML or metadata',async()=>{
+ const id='a'.repeat(64),other='b'.repeat(64),localRelease={schema:1,sourceId:id,version:'1.0.0'};
+ async function results(metaId,htmlId){return verifyPublic('https://app.example.test',{localRelease,fetcher:async(url,options)=>{
+  const path=new URL(url).pathname;
+  if(path==='/release.json')return json({...localRelease,sourceId:metaId});
+  if(path==='/')return new Response(html.replace('abcdefgh','different')+`<meta name="cda-source-id" content="${htmlId}">`);
+  return mock(url,options);
+ }})}
+ assert.equal((await results(id,id)).find(x=>x.name==='Deployed source matches this release').ok,true);
+ for(const pair of [[other,id],[id,other]])assert.equal((await results(...pair)).find(x=>x.name==='Deployed source matches this release').ok,false);
+});
+
+test('native diagnostics reject association files for another app',async()=>{
+ const results=await verifyPublic('https://app.example.test',{native:true,fetcher:async(url,options)=>{
+  if(new URL(url).pathname.endsWith('apple-app-site-association'))return json({applinks:{details:[{appIDs:['TESTTEAM12.other.app']}]}});
+  if(new URL(url).pathname.endsWith('assetlinks.json'))return json([{relation:['delegate_permission/common.handle_all_urls'],target:{namespace:'android_app',package_name:'other.app',sha256_cert_fingerprints:[Array(32).fill('AB').join(':')]}}]);
+  return mock(url,options);
+ }});
+ assert.equal(results.find(x=>x.name==='iOS universal links').ok,false);
+ assert.equal(results.find(x=>x.name==='Android app links').ok,false);
+});

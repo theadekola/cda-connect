@@ -79,6 +79,7 @@ jobs:
         if: failure()
         with: {name: visual-failures, path: frontend/test-results, retention-days: 7}
   ios:
+    name: iOS simulator build (unsigned)
     runs-on: macos-latest
     env:
       VITE_API_URL: https://cdaconnect.org/api/v1
@@ -92,6 +93,7 @@ jobs:
           npm run cap:sync:ios
           xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=NO build
   android:
+    name: Android debug build
     runs-on: ubuntu-latest
     env:
       VITE_API_URL: https://cdaconnect.org/api/v1
