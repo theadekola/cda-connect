@@ -1,65 +1,88 @@
-# CDA Connect — React 19 rebuild (development milestone)
+# CDA Connect mobile and web interface
 
-This is newly written React DOM + TypeScript code, not the original Expo application or its React Native compatibility layer. It is a working buildable foundation, **not a completed feature-parity rebuild or release-ready application**. The backend and MSSQL database are not bundled or modified.
+React 19, TypeScript and Vite provide the web/PWA interface; Capacitor packages the same interface for Android and iOS. Express and SQL Server remain the application backend. Normal application requests use `/api/v1` on the website; FastAPI is used only behind the authenticated AI feature.
 
-## Run
+## Current functionality
 
-Use Node 22.12+ (validated here on Node 24). Run `npm ci`, copy `.env.example` to `.env`, configure the real API and Socket.IO origins, then run `npm run dev`. Never put MSSQL, Redis, storage secrets, or administrator credentials in VITE variables: these are public build-time values.
+The implementation includes authentication and two-factor challenges, account recovery, profile/privacy/security settings, communities and membership administration, paginated feeds and media, messaging and calls, meetings and attendance, polls and governance, marketplace/services, documents, finance and administration. Native integrations cover contacts, storage, sharing, permissions, app links and push registration. Availability also depends on backend permissions, provider configuration and device support.
 
-Run `npm test` and `npm run build`. Serve `dist` over HTTPS with SPA history fallback to index.html. Set environment variables before building. The API requires HTTPS in production.
+These are implemented features, not proof that every provider or device configuration has passed production acceptance. The repository release workflow checks browser scenarios, backend SQL/Redis integration, native debug builds and repository security. Debug compilation does not produce a signed store release.
 
-## Native projects
+## Development and production builds
 
-Run `npm run build`, `npx cap add android`, `npx cap add ios`, and `npm run cap:sync`. Open with `npm run android` or `npm run ios`. These generate native projects; this archive does not include a signed APK, IPA or verified native build. iOS compilation needs macOS/Xcode. Configure API CORS for the actual Capacitor origins and website; never use wildcard authenticated CORS. Android/iOS push, deep links, camera and secure persistent sessions still require implementation.
+Use Node 22.13 or newer. From the repository root:
 
-## Implemented source
+```bash
+npm ci --prefix frontend
+npm test --prefix frontend
+VITE_API_URL=/api/v1 npm run build --prefix frontend
+```
 
-| Area | Included interactions |
-| --- | --- |
-| Welcome/authentication | Welcome, login, 2FA login, phone verification registration, password recovery |
-| Account | Profile edit, password change, authenticator/SMS 2FA setup, session revoke, support tickets, data export request |
-| Communities | Discover, join request, join by code, create, responsive community navigation |
-| Feed | Text publishing, comments, likes, saved toggle |
-| Meetings/polls | List, permission-gated creation, RSVP, poll voting |
-| Events/marketplace/services/issues | Lists and basic creation forms; event registration and marketplace save |
-| Announcements/emergency | List/create, safe/help response |
-| Documents | List and server-authorized temporary download links |
-| Chat | Existing conversations, Socket.IO text sending with stable retry ID |
-| Other | Notifications/read actions, proposal creation/list, decisions list, executive list, attendance code check-in, basic finance readout, membership-card details/token rotation |
-| Platform | Vite production output, public offline fallback, install manifest/icons, Capacitor configuration |
+For native packages use the HTTPS website API origin when compiling. Never place signing passwords, AI keys, SQL credentials or private member information in VITE variables. Frontend variables are public.
 
-## Not yet migrated — release blockers
+```bash
+cd frontend
+VITE_API_URL=https://cdaconnect.org/api/v1 npm run cap:sync:android
+# Run on macOS for iOS:
+VITE_API_URL=https://cdaconnect.org/api/v1 npm run cap:sync:ios
+```
 
-- Full Super Admin system, protected initial-account database setup, impersonation policy, platform audit log, moderation and operational dashboards. Main backend does not provide a verified complete contract for this system; no fake admin role or browser-created administrator is included.
-- Feature-specific detail/edit/delete flows, rich media/feed attachments, uploads and document metadata/visibility/version management.
-- Membership QR display/scan/share; camera and native permissions.
-- Finance payment submission, proof uploads, reconciliation, dues/levy administration, receipts and full reporting.
-- Member role administration, invitations/join-request review, community settings and moderation actions.
-- Advanced governance: discussion/amendments, formal ballots and finalization.
-- Conversation creation, attachments, read receipts, unread counters, calls and notification deep links.
-- Full preferences/privacy, account deactivation/deletion, 2FA disable/recovery UI.
-- Persistent secure native login, push subscriptions, native deep links, full PWA update UX and native hardware-back handling.
-- Pagination/infinite loading and dedicated layouts across all resource types. Some resource collections use generic cards.
-- Comprehensive accessibility, browser, native and staging integration testing. Automated checks in this archive are structural smoke checks, not proof of backend security or production correctness.
+Android release builds require the existing CDA_ANDROID_KEYSTORE, CDA_ANDROID_KEY_ALIAS, CDA_ANDROID_STORE_PASSWORD and CDA_ANDROID_KEY_PASSWORD variables. Configure iOS signing and provisioning in Xcode using the operator's Apple account. Use increasing build numbers appropriate to the versions already uploaded to the stores. Keep certificates and provider configuration outside Git.
 
-## Architecture and safety
+## Reliable deployment identification
 
-`src/api.ts` is the API/session adapter. `auth.tsx` handles onboarding. `shell.tsx` owns responsive navigation. `pages.tsx`, `domain.tsx`, `security.tsx`, `card.tsx`, and `chat.tsx` contain page interactions; `ui.tsx` contains shared forms and error states.
+Each build emits `dist/release.json` and an HTML source fingerprint. About shows that same reference. The fingerprint covers frontend source, public assets, dependencies and build configuration. It normalizes text checkout line endings and does not change merely because the same source was rebuilt later. It identifies source, not a signing certificate, server configuration, device acceptance or store approval.
 
-Authentication uses sessionStorage: refreshing preserves the session, and closing the browser tab normally clears it. Tokens remain accessible to JavaScript, so preventing cross-site scripting is essential. Refresh calls are single-flight; mutations are not automatically retried. Backend authorization remains mandatory regardless of hidden UI buttons. API responses are not cached by the service worker. The PWA is online-first with an offline explanation, not an offline replica of private data. Font loading is optional and falls back to system fonts.
+After deployment, from the deployed checkout:
 
-Redis, BullMQ and MSSQL stay behind Express. The frontend does not enqueue jobs or connect directly to them. Socket.IO connects to the configured backend. Object storage downloads are mediated through the existing API. This preserves infrastructure boundaries but does not verify that the existing workers, permissions or notification fan-out are correct.
+```bash
+node deploy/verify-public.mjs https://cdaconnect.org --native
+```
 
-Contracts were inspected from `theadekola/cda-connect` main at `e15e8f4cf320ac80b559b1d63c6aa4da9c88e70f`; no live authenticated backend test was performed.
+This checks the live HTML/metadata against the local source release. Older deployments without release metadata must be updated before the new identity check passes. Different compile-time origins may still produce different JavaScript filenames from the same source; filenames alone are not release identifiers.
 
-## Staging acceptance checklist
+## Interface language completion
 
-1. Test expired/revoked tokens, concurrent refresh, logout, two accounts in one browser, invalid 2FA and SMS rate limits.
-2. With member/admin/nonmember/suspended accounts, test every read and mutation, including cross-community IDs and hidden/private documents. Verify backend denial, not only UI hiding.
-3. Validate response shapes and pagination for every resource against seeded staging data. Exercise empty, loading, 403, 404, 429 and server-error states.
-4. Test reconnect and duplicate chat delivery, lost acknowledgements and retry; confirm server idempotency. Test expired socket auth and community removal mid-session.
-5. Verify notification audience, membership changes during queue delay, deduplication keys, worker retries and Redis outages on the backend. Ensure one intended delivery per channel and no cross-community leakage.
-6. Validate document signed-link expiry, revoked visibility, deleted files, storage failures and unsafe content types.
-7. Test refresh on deep routes, install/uninstall PWA, offline navigation, cache isolation after logout and upgrades.
-8. Test 320px mobile, tablet portrait/landscape, desktop, keyboard navigation, focus and screen readers; then real Android and iOS devices.
-9. Complete the migration gaps above before replacing the production frontend. Keep the old frontend deployed until parity and rollback are verified.
+Changing app language immediately changes bundled navigation and controls. Missing specialist wording currently falls back to English. Measure coverage before claiming a fully translated interface:
+
+```bash
+npm --prefix frontend run language:check
+# Check one language:
+npm --prefix frontend run language:check -- fr
+```
+
+The command exits unsuccessfully if required static strings are missing. Generate missing strings using a trusted provider configured through CDA_INTERFACE_TRANSLATION_URL and, if needed, CDA_INTERFACE_TRANSLATION_KEY in the deployment shell. The endpoint must implement the contract documented in scripts/prepare-interface-packs.mjs. Only developer-authored static interface strings are sent. Existing core and specialist translations are reused; interrupted generation resumes from atomic checkpoints.
+
+```bash
+npm --prefix frontend run language:prepare -- fr
+npm --prefix frontend run language:check -- fr
+```
+
+Repeat for the advertised languages and obtain fluent review before committing the packs. Content translation for member posts and messages is a separate authenticated server/provider feature. Do not interpret dictionary coverage as a linguistic quality assessment.
+
+## Required production acceptance
+
+Supply real app-signing identifiers on the application VM. You can configure either platform independently; other backend settings and the other platform's identifiers are preserved:
+
+```bash
+sudo python3 deploy/setup-app-links.py --platform android
+sudo python3 deploy/setup-app-links.py --platform ios
+sudo systemctl restart cda-api
+node deploy/verify-public.mjs https://cdaconnect.org --native
+```
+
+Use the Apple App ID prefix for org.cdaconnect.app and Google Play's SHA-256 app-signing certificate fingerprint, rather than guessing identifiers or substituting a debug certificate. Configure real Firebase/APNs delivery separately.
+
+Before a general rollout, test a signed app on an Android phone and iPhone, plus the installed PWA on both platforms:
+
+1. Register a test account, verify email, sign in, exercise two-factor authentication and recover a password using real provider delivery.
+2. Open shared links cold and while signed in; test an expired session and a revoked account. Verify the sign-in return destination.
+3. Background/resume the app, exercise biometric cancellation and successful unlock, wait through the idle timeout, and verify another account cannot see cached content.
+4. Open chat, focus the keyboard, rotate the phone and send media; interrupt the network and check reconnect, retry and duplicate delivery.
+5. Place voice/video calls across Wi-Fi and mobile data. Exercise denied permissions, Bluetooth/headset audio, background/incoming calls and TURN relay fallback.
+6. Receive push while foregrounded, backgrounded and terminated; open its destination and verify logout removes this device's registration.
+7. Exercise authorised and denied membership/admin actions, upload/download private documents, and validate finance proof/reconciliation with synthetic staging records.
+8. Export and delete a disposable account; confirm server records and uploaded-file/backup handling against the operator's actual retention policy.
+9. Exercise 320px screens, landscape, larger text, screen-reader/focus navigation, language changes, offline/reconnect and PWA upgrades.
+
+Privacy and terms remain drafts until the operator confirms identity/address, processing purposes, provider/transfer arrangements, retention/backup/upload disposal and child-user rules. Do not remove the draft label or claim store readiness without supplying and reviewing those facts. No test in this repository substitutes for real provider delivery, signed-device acceptance, policy approval or store review.

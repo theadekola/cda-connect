@@ -38,3 +38,8 @@ class AppLinkSetupTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(ValueError):
                 setup.save(Path(directory)/"missing.env", {})
+
+    def test_platform_setup_does_not_require_or_overwrite_other_platform(self):
+        fingerprint = ":".join(["AB"]*32)
+        self.assertEqual(setup.association_values("", fingerprint, "android"), {"ANDROID_APP_LINK_SHA256": fingerprint})
+        self.assertEqual(setup.association_values("TESTTEAM12.org.cdaconnect.app", "", "ios"), {"IOS_APP_ID": "TESTTEAM12.org.cdaconnect.app"})

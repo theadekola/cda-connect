@@ -8,8 +8,7 @@ import {Users,MessagesSquare,CalendarDays,ShieldCheck,ChartNoAxesColumn,HeartHan
 import packageInfo from '../package.json';
 import {api,rows,str,type RecordData} from './api';
 import {Loading,ErrorBox} from './ui';
-import {getLocale} from './i18n';
-declare const __CDA_BUILD_TIME__:string;
+declare const __CDA_BUILD_ID__:string;
 const features=[
  ['Join Communities','Discover and join communities that matter to you.','/communities',Users],
  ['Stay Connected','Message, chat and engage with your community.','chat',MessagesSquare],
@@ -27,11 +26,11 @@ export function AboutSettings(){
  const info=useQuery({queryKey:['native-app-info'],queryFn:()=>App.getInfo(),enabled:native,retry:false});
  const communities=useQuery({queryKey:['/me/home'],queryFn:()=>api.get<RecordData>('/me/home'),enabled:!!sections[field]});
  const version=native?(info.data?.version||'Checking…'):packageInfo.version;
- const buildTime=new Date(__CDA_BUILD_TIME__).toLocaleString(getLocale());
+ const buildId=__CDA_BUILD_ID__;
  const row=(to:string,title:string,Icon:typeof Info,value?:string,external=false)=>{const content=<><span className="settings-row-icon"><Icon size={20}/></span><span className="settings-row-text"><strong>{title}</strong></span>{value&&<span className="privacy-value">{value}</span>}<ChevronRight size={17}/></>;return external?<a className="settings-row" href={to} target={to.startsWith('https:')?'_blank':undefined} rel="noopener noreferrer">{content}</a>:<Link className="settings-row" to={'/settings/about/'+to}>{content}</Link>};
  if(field)return <div className="about-detail"><Link className="settings-back" to="/settings/about"><ArrowLeft size={17}/>About CDA Connect</Link><h2>{detailTitles[field]||'About CDA Connect'}</h2>
- {field==='version'&&<section className="card"><h3>Installed application</h3><p>Version: {version}</p>{native&&<>{info.error&&<ErrorBox error={info.error}/>}<p>Native build: {info.data?.build||'Not available'}</p><p>Application ID: {info.data?.id||'Not available'}</p></>}<p>Web interface version: {packageInfo.version}</p><p>Platform: {native?Capacitor.getPlatform():'Web / installed web app'}</p><p>Interface built: {buildTime}</p><p>This identifies the installed build. No release service is configured to compare it with the latest available version.</p><Link className="button secondary" to="/settings/support">Get update help</Link></section>}
- {field==='release'&&<section className="card"><h3>Build information</h3><p>Interface version {packageInfo.version}</p><p>Built {buildTime}</p><p>A public release date and release history have not been supplied. The build time above records when this interface was compiled; it is not a published release date.</p><Link className="button secondary" to="/settings/support">Ask about releases</Link></section>}
+ {field==='version'&&<section className="card"><h3>Installed application</h3><p>Version: {version}</p>{native&&<>{info.error&&<ErrorBox error={info.error}/>}<p>Native build: {info.data?.build||'Not available'}</p><p>Application ID: {info.data?.id||'Not available'}</p></>}<p>Web interface version: {packageInfo.version}</p><p>Platform: {native?Capacitor.getPlatform():'Web / installed web app'}</p><p>Source reference: <code style={{overflowWrap:'anywhere'}}>{buildId}</code></p><p>This identifies the installed build. No release service is configured to compare it with the latest available version.</p><Link className="button secondary" to="/settings/support">Get update help</Link></section>}
+ {field==='release'&&<section className="card"><h3>Build information</h3><p>Interface version {packageInfo.version}</p><p>Source reference: <code style={{overflowWrap:'anywhere'}}>{buildId}</code></p><p>A public release date and release history have not been supplied. The source reference identifies the interface code used for this build.</p><Link className="button secondary" to="/settings/support">Ask about releases</Link></section>}
  {field==='data-protection'&&<DataProtection/>}
  {(field==='privacy'||field==='terms')&&<LegalStatement kind={field}/>}
  {!!sections[field]&&<><p>Choose a community to open its {field==='chat'?'conversations':field==='resources'?'documents':field}. Access follows your community membership and permissions.</p>{communities.isPending?<Loading/>:communities.error?<ErrorBox error={communities.error}/>:rows(communities.data?.communities).length?<div className="settings-list">{rows(communities.data?.communities).map(c=><Link className="settings-row" key={str(c.Id)} to={'/community/'+c.Id+'/'+sections[field]}><span className="settings-row-icon"><Users size={20}/></span><span className="settings-row-text"><strong>{str(c.Name)}</strong></span><ChevronRight size={17}/></Link>)}</div>:<section className="card"><p>You have not joined a community yet.</p><Link className="button secondary" to="/communities">Find a community</Link></section>}</>}
