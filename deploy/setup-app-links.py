@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
 """Configure public app association identifiers without changing API routing."""
 import os
+import argparse
 from pathlib import Path
 import re
 import tempfile
 
 
-def association_values(apple_id, fingerprints):
+def association_values(apple_id, fingerprints, platform="both"):
+    if platform not in {"both", "ios", "android"}:
+        raise ValueError("Choose ios, android or both")
     apple_id = apple_id.strip()
-    if not re.fullmatch(r"[A-Z0-9]{10}\.org\.cdaconnect\.app", apple_id):
+    if platform != "android" and not re.fullmatch(r"[A-Z0-9]{10}\.org\.cdaconnect\.app", apple_id):
         raise ValueError("Use the Apple App ID prefix followed by .org.cdaconnect.app")
     values = list(dict.fromkeys(value.strip().upper() for value in fingerprints.split(",") if value.strip()))
-    if not values or any(not re.fullmatch(r"(?:[A-F0-9]{2}:){31}[A-F0-9]{2}", value) for value in values):
+    if platform != "ios" and (not values or any(not re.fullmatch(r"(?:[A-F0-9]{2}:){31}[A-F0-9]{2}", value) for value in values)):
         raise ValueError("Use the SHA-256 app-signing certificate fingerprint from Google Play App integrity")
-    return {"IOS_APP_ID": apple_id, "ANDROID_APP_LINK_SHA256": ",".join(values)}
+    result = {}
+    if platform != "android":
+        result["IOS_APP_ID"] = apple_id
+    if platform != "ios":
+        result["ANDROID_APP_LINK_SHA256"] = ",".join(values)
+    return result
 
 
 def save(path, updates):
@@ -36,15 +44,18 @@ def save(path, updates):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--platform", choices=["both", "ios", "android"], default="both")
+    args = parser.parse_args()
     if os.geteuid() != 0:
         raise SystemExit("Run with sudo on the application server.")
     path = Path("/etc/cda-connect/backend.env")
     if not path.is_file() or path.is_symlink():
         raise SystemExit("Configure the backend environment first.")
     print("Use the App ID prefix from Apple Developer and the app-signing certificate from Google Play.")
-    apple = input("Apple application identifier (PREFIX.org.cdaconnect.app): ")
-    android = input("Android SHA-256 app-signing fingerprint(s), comma-separated: ")
-    updates = association_values(apple, android)
+    apple = input("Apple application identifier (PREFIX.org.cdaconnect.app): ") if args.platform != "android" else ""
+    android = input("Android SHA-256 app-signing fingerprint(s), comma-separated: ") if args.platform != "ios" else ""
+    updates = association_values(apple, android, args.platform)
     save(path, updates)
     print("App-link settings saved. Restart the API through the normal deployment, then run verify-public.mjs --native.")
 

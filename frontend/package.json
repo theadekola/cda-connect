@@ -18,7 +18,8 @@
     "cap:sync:android": "npm run build && cap sync android && node scripts/configure-communications-native.mjs",
     "cap:sync:ios": "npm run build && cap sync ios && node scripts/configure-communications-native.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
-    "language:prepare": "node scripts/prepare-interface-packs.mjs"
+    "language:prepare": "node scripts/prepare-interface-packs.mjs",
+    "language:check": "node scripts/check-interface-packs.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-biometric-auth": "^10.0.0",

@@ -2,7 +2,7 @@
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 
-export async function verifyPublic(origin,{fetcher=fetch,native=false,localHtml}={}){
+export async function verifyPublic(origin,{fetcher=fetch,native=false,localRelease,localHtml}={}){
  const base=new URL(origin);
  if(base.protocol!=='https:'||base.username||base.password||base.pathname!=='/'||base.search||base.hash)throw Error('Provide an HTTPS origin without a path or credentials.');
  const results=[];
@@ -13,7 +13,12 @@ export async function verifyPublic(origin,{fetcher=fetch,native=false,localHtml}
   const response=await request('/');if(response.status!==200)throw Error();html=await response.text();
   if(!/name="apple-mobile-web-app-status-bar-style" content="default"/.test(html)||!html.includes('/apple-touch-icon-v2.png'))throw Error();
  });
- if(localHtml)await check('Deployed JavaScript matches this release',async()=>{const asset=text=>text.match(/src="(\/assets\/app-[^"]+\.js)"/)?.[1];if(!asset(html)||asset(html)!==asset(localHtml))throw Error()});
+ if(localRelease)await check('Deployed source matches this release',async()=>{
+  const response=await request('/release.json'),data=await response.json();
+  const sourceId=html.match(/name="cda-source-id" content="([a-f0-9]{64})"/)?.[1];
+  if(response.status!==200||data.schema!==1||!sourceId||data.sourceId!==sourceId||data.sourceId!==localRelease.sourceId||data.version!==localRelease.version)throw Error();
+ });
+ else if(localHtml)await check('Deployed JavaScript matches this release',async()=>{const asset=text=>text.match(/src="(\/assets\/app-[^"]+\.js)"/)?.[1];if(!asset(html)||asset(html)!==asset(localHtml))throw Error()});
  await check('Website API and database, Redis and worker health',async()=>{
   const response=await request('/health'),data=await response.json();
   if(response.status!==200||data.ok!==true||!['api','mssql','redis','worker'].every(key=>data.checks?.[key]==='ok'))throw Error();
@@ -37,8 +42,8 @@ export async function verifyPublic(origin,{fetcher=fetch,native=false,localHtml}
   if(![301,308].includes(response.status)||response.headers.get('location')!==base.origin+'/login?next=%2Fhome')throw Error();
  });
  if(native)for(const [name,path,valid] of [
-  ['iOS universal links','/.well-known/apple-app-site-association',data=>data.applinks?.details?.some(item=>item.appIDs?.length||item.appID)],
-  ['Android app links','/.well-known/assetlinks.json',data=>Array.isArray(data)&&data.some(item=>item.target?.sha256_cert_fingerprints?.length)],
+  ['iOS universal links','/.well-known/apple-app-site-association',data=>data.applinks?.details?.some(item=>(item.appIDs||[item.appID]).some(id=>typeof id==='string'&&/^[A-Z0-9]{10}\.org\.cdaconnect\.app$/.test(id)))],
+  ['Android app links','/.well-known/assetlinks.json',data=>Array.isArray(data)&&data.some(item=>item.relation?.includes('delegate_permission/common.handle_all_urls')&&item.target?.namespace==='android_app'&&item.target.package_name==='org.cdaconnect.app'&&item.target.sha256_cert_fingerprints?.length&&item.target.sha256_cert_fingerprints.every(value=>typeof value==='string'&&/^(?:[A-Fa-f0-9]{2}:){31}[A-Fa-f0-9]{2}$/.test(value)))],
  ])await check(name,async()=>{const response=await request(path);if(response.status!==200||!valid(await response.json()))throw Error()});
  return results;
 }
@@ -47,9 +52,10 @@ export function publicCheckOptions(args){
  return{origin:args.find(arg=>!arg.startsWith('--'))||'https://cdaconnect.org',native:args.includes('--native')};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const {origin,native}=publicCheckOptions(process.argv.slice(2));let localHtml;
+ const {origin,native}=publicCheckOptions(process.argv.slice(2));let localHtml,localRelease;
  try{localHtml=await readFile(new URL('../frontend/dist/index.html',import.meta.url),'utf8')}catch(error){if(error.code!=='ENOENT')throw error}
- const results=await verifyPublic(origin,{native,localHtml});
+ try{localRelease=JSON.parse(await readFile(new URL('../frontend/dist/release.json',import.meta.url),'utf8'))}catch(error){if(error.code!=='ENOENT')throw error}
+ const results=await verifyPublic(origin,{native,localHtml,localRelease});
  for(const result of results)console.log(`${result.ok?'PASS':'FAIL'} ${result.name}`);
  console.log('Device calls, push delivery, signing and store declarations require separate verification.');
  if(results.some(result=>!result.ok))process.exitCode=1;
