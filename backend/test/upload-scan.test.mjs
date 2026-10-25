@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {createServer,createConnection} from 'node:net';import fs from 'node:fs';import vm from 'node:vm';import ts from 'typescript';import {mkdtemp,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';
+import test from 'node:test';import assert from 'node:assert/strict';import {createServer,createConnection} from 'node:net';import fs from 'node:fs';import vm from 'node:vm';import ts from 'typescript';import {tmpdir} from 'node:os';import {join} from 'node:path';
 Object.assign(process.env,{NODE_ENV:'test',DB_SERVER:'localhost',DB_NAME:'test',DB_USER:'test',DB_PASSWORD:'test',JWT_ACCESS_SECRET:'a'.repeat(64),JWT_REFRESH_SECRET:'b'.repeat(64)});
 const {env}=await import('../dist/config/env.js'),{AppError}=await import('../dist/utils/errors.js');
 // Exercise the real scanner protocol over loopback TCP; the test host blocks
