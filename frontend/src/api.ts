@@ -17,17 +17,23 @@ function base(){const configured=import.meta.env.VITE_API_URL;const value=Capaci
 async function perform<T>(path:string,options:RequestInit={},retry=true):Promise<T>{
  const token=current?.accessToken;const headers=new Headers(options.headers);headers.set('x-cda-client','app');if(token)headers.set('Authorization','Bearer '+token);if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json');
  const controller=new AbortController();let timedOut=false;const abort=()=>controller.abort();if(options.signal?.aborted)abort();else options.signal?.addEventListener('abort',abort,{once:true});const timer=setTimeout(()=>{timedOut=true;controller.abort()},options.body instanceof FormData?120000:20000);
- let response:Response;try{response=await fetch(base()+path,{...options,headers,cache:'no-store',credentials:'include',signal:controller.signal})}catch(e){if(e instanceof ApiError)throw e;throw new ApiError(0,timedOut?'The request timed out. Please try again.':'Unable to connect. Check your network and retry.')}finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abort)}
+ try{const response=await fetch(base()+path,{...options,headers,cache:'no-store',credentials:'include',signal:controller.signal});
  if(response.status===401&&retry&&current&&current.accessToken!==token)throw new ApiError(401,'Your sign-in changed. Retry this action.');
  if(response.status===401&&retry&&current&&!['/auth/refresh','/auth/login','/auth/register','/auth/logout'].includes(path)){
+  clearTimeout(timer);
   try{await refreshSession()}catch(e){if(e instanceof ApiError&&[401,403].includes(e.status)&&current?.accessToken===token)session.set(null);throw e}
   if(!current)throw new ApiError(401,'Your session has ended.');return perform<T>(path,options,false);
  }
- if(!response.ok){const data=await response.json().catch(()=>({}));throw new ApiError(response.status,data.error||'The request could not be completed.')}
- return response.status===204?undefined as T:response.json() as Promise<T>;
+ if(!response.ok){const data=await response.json().catch(error=>{if(controller.signal.aborted)throw error;return {}});throw new ApiError(response.status,data.error||'The request could not be completed.')}
+ const data=response.status===204?undefined as T:await response.json() as T;
+ if(options.method&&options.method!=='GET')mutationListeners.forEach(fn=>fn(path));
+ return data;
+ }catch(e){if(e instanceof ApiError)throw e;if(options.signal?.aborted)throw new DOMException('Request cancelled','AbortError');throw new ApiError(0,timedOut?'The request timed out. Please try again.':'Unable to connect. Check your network and retry.')}finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abort)}
 }
 function asset(value:string){if(!value)return '';try{return resolveAssetUrl(value,base(),window.location.origin)}catch{return value}}
 export function socketOrigin(){return import.meta.env.VITE_SOCKET_URL||new URL(base(),window.location.origin).origin}
+const mutationListeners=new Set<(path:string)=>void>();
+export function observeMutations(fn:(path:string)=>void){mutationListeners.add(fn);return()=>{mutationListeners.delete(fn)}}
 export const api={url:(path:string)=>base()+path,get:<T>(p:string,signal?:AbortSignal,headers?:HeadersInit)=>perform<T>(p,{signal,headers}),send:<T=RecordData>(p:string,body:unknown={},method='POST')=>perform<T>(p,{method,body:JSON.stringify(body)}),upload:<T>(p:string,data:FormData)=>perform<T>(p,{method:'POST',body:data}),asset};
 export function rows(value:unknown):RecordData[]{if(Array.isArray(value))return value as RecordData[];if(value&&typeof value==='object'){const v=value as RecordData;for(const key of ['items','data','posts','documents','members'])if(Array.isArray(v[key]))return v[key] as RecordData[]}return[]}
 export const str=(v:unknown)=>v===null||v===undefined?'':String(v);

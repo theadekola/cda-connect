@@ -137,7 +137,7 @@ test('service contacts, verification, editing and removal are connected',async({
 });
 
 test('service ratings call the review API and display reviews',async({page})=>{
- await setup(page);let saved:any;await page.route('**/api/v1/communities/'+community+'/services',r=>r.fulfill({headers,json:[{Id:proposal,Name:'Test provider',CreatedBy:'another-member',Category:'Plumbing'}]}));await page.route('**/api/v1/services/'+proposal+'/reviews',async r=>{if(r.request().method()==='POST'){saved=r.request().postDataJSON();return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:[{Id:'review',FirstName:'Test',LastName:'Reviewer',Rating:4,Comment:'Helpful service'}]})});
+ await setup(page);let saved:any;await page.route('**/api/v1/communities/'+community+'/services?**',r=>r.fulfill({headers,json:[{Id:proposal,Name:'Test provider',CreatedBy:'another-member',Category:'Plumbing'}]}));await page.route('**/api/v1/services/'+proposal+'/reviews',async r=>{if(r.request().method()==='POST'){saved=r.request().postDataJSON();return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:[{Id:'review',FirstName:'Test',LastName:'Reviewer',Rating:4,Comment:'Helpful service'}]})});
  await page.goto('/community/'+community+'/services');await page.getByRole('button',{name:'Reviews & rating'}).click();await expect(page.getByText('Helpful service')).toBeVisible();await page.getByRole('combobox',{name:'Rating',exact:true}).selectOption('4');await page.getByLabel('Review',{exact:true}).fill('Reliable and helpful');await page.getByRole('button',{name:'Save my review'}).click();await expect.poll(()=>saved?.rating).toBe(4);expect(saved.comment).toBe('Reliable and helpful');
 });
 
@@ -191,4 +191,32 @@ test('session expiry keeps push cleanup authenticated while private screens are 
   await page.evaluate(()=>(window as any).releasePushLookup());
   await expect.poll(()=>removed).toBe(true);await expect(page).toHaveURL(/\/login/);
  }finally{releaseLogout()}
+});
+
+test('chat message options support keyboard focus, Escape and focus restoration',async({page})=>{
+ await setup(page);await page.goto('/chat/'+chat);
+ const opener=page.getByRole('button',{name:'Message options'}).first();await opener.focus();await page.keyboard.press('Enter');
+ const dialog=page.getByRole('dialog',{name:'Message options'});await expect(dialog).toBeVisible();
+ await expect(dialog.getByRole('button',{name:'Reply',exact:true})).toBeVisible();
+ const outside=await dialog.evaluate(element=>{const focus=document.activeElement;return !element.contains(focus)});expect(outside).toBe(false);
+ await page.keyboard.press('Shift+Tab');expect(await dialog.evaluate(element=>element.contains(document.activeElement))).toBe(true);
+ await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(opener).toBeFocused();
+ await opener.click({button:'right'});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Close',exact:true}).click();await expect(dialog).toHaveCount(0);
+});
+test('service directory advances bounded pages and returns to the previous page',async({page})=>{
+ await setup(page);const loaded:string[]=[];await page.route('**/api/v1/communities/'+community+'/services?**',route=>{const index=new URL(route.request().url()).searchParams.get('page')!;loaded.push(index);return route.fulfill({headers,json:{items:[{Id:'provider-'+index,Name:index==='0'?'First provider':'Second provider',Category:'Plumbing',CreatedBy:'other'}],hasMore:index==='0'}})});
+ await page.goto('/community/'+community+'/services');await expect(page.getByRole('heading',{name:'First provider',exact:true})).toBeVisible();await page.getByRole('button',{name:'Next page',exact:true}).click();await expect(page.getByRole('heading',{name:'Second provider',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Next page',exact:true})).toBeDisabled();await page.getByRole('button',{name:'Previous page',exact:true}).click();await expect(page.getByRole('heading',{name:'First provider',exact:true})).toBeVisible();expect(loaded).toContain('1');
+});
+test('member search and sort are applied on the server with bounded pages',async({page})=>{
+ await setup(page);const requests:URL[]=[];await page.route('**/api/v1/communities/'+community+'/members?**',route=>{const url=new URL(route.request().url());requests.push(url);const index=url.searchParams.get('page');return route.fulfill({headers,json:{items:[{MembershipId:'membership-'+index,UserId:'member-'+index,FirstName:index==='0'?'Alice':'Zara',LastName:'Member',JoinedAt:'2026-01-01',Roles:'Member'}],hasMore:index==='0',stats:{Members:60,Admins:2,Moderators:1}}})});
+ await page.goto('/community/'+community+'/members');await expect(page.getByText('60 members',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Next page',exact:true}).click();await expect(page.getByRole('link',{name:'Zara Member',exact:true})).toBeVisible();await page.getByRole('combobox',{name:'Sort members'}).selectOption('name');await expect.poll(()=>requests.at(-1)?.searchParams.get('page')).toBe('0');await expect.poll(()=>requests.at(-1)?.searchParams.get('sort')).toBe('name');
+});
+test('new administrators can be selected from ordinary members outside the leadership page',async({page})=>{
+ await setup(page);await page.route('**/api/v1/communities/'+community+'/capabilities',route=>route.fulfill({headers,json:{permissions:['MEMBER_ROLE_CHANGE']}}));
+ await page.route('**/api/v1/communities/'+community+'/members?**',route=>{const leaders=new URL(route.request().url()).searchParams.get('role')==='leaders';return route.fulfill({headers,json:{items:leaders?[]:[{MembershipId:proposal,UserId:chat,FirstName:'Ordinary',LastName:'Member',Roles:'Member'}],hasMore:false,stats:{Members:1}}})});
+ await page.goto('/community/'+community+'/members?tab=admins');await page.getByRole('button',{name:'Add admin/mod',exact:true}).click();await expect(page.getByRole('combobox',{name:'Choose member to manage'})).toContainText('Ordinary Member');await page.getByRole('combobox',{name:'Choose member to manage'}).selectOption(proposal);await expect(page.getByRole('dialog',{name:'Manage member'})).toBeVisible();
+});
+test('large account exports download every numbered part and confirm the final file',async({page})=>{
+ await setup(page);await page.route('**/api/v1/users/account/export?**',route=>{const index=Number(new URL(route.request().url()).searchParams.get('page'));return route.fulfill({headers,json:{page:index,pageSize:100,hasMore:index===0,profile:index===0?[user]:[],messages:[{Id:'message-'+index,MessageText:'My own data'}]}})});
+ await page.goto('/profile/account/download');let downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Download my data',exact:true}).click();expect((await downloaded).suggestedFilename()).toBe('cda-connect-my-data-part-0001.json');await expect(page.getByText(/File 1 is ready/)).toBeVisible();downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Download next data file',exact:true}).click();expect((await downloaded).suggestedFilename()).toBe('cda-connect-my-data-part-0002.json');await expect(page.getByText(/Last file ready/)).toBeVisible();
 });

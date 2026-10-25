@@ -31,3 +31,6 @@ test('community member list applies contact and profile-photo privacy before ret
 test('community administrator status is passed explicitly to the privacy projection',async()=>{
  queries=[];admin=true;assert.equal((await fetch(`http://127.0.0.1:${server.address().port}/${community}/members`)).status,200);const listing=queries.find(item=>item.query.startsWith('SELECT cm.Id MembershipId'));assert.equal(listing.params.admin,true);
 });
+test('paged member searches bind user input, retain privacy projection and return community counts',async()=>{
+ queries=[];const response=await fetch(`http://127.0.0.1:${server.address().port}/${community}/members?page=2&pageSize=10&search=Private&role=leaders&sort=newest`);assert.equal(response.status,200);const data=await response.json();assert.equal(data.items.length,1);assert.equal(data.hasMore,false);const listing=queries.find(item=>item.query.startsWith('SELECT cm.Id MembershipId'));assert.equal(listing.params.search,'Private');assert.equal(listing.params.role,'leaders');assert.equal(listing.params.offset,20);assert.equal(listing.params.size,11);assert.match(listing.query,/cm.JoinedAt DESC,cm.Id OFFSET @offset ROWS FETCH NEXT @size ROWS ONLY/);assert.match(listing.query,/pp.ShowProfilePhoto=0/);assert.ok(queries.some(item=>item.query.includes('COUNT(*) Members')));
+});

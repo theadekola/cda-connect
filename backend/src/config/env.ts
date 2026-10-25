@@ -12,7 +12,7 @@ const schema = z.object({
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_ENCRYPT: z.string().default('true').transform(v => v.toLowerCase() === 'true'),
-  DB_TRUST_CERT: z.string().default('true').transform(v => v === 'true'),
+  DB_TRUST_CERT: z.enum(['true','false']).default('false').transform(v => v === 'true'),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
   JWT_ACCESS_EXPIRES: z.string().default('15m'),
@@ -29,6 +29,7 @@ const schema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().default(60),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(180),
+  CLAMAV_SOCKET: z.string().min(1).max(100).refine(value=>value.startsWith('/'),'Use an absolute local scanner socket path').optional(),
   STORAGE_DRIVER: z.enum(['local','s3']).default('local'),
   STORAGE_BUCKET: z.string().default('cda-connect'),
   STORAGE_REGION: z.string().default('us-east-1'),
@@ -81,6 +82,7 @@ if (env.NODE_ENV === 'production') {
   if (env.CORS_ORIGIN === '*' || !env.CORS_ORIGIN.trim()) throw new Error('Set explicit production CORS origins');
   if (!env.PUBLIC_BASE_URL.startsWith('https://')) throw new Error('Production PUBLIC_BASE_URL must use HTTPS');
   if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) throw new Error('Use different access and refresh secrets');
+  if (env.DB_TRUST_CERT) throw new Error('Production SQL certificate verification is required; configure a trusted SQL certificate and DB_TRUST_CERT=false');
   if (!env.DB_ENCRYPT) throw new Error('Production SQL connections must be encrypted');
   if (env.DB_PASSWORD.length < 8 || [env.DB_PASSWORD,env.JWT_ACCESS_SECRET,env.JWT_REFRESH_SECRET].some(value=>/replace.with|change.me/i.test(value))) throw new Error('Configure strong non-placeholder production credentials');
 }

@@ -86,3 +86,18 @@ Before a general rollout, test a signed app on an Android phone and iPhone, plus
 9. Exercise 320px screens, landscape, larger text, screen-reader/focus navigation, language changes, offline/reconnect and PWA upgrades.
 
 Privacy and terms remain drafts until the operator confirms identity/address, processing purposes, provider/transfer arrangements, retention/backup/upload disposal and child-user rules. Do not remove the draft label or claim store readiness without supplying and reviewing those facts. No test in this repository substitutes for real provider delivery, signed-device acceptance, policy approval or store review.
+
+
+## October audit correction deployment
+
+The source update adds response-body deadlines, accessible chat menus, retained offline fallback, per-account rate buckets, paged member/service screens, bounded multi-part data exports, native temporary-export cleanup and upload scanning before object storage. Non-paged member/service API responses remain compatible for existing internal selectors; the main screens explicitly request pages.
+
+Production now rejects `DB_TRUST_CERT=true`. Provision a SQL Server certificate whose hostname matches `DB_SERVER` and whose issuing CA is trusted by the Node process, then set `DB_TRUST_CERT=false`. Do not change this flag without first provisioning the certificate. Existing runtime secrets are preserved by the installer.
+
+On the Ubuntu VM, run `sudo bash deploy/setup-upload-scanner.sh` to install a local ClamAV daemon and signature updater, with its Unix socket restricted to the scanner group. Set `CLAMAV_SOCKET=/run/clamav/clamd.ctl` in the existing private backend environment file. The API service user needs socket access. Keep signatures current. New production uploads fail closed when scanning is missing, unavailable, exceeds scanner limits or detects malware; they do not enter object storage first. Previously stored files have not been retrospectively scanned by this update. The installer checks the scanner before switching releases.
+
+Deploy from the updated checkout with `bash deploy/start-ubuntu.sh`. Then run `node deploy/verify-public.mjs https://cdaconnect.org --native` to verify the deployed source ID, same-origin API, logo assets and native associations. No new dependencies or database migrations are required by these audit corrections. If a preflight fails, configure the reported dependency and rerun; do not bypass verification to make the command pass.
+
+Exports contain numbered JSON files with at most 100 records per section per file. Download every part until the last-file confirmation. Records can change while an export is in progress; these files are a personal data export, not a transactional database backup. Native share files are deleted after sharing and on startup/account changes, while copies explicitly saved by the user remain theirs.
+
+Full translations still require the configured translation service and fluent review. Operator disclosures, actual app-signing identifiers, push credentials and physical Android/iOS acceptance must be completed using real production information. Merging source does not complete those external tasks or deploy the VM.

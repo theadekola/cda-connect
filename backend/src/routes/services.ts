@@ -1,3 +1,4 @@
+import {listPage} from '../services/listPage.js';
 import {audit} from '../services/audit.js';
 import {Router} from 'express';
 import {z} from 'zod';
@@ -13,7 +14,7 @@ async function provider(user:string,id:string,community?:string){
  await requireCommunityMember(user,row.CommunityId);return row;
 }
 servicesRouter.get('/communities/:communityId/services',asyncHandler(async(req,res)=>{
- await requireCommunityMember(req.user!.id,req.params.communityId);const category=z.string().max(100).parse(req.query.category??'');const r=await(await getPool()).request().input('c',sql.UniqueIdentifier,req.params.communityId).input('cat',sql.NVarChar(100),category).query("SELECT s.*,CAST(ISNULL((SELECT AVG(CAST(Rating AS FLOAT)) FROM ServiceReviews r WHERE r.ProviderId=s.Id),0) AS DECIMAL(3,1)) Rating,(SELECT COUNT(*) FROM ServiceReviews r WHERE r.ProviderId=s.Id) ReviewCount FROM ServiceProviders s WHERE s.CommunityId=@c AND s.Status='ACTIVE' AND (@cat='' OR s.Category=@cat) ORDER BY s.IsVerified DESC,Rating DESC,s.Name");res.json(r.recordset);
+ await requireCommunityMember(req.user!.id,req.params.communityId);const paging=listPage(req.query);const category=z.string().max(100).parse(req.query.category??'');const r=await(await getPool()).request().input('c',sql.UniqueIdentifier,req.params.communityId).input('cat',sql.NVarChar(100),category).input('offset',sql.Int,paging.offset).input('size',sql.Int,paging.size+1).query("SELECT s.*,CAST(ISNULL((SELECT AVG(CAST(Rating AS FLOAT)) FROM ServiceReviews r WHERE r.ProviderId=s.Id),0) AS DECIMAL(3,1)) Rating,(SELECT COUNT(*) FROM ServiceReviews r WHERE r.ProviderId=s.Id) ReviewCount FROM ServiceProviders s WHERE s.CommunityId=@c AND s.Status='ACTIVE' AND (@cat='' OR s.Category=@cat) ORDER BY s.IsVerified DESC,Rating DESC,s.Name,s.Id"+(paging.paged?" OFFSET @offset ROWS FETCH NEXT @size ROWS ONLY":""));res.json(paging.paged?{items:r.recordset.slice(0,paging.size),hasMore:r.recordset.length>paging.size}:r.recordset);
 }));
 for(const method of ['post','patch'] as const)servicesRouter[method]('/communities/:communityId/services'+(method==='patch'?'/:providerId':''),asyncHandler(async(req,res)=>{
  await requireCommunityMember(req.user!.id,req.params.communityId);const d=input.parse(req.body);

@@ -1,20 +1,20 @@
 import {useState} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
-import {api,session,str,type RecordData} from './api';
+import {api,session,str,rows,type RecordData} from './api';
 import {Action,ErrorBox,Field,Loading,MutationForm,Empty} from './ui';
 export function Services({id,permissions}:{id:string;permissions:string[]}){
- const base='/communities/'+id+'/services',qc=useQueryClient(),[editing,setEditing]=useState<RecordData|null|undefined>(),[reviewing,setReviewing]=useState('');
- const q=useQuery({queryKey:[base],queryFn:({signal})=>api.get<RecordData[]>(base,signal)}),manager=permissions.includes('DIRECTORY_MANAGE');
+ const base='/communities/'+id+'/services',qc=useQueryClient(),[editing,setEditing]=useState<RecordData|null|undefined>(),[reviewing,setReviewing]=useState(''),[page,setPage]=useState(0);
+ const q=useQuery({queryKey:[base,page],queryFn:({signal})=>api.get<RecordData|RecordData[]>(base+'?page='+page,signal)}),manager=permissions.includes('DIRECTORY_MANAGE'),providers=rows(q.data);
  return <div className="services-page"><h1>Local services</h1><button className="primary" onClick={()=>setEditing(editing===undefined?null:undefined)}>{editing===undefined?'Add a service':'Cancel'}</button>
  {editing!==undefined&&<section className="card"><h2>{editing?'Edit service':'Add a service'}</h2><MutationForm key={str(editing?.Id)||'new'} label="Save service" onSuccess={()=>setEditing(undefined)} onSubmit={data=>api.send(base+(editing?'/'+editing.Id:''),Object.fromEntries(Object.entries(data).map(([key,value])=>[key,value.trim()])),editing?'PATCH':'POST')}>
  <Field name="name" label="Service name" defaultValue={str(editing?.Name)}/><Field name="category" label="Category" defaultValue={str(editing?.Category)}/><Field name="description" label="Description" type="textarea" required={false} defaultValue={str(editing?.Description)}/><Field name="phone" label="Contact phone" type="tel" required={false} defaultValue={str(editing?.Phone)}/><Field name="email" label="Contact email" type="email" required={false} defaultValue={str(editing?.Email)}/><Field name="website" label="Website (HTTPS)" type="url" required={false} defaultValue={str(editing?.Website)}/><Field name="area" label="Area served" required={false} defaultValue={str(editing?.Area)}/></MutationForm></section>}
- <ErrorBox error={q.error}/>{q.isPending?<Loading/>:!q.data?.length?<Empty text="No services listed yet."/>:q.data.map(provider=><article className="card" key={str(provider.Id)}><h2>{str(provider.Name)}</h2>{!!provider.IsVerified&&<span className="badge">Verified by community</span>}<p>{str(provider.Category)}{provider.Area?' · '+str(provider.Area):''}</p><p className="prose">{str(provider.Description)}</p><p>{Number(provider.Rating||0).toFixed(1)} / 5 · {Number(provider.ReviewCount||0)} reviews</p><div className="actions">
+ <ErrorBox error={q.error}/>{q.isPending?<Loading/>:!providers.length?<Empty text="No services listed yet."/>:providers.map(provider=><article className="card" key={str(provider.Id)}><h2>{str(provider.Name)}</h2>{!!provider.IsVerified&&<span className="badge">Verified by community</span>}<p>{str(provider.Category)}{provider.Area?' · '+str(provider.Area):''}</p><p className="prose">{str(provider.Description)}</p><p>{Number(provider.Rating||0).toFixed(1)} / 5 · {Number(provider.ReviewCount||0)} reviews</p><div className="actions">
  {!!provider.Phone&&<a className="button secondary" href={'tel:'+str(provider.Phone).replace(/[^+\d]/g,'')}>Call {str(provider.Phone)}</a>}{!!provider.Email&&<a className="button secondary" href={'mailto:'+str(provider.Email)}>Email provider</a>}{/^https:\/\//i.test(str(provider.Website))&&<a className="button secondary" href={str(provider.Website)} target="_blank" rel="noreferrer">Visit website</a>}
  {(manager||str(provider.CreatedBy).toLowerCase()===str(session.get()?.user.Id).toLowerCase())&&<><button onClick={()=>setEditing(provider)}>Edit service</button><Action danger run={async()=>{await api.send(base+'/'+provider.Id,{},'DELETE');if(editing?.Id===provider.Id)setEditing(undefined)}}>Remove service</Action></>}
  {manager&&<Action run={()=>api.send(base+'/'+provider.Id+'/verification',{isVerified:!provider.IsVerified},'PATCH')}>{provider.IsVerified?'Remove verification':'Verify service'}</Action>}
  <button onClick={()=>setReviewing(reviewing===provider.Id?'':str(provider.Id))}>{reviewing===provider.Id?'Close reviews':'Reviews & rating'}</button></div>
  {reviewing===provider.Id&&<Reviews provider={provider} onSaved={()=>void qc.invalidateQueries({queryKey:[base]})}/>}</article>)}
- </div>;
+ <nav aria-label="Service pages"><button disabled={page===0||q.isFetching} onClick={()=>setPage(page-1)}>Previous page</button><span>Page {page+1}</span><button disabled={!q.data||Array.isArray(q.data)||!q.data.hasMore||q.isFetching} onClick={()=>setPage(page+1)}>Next page</button></nav></div>;
 }
 function Reviews({provider,onSaved}:{provider:RecordData;onSaved:()=>void}){
  const path='/services/'+provider.Id+'/reviews',q=useQuery({queryKey:[path],queryFn:({signal})=>api.get<RecordData[]>(path,signal)});

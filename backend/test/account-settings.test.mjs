@@ -41,3 +41,8 @@ test('protected super-admin cannot deactivate the account',async()=>{
 test('data export scopes queries to the signed-in user and excludes authentication secrets',async()=>{
  queries=[];const response=await call('/account/export');assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert.ok(queries.every(q=>q.params.u===viewer));assert.ok(queries.every(q=>!/(PasswordHash|UserSessions|TwoFactorSecret|SELECT \* FROM Users)/i.test(q.query)));
 });
+test('data export validates page bounds and parameterizes bounded queries with stable order',async()=>{
+ queries=[];assert.equal((await call('/account/export?page=-1')).status,400);assert.equal(queries.length,0);
+ const response=await call('/account/export?page=2');assert.equal(response.status,200);const data=await response.json();assert.equal(data.page,2);assert.equal(data.pageSize,100);assert.equal(data.hasMore,false);
+ assert.ok(queries.length>10);for(const entry of queries){assert.equal(entry.params.offset,200);assert.equal(entry.params.size,101);assert.match(entry.query,/ORDER BY [A-Za-z]+ OFFSET @offset ROWS FETCH NEXT @size ROWS ONLY$/)}
+});

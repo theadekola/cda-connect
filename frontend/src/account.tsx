@@ -1,3 +1,4 @@
+import {clearTemporaryExports} from './storageLocal';
 import {PhoneField} from './PhoneField';
 import {LocationFields} from './LocationFields';
 import {getLocale} from './i18n';
@@ -46,7 +47,27 @@ function AccountEditor({field,user:u}:{field:string;user:RecordData}){
  return <p>Choose an item from Account settings.</p>;
 }
 
-export function AccountDownload(){const[busy,setBusy]=useState(false),[message,setMessage]=useState('');return <><p>Download a JSON file containing your profile, preferences, memberships and content you authored. Passwords and other members’ content are excluded.</p><button type="button" disabled={busy} onClick={async()=>{setBusy(true);setMessage('');try{const data=await api.get<RecordData>('/users/account/export');if(Capacitor.isNativePlatform()){const {Filesystem,Directory,Encoding}=await import('@capacitor/filesystem'),{Share}=await import('@capacitor/share');const file=await Filesystem.writeFile({path:'cda-connect-my-data.json',data:JSON.stringify(data,null,2),directory:Directory.Cache,encoding:Encoding.UTF8});await Share.share({title:'CDA Connect account data',files:[file.uri]});setMessage('Your data file is ready. Choose where to save it in the share sheet.');return}const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='cda-connect-my-data.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);setMessage('Your data file is ready. Check your downloads.')}catch(e){setMessage(e instanceof Error?e.message:'Download failed')}finally{setBusy(false)}}}>{busy?'Preparing download…':'Download my data'}</button><p role="status">{message}</p></>}
+export function AccountDownload(){
+ const[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[page,setPage]=useState(0);
+ return <><p>Download your profile, preferences, memberships and authored content as JSON. Large exports are split into numbered files with up to 100 records per section. Keep downloading until the app confirms the last file. Passwords and other members’ content are excluded.</p><button type="button" disabled={busy} onClick={async()=>{
+ setBusy(true);setMessage('');const owner=session.get()?.user.Id;
+ try{
+  const data=await api.get<RecordData>('/users/account/export?page='+page);
+  if(!owner||session.get()?.user.Id!==owner)throw Error('Your sign-in changed. Start your download again.');
+  const filename=data.hasMore||page>0?'cda-connect-my-data-part-'+String(page+1).padStart(4,'0')+'.json':'cda-connect-my-data.json';
+  if(Capacitor.isNativePlatform()){
+   const {Filesystem,Directory,Encoding}=await import('@capacitor/filesystem'),{Share}=await import('@capacitor/share');
+   await clearTemporaryExports();if(session.get()?.user.Id!==owner)throw Error('Your session has ended.');
+   const file=await Filesystem.writeFile({path:filename,data:JSON.stringify(data,null,2),directory:Directory.Cache,encoding:Encoding.UTF8});
+   try{if(session.get()?.user.Id!==owner)throw Error('Your session has ended.');await Share.share({title:filename,files:[file.uri]})}finally{await clearTemporaryExports()}
+  }else{
+   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }
+  setPage(data.hasMore?page+1:0);setMessage(data.hasMore?'File '+(page+1)+' is ready. Save it, then download the next data file.':'Last file ready. Your export is complete once you have saved all files.');
+ }catch(e){setMessage(e instanceof Error?e.message:'Download failed')}finally{setBusy(false)}
+ }}>{busy?'Preparing download…':page?'Download next data file':'Download my data'}</button><p role="status">{message}</p></>
+}
+
 function Following(){const q=useQuery({queryKey:['/users/account/following'],queryFn:()=>api.get<RecordData[]>('/users/account/following')});return q.isPending?<Loading/>:q.error?<ErrorBox error={q.error}/>:q.data.length?<div className="settings-list">{q.data.map(u=><AccountRow key={str(u.Id)} to={'/member/'+u.Id} title={[u.FirstName,u.LastName].filter(Boolean).join(' ')} value="View profile and updates" Icon={UserRound}/>)}</div>:<p>You are not following any available profiles. Members can share their profile link with you.</p>}
 
 export function MemberProfile(){
