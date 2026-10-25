@@ -204,3 +204,4 @@
 .app #main .community-menu>section:not(.community-hero){padding-top:8px;padding-bottom:8px;margin:0}
 .app #main .community-menu>section:not(.community-hero)+section:not(.community-hero){padding-top:10px}
 .app #main .community-menu>section:not(.community-hero)>h2{margin:0 0 10px}
+.member-dialog-fallback{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:14px;background:#102b4770}.member-dialog-fallback>.member-dialog{max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);margin:auto}.member-dialog-fallback [hidden]{display:none!important}
