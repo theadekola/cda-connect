@@ -3,7 +3,7 @@ const CACHE='cda-v2-public-v1';
 self.addEventListener('install',event=>event.waitUntil(Promise.all([caches.open(CACHE).then(cache=>cache.add('/offline.html')),self.skipWaiting()])));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('cda-v2-public-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()])));
 self.addEventListener('message',event=>{if(event.data==='ACTIVATE_UPDATE')self.skipWaiting()});
-self.addEventListener('fetch',event=>{if(event.request.mode==='navigate'&&event.request.method==='GET')event.respondWith(fetch(event.request).catch(()=>caches.match('/offline.html')))});
+self.addEventListener('fetch',event=>{if(event.request.mode==='navigate'&&event.request.method==='GET')event.respondWith(fetch(event.request).catch(()=>caches.match('/offline.html').then(response=>response||new Response('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CDA Connect offline</title><h1>You are offline</h1><p>Reconnect and reload to use CDA Connect.</p></html>',{headers:{'Content-Type':'text/html; charset=utf-8'}}))))});
 
 function safeDestination(value){if(typeof value!=='string'||!value.startsWith('/')||value.startsWith('//')||/[\\\x00-\x1f]/.test(value))return '/notifications';try{const url=new URL(value,self.location.origin);return url.origin===self.location.origin?url.pathname+url.search+url.hash:'/notifications'}catch{return '/notifications'}}
 self.addEventListener('push',event=>{

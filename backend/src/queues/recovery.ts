@@ -7,6 +7,9 @@ export async function ensureRunnable(queue:Queue,name:string,data:any,options:Jo
  if(job){const state=await job.getState();if(state==='failed'||state==='completed'){await job.updateData(data);await job.retry(state);}else if(state==='waiting'||state==='delayed')await job.updateData(data);}
  else job=await queue.add(name,data,options);
  const state=await job.getState();
+ // A fast worker may finish after add/retry and before this observation.
+ // A completed recovery is successful; retrying it again could duplicate work.
+ if(state==='completed')return {job,state,status:'COMPLETED'};
  if(!['waiting','delayed','active','prioritized'].includes(state))throw Error(`Job ${options.jobId} is not runnable: ${state}`);
  return {job,state,status:state==='active'?'PROCESSING':'QUEUED'};
 }

@@ -1,3 +1,4 @@
+import {listPage} from '../services/listPage.js';
 import {emailChangeRouter} from './emailChange.js';
 import {visibleContent} from '../services/privacy.js';
 import {getRedis} from '../config/redis.js';
@@ -22,10 +23,12 @@ accountRouter.put('/account/username',asyncHandler(async(req,res)=>{
 }));
 accountRouter.use(emailChangeRouter);
 accountRouter.get('/account/export',asyncHandler(async(req,res)=>{
- const pool=await getPool();
+ const {page}=listPage(req.query),pageSize=100;const pool=await getPool();
  const queries:Record<string,string>={securityPreferences:'SELECT LoginAlerts,PasswordChangedAt,LastLoginAlertAt,LastLoginAlertStatus FROM Users WHERE Id=@u',languagePreferences:'SELECT * FROM LanguagePreferences WHERE UserId=@u',communityPreferences:'SELECT * FROM CommunityPreferences WHERE UserId=@u',profile:'SELECT Id,FirstName,LastName,Email,Phone,Address,Country,State,LGA,Postcode,DateOfBirth,CreatedAt FROM Users WHERE Id=@u',account:'SELECT * FROM AccountSettings WHERE UserId=@u',privacy:'SELECT * FROM PrivacyPreferences WHERE UserId=@u',communications:'SELECT * FROM CommunicationSettings WHERE UserId=@u',syncedContacts:'SELECT ContactUserId FROM SyncedContacts WHERE UserId=@u',privacySafety:'SELECT * FROM PrivacySafetySettings WHERE UserId=@u',hiddenUsers:'SELECT HiddenUserId FROM HiddenUsers WHERE UserId=@u',restrictedWords:'SELECT Phrase FROM RestrictedWords WHERE UserId=@u',notifications:'SELECT * FROM NotificationPreferences WHERE UserId=@u',memberships:'SELECT CommunityId,Status,JoinedAt FROM CommunityMembers WHERE UserId=@u',posts:'SELECT Id,CommunityId,Body,CreatedAt FROM CommunityPosts WHERE CreatedBy=@u',comments:'SELECT Id,PostId,Body,CreatedAt FROM PostComments WHERE UserId=@u',messages:'SELECT Id,ConversationId,MessageText,CreatedAt FROM Messages WHERE SenderUserId=@u'};
- const data:Record<string,unknown>={exportedAt:new Date().toISOString(),description:'Personal profile, preferences, memberships and content authored by this account. Authentication secrets and other members’ content are excluded.'};
- for(const [key,query] of Object.entries(queries))data[key]=(await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).query(query)).recordset;
+ let hasMore=false;const data:Record<string,unknown>={page,pageSize,exportedAt:new Date().toISOString(),description:'Personal profile, preferences, memberships and content authored by this account. Authentication secrets and other members’ content are excluded.'};
+ const order:Record<string,string>={securityPreferences:'Id',profile:'Id',syncedContacts:'ContactUserId',hiddenUsers:'HiddenUserId',restrictedWords:'Phrase',memberships:'CommunityId',posts:'Id',comments:'Id',messages:'Id'};
+ for(const [key,query] of Object.entries(queries)){const result=(await pool.request().input('u',sql.UniqueIdentifier,req.user!.id).input('offset',sql.Int,page*pageSize).input('size',sql.Int,pageSize+1).query(query+' ORDER BY '+(order[key]??'UserId')+' OFFSET @offset ROWS FETCH NEXT @size ROWS ONLY')).recordset;hasMore ||= result.length>pageSize;data[key]=result.slice(0,pageSize)}
+ data.hasMore=hasMore;
  res.set('Cache-Control','no-store').json(data);
 }));
 accountRouter.post('/account/deactivate',asyncHandler(async(req,res)=>{

@@ -25,12 +25,12 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
-    "multer": "^2.4.0",
-    "nodemailer": "^10.0.13",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.2.1",
     "sharp": "^0.35.5",
     "socket.io": "^4.8.4",
     "web-push": "^3.6.7",
-    "zod": "^4.0.17"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import ts from 'typescript';import vm from 'node:vm';
+const source=fs.readFileSync(new URL('../src/mutationQueries.ts',import.meta.url),'utf8').replace(/^import .*;$/gm,'');let notify;const context={exports:{},observeMutations:fn=>{notify=fn;return()=>notify=undefined}};vm.createContext(context);vm.runInContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,context);const {runMutation,relatedQuery}=context.exports;
+test('completed mutations refresh related resources without waiting for slow unrelated queries',async()=>{
+ let predicate,stale=false;const client={invalidateQueries:async options=>{assert.equal(options.refetchType,'none');stale=true},refetchQueries:options=>{predicate=options.predicate;return new Promise(()=>{})}};
+ assert.equal(await runMutation(client,async()=>{notify('/communities/one/services/provider');return 'saved'}),'saved');assert.equal(stale,true);assert.equal(predicate({queryKey:['/communities/one/services',0]}),true);assert.equal(predicate({queryKey:['/communities/two/services',0]}),false);assert.equal(predicate({queryKey:['/users/communications']}),false);assert.equal(notify,undefined);
+});
+test('member changes refresh the roster and account edits refresh shared profile details',()=>{assert.equal(relatedQuery(['/communities/one/members',2],['/communities/one/members/id/roles']),true);assert.equal(relatedQuery(['/users/account'],['/users/me']),true)});

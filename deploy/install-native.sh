@@ -54,12 +54,17 @@ try {
   const dotenv=(await import(pathToFileURL(base+'/backend/node_modules/dotenv/lib/main.js'))).default;
   Object.assign(process.env,dotenv.parse(fs.readFileSync('/etc/cda-connect/backend.env')));
   if(process.env.HOST!=='127.0.0.1'||process.env.PORT!=='4000'||!process.env.REDIS_URL?.endsWith('@127.0.0.1:6380'))throw Error('Native network settings do not match');
+  if(process.env.DB_TRUST_CERT==='true'){console.error('Configure a SQL certificate trusted by this VM, matching DB_SERVER, then set DB_TRUST_CERT=false. The running release was not switched.');process.exit(2)}
   await import(pathToFileURL(base+'/backend/dist/config/env.js'));
+  const {scanUpload}=await import(pathToFileURL(base+'/backend/dist/services/uploadScan.js'));
+  await scanUpload(Buffer.from('CDA Connect deployment scanner readiness check'));
 } catch {
-  console.error('Configure /etc/cda-connect/backend.env with the real SQL password (8+ characters) and provider settings, then rerun. Native HOST=127.0.0.1, PORT=4000 and Redis port=6380 are required.');
+  console.error('Configure /etc/cda-connect/backend.env with the real SQL password (8+ characters) and provider settings, then rerun. Production requires a trusted SQL certificate, DB_TRUST_CERT=false and a reachable CLAMAV_SOCKET (sudo bash deploy/setup-upload-scanner.sh). Native HOST=127.0.0.1, PORT=4000 and Redis port=6380 are required.');
   process.exit(2);
 }
 JS
+scanner_socket="$(/usr/bin/node --env-file=/etc/cda-connect/backend.env -e 'process.stdout.write(process.env.CLAMAV_SOCKET||"")')"
+runuser -u cda-app -- test -w "$scanner_socket" || { echo 'cda-app cannot access CLAMAV_SOCKET. Add it to the scanner socket group before deployment.' >&2; exit 1; }
 release_id="$(date -u +%Y%m%dT%H%M%S)-$$"
 release="/opt/cda-connect/releases/$release_id"
 install -d -m 755 "$release/backend" "$release/frontend"
