@@ -201,7 +201,7 @@ test('chat message options support keyboard focus, Escape and focus restoration'
  const outside=await dialog.evaluate(element=>{const focus=document.activeElement;return !element.contains(focus)});expect(outside).toBe(false);
  await page.keyboard.press('Shift+Tab');expect(await dialog.evaluate(element=>element.contains(document.activeElement))).toBe(true);
  await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(opener).toBeFocused();
- await opener.click({button:'right'});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Close',exact:true}).click();await expect(dialog).toHaveCount(0);
+ await opener.click({button:'right'});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Reply',exact:true}).click();await expect(dialog).toHaveCount(0);await expect(page.getByLabel('Message',{exact:true})).toBeFocused();await expect(page.locator('.chat-reply-preview')).toBeVisible();
 });
 test('service directory advances bounded pages and returns to the previous page',async({page})=>{
  await setup(page);const loaded:string[]=[];await page.route('**/api/v1/communities/'+community+'/services?**',route=>{const index=new URL(route.request().url()).searchParams.get('page')!;loaded.push(index);return route.fulfill({headers,json:{items:[{Id:'provider-'+index,Name:index==='0'?'First provider':'Second provider',Category:'Plumbing',CreatedBy:'other'}],hasMore:index==='0'}})});
