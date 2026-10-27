@@ -1,6 +1,6 @@
 import {HeaderSearch} from './HeaderSearch';
 import {currentPosition} from './location';
-import {getLocale} from './i18n';
+import {getLocale,interfaceText,useLocale} from './i18n';
 import {useState} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router-dom';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -10,15 +10,16 @@ import {Loading,ErrorBox,Records,Action,MutationForm,Field} from './ui';
 import {Security} from './security';
 
 const titles:Record<string,string>={visibility:'Profile visibility',followers:'Who can follow you',comments:'Who can comment on your posts',mentions:'Who can mention you',tags:'Tag approval',blocked:'Block users',reports:'Report & manage',hidden:'Hidden users',words:'Restricted words','two-factor':'Two-factor authentication',activity:'Login activity',devices:'Trusted devices',guidelines:'Community guidelines'};
-function Row({field,title,description,value,Icon}:{field:string;title:string;description:string;value?:string;Icon:typeof UserRound}){return <Link className="settings-row" to={'/settings/privacy/'+field}><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{title}</strong><small>{description}</small></span>{value&&<span className="privacy-value">{value}</span>}<ChevronRight size={17}/></Link>}
+function Row({field,title,description,value,Icon}:{field:string;title:string;description:string;value?:string;Icon:typeof UserRound}){return <Link className="settings-row" to={'/settings/privacy/'+field}><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{interfaceText(title)}</strong><small>{interfaceText(description)}</small></span>{value&&<span className="privacy-value">{interfaceText(value)}</span>}<ChevronRight size={17}/></Link>}
 const audienceLabel=(value:unknown)=>value==='NOBODY'?'Nobody':value==='COMMUNITIES'?'My communities':'Everyone';
 export function PrivacySettings(){
+ useLocale();
  const field=useLocation().pathname.split('/')[3]||'',qc=useQueryClient(),[busy,setBusy]=useState(''),[error,setError]=useState<unknown>(),[notice,setNotice]=useState('');
  const q=useQuery({queryKey:['/users/privacy'],queryFn:({signal})=>api.get<RecordData>('/users/privacy',signal)});
- async function save(key:string,value:boolean|string){setBusy(key);setError(undefined);setNotice('');try{if(key==='shareLocation'&&value===true)await currentPosition();await api.send('/users/privacy',{key,value},'PATCH');await qc.invalidateQueries();setNotice('Privacy preference saved.')}catch(e){setError(e)}finally{setBusy('')}}
+ async function save(key:string,value:boolean|string){setBusy(key);setError(undefined);setNotice('');try{if(key==='shareLocation'&&value===true)await currentPosition();await api.send('/users/privacy',{key,value},'PATCH');await qc.invalidateQueries();setNotice(interfaceText('Privacy preference saved.'))}catch(e){setError(e)}finally{setBusy('')}}
  if(q.isPending)return <Loading/>;if(q.error)return <ErrorBox error={q.error}/>;const p=q.data;
- const toggle=(key:string,title:string,description:string,checked:boolean,Icon:typeof UserRound)=><label className="settings-row account-switch-row"><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{title}</strong><small>{description}</small></span><input type="checkbox" role="switch" checked={checked} disabled={!!busy} onChange={e=>save(key,e.target.checked)}/></label>;
- if(field)return <><Link className="settings-back" to="/settings/privacy"><ArrowLeft size={17}/>Privacy & safety</Link><h2 className="privacy-detail-title">{titles[field]||'Privacy & safety'}</h2><PrivacyDetail key={field} field={field} preferences={p}/></>;
+ const toggle=(key:string,title:string,description:string,checked:boolean,Icon:typeof UserRound)=><label className="settings-row account-switch-row"><span className="settings-row-icon"><Icon size={21}/></span><span className="settings-row-text"><strong>{interfaceText(title)}</strong><small>{interfaceText(description)}</small></span><input type="checkbox" role="switch" checked={checked} disabled={!!busy} onChange={e=>save(key,e.target.checked)}/></label>;
+ if(field)return <><Link className="settings-back" to="/settings/privacy"><ArrowLeft size={17}/>Privacy & safety</Link><h2 className="privacy-detail-title">{interfaceText(titles[field]||'Privacy & safety')}</h2><PrivacyDetail key={field} field={field} preferences={p}/></>;
  return <div className="privacy-dashboard">{error!=null&&<ErrorBox error={error}/>}<p className="privacy-status" role="status" aria-live="polite">{busy?'Saving…':notice}</p>
  <section className="settings-group"><h2>Profile privacy</h2><div className="settings-list">
  <Row field="visibility" title="Profile visibility" description="Control who can see your member profile" value={p.PrivateAccount?'My communities':'Everyone'} Icon={UserRound}/>
@@ -54,7 +55,7 @@ function PrivacyDetail({field,preferences:p}:{field:string;preferences:RecordDat
   const account=field==='visibility'||field==='followers',key=field==='visibility'?'privateAccount':field==='followers'?'allowFollowers':field==='comments'?'commentAudience':'mentionAudience';
   const current=field==='visibility'?(p.PrivateAccount?'COMMUNITIES':'EVERYONE'):field==='followers'?(p.AllowFollowers?'EVERYONE':'NOBODY'):str(p[field==='comments'?'CommentAudience':'MentionAudience']);
   const options=field==='visibility'?[['EVERYONE','Everyone signed in'],['COMMUNITIES','Members of communities I have joined']]:field==='followers'?[['EVERYONE','Everyone who can view my profile'],['NOBODY','Nobody']]:[['EVERYONE','Everyone who can access the post'],['COMMUNITIES','Members of my communities'],['NOBODY','Nobody except me']];
-  return <section className="card"><p>{field==='visibility'?'Private profiles are visible to all active members of communities you have joined. Individual approval is not required.':field==='followers'?'Your profile visibility and blocking rules still apply.':'Community membership and blocking rules still apply. These settings never make a private community’s posts public.'}</p><MutationForm label="Save preference" onSubmit={d=>api.send(account?'/users/account/preferences':'/users/privacy',{key,value:account?(field==='visibility'?d.audience==='COMMUNITIES':d.audience==='EVERYONE'):d.audience},'PATCH')}><label>Who is allowed?<select name="audience" defaultValue={current}>{options.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select></label></MutationForm></section>;
+  return <section className="card"><p>{field==='visibility'?'Private profiles are visible to all active members of communities you have joined. Individual approval is not required.':field==='followers'?'Your profile visibility and blocking rules still apply.':'Community membership and blocking rules still apply. These settings never make a private community’s posts public.'}</p><MutationForm label="Save preference" onSubmit={d=>api.send(account?'/users/account/preferences':'/users/privacy',{key,value:account?(field==='visibility'?d.audience==='COMMUNITIES':d.audience==='EVERYONE'):d.audience},'PATCH')}><label>Who is allowed?<select name="audience" defaultValue={current}>{options.map(([value,label])=><option key={value} value={value}>{interfaceText(label)}</option>)}</select></label></MutationForm></section>;
  }
  if(field==='two-factor')return <Security/>;
  if(field==='activity')return <Security section="sessions"/>;
