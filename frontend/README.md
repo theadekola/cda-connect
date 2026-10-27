@@ -101,3 +101,24 @@ Deploy from the updated checkout with `bash deploy/start-ubuntu.sh`. Then run `n
 Exports contain numbered JSON files with at most 100 records per section per file. Download every part until the last-file confirmation. Records can change while an export is in progress; these files are a personal data export, not a transactional database backup. Native share files are deleted after sharing and on startup/account changes, while copies explicitly saved by the user remain theirs.
 
 Full translations still require the configured translation service and fluent review. Operator disclosures, actual app-signing identifiers, push credentials and physical Android/iOS acceptance must be completed using real production information. Merging source does not complete those external tasks or deploy the VM.
+
+## Automatic post and message translation
+
+The Node API supports Google Cloud Translation Basic v2 directly. Create a Google Cloud project, enable billing and Cloud Translation API, then create an API key restricted to Cloud Translation API. For a fixed server egress IP, also restrict the key to that public IP; browser referrer restrictions do not apply to server requests. Configure usage quotas and billing alerts before enabling member translation. Google charges depend on usage; billing alerts do not enforce a spending cap. Review Google's current pricing and data-processing terms.
+
+Keep the key only in `/etc/cda-connect/backend.env`:
+
+```ini
+GOOGLE_TRANSLATE_API_KEY=your-private-key
+```
+
+Do not put the key in Git, frontend variables, URLs or support screenshots. Leave `LANGUAGE_SERVICE_URL` unset unless using a separate custom provider. Google is used for text translation when its key is present; a custom provider remains necessary for transcription and simple-language rewriting. FastAPI and ordinary application API routing are unchanged. Existing member permissions, per-user rate limits and translation opt-in continue to apply. When enabled, eligible post/message text is sent to the provider; original content is retained. This does not fill missing interface language packs.
+
+After pulling and deploying the update, run a small public-sample request from the checkout (the request can count against Google's quota):
+
+```bash
+sudo node backend/scripts/check-translation.mjs /etc/cda-connect/backend.env
+sudo systemctl restart cda-api
+```
+
+Only restart after the check prints PASS. Reload Language settings, choose a translation language and enable Translate Posts / Translate Messages. Configuration readiness enables the controls; provider billing, key restrictions or quota failures can still make a translation fail. Errors preserve the original text. No live provider call is part of CI.

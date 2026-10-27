@@ -93,5 +93,6 @@
   "Open": "Mepee",
   "Unsave": "Wepụ na echekwara",
   "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "Ịhọrọ asụsụ na-etinye ntụgharị ngwa dị ugbu a ozugbo. Ntụgharị ezubeghị, ya mere ụfọdụ ibe na bọtịnụ ka dị na Bekee.",
-  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Ngwugwu ndị dị na-atụgharị bọtịnụ a na-ejikarị. Ụfọdụ ibe ngwa ka dị na Bekee. Ozi obodo na ozi mkparịta ụka nwere ntọala ntụgharị nke ha."
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Ngwugwu ndị dị na-atụgharị bọtịnụ a na-ejikarị. Ụfọdụ ibe ngwa ka dị na Bekee. Ozi obodo na ozi mkparịta ụka nwere ntọala ntụgharị nke ha.",
+  "When enabled, post and message text is sent to the translation provider. Your original content is kept.": "Mgbe agbanyere ya, a na-eziga ederede ozi obodo na ozi mkparịta ụka n’aka onye na-enye ntụgharị. A na-edobe ọdịnaya mbụ gị."
 }

@@ -93,5 +93,6 @@
   "Open": "Buɗe",
   "Unsave": "Cire daga ajiyayyu",
   "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "Zaɓin harshe yana sauya fassarar manhajar da ke akwai nan take. Fassarar ba ta cika ba, don haka wasu shafuka da maɓallai suna nan da Turanci.",
-  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Harsunan da ke ciki suna fassara maɓallan gama gari. Wasu shafukan suna nan da Turanci. Saƙonnin al’umma da saƙonnin kai tsaye suna da saitunan fassara daban."
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Harsunan da ke ciki suna fassara maɓallan gama gari. Wasu shafukan suna nan da Turanci. Saƙonnin al’umma da saƙonnin kai tsaye suna da saitunan fassara daban.",
+  "When enabled, post and message text is sent to the translation provider. Your original content is kept.": "Idan an kunna, ana aika rubutun saƙonnin al’umma da saƙonnin kai tsaye ga mai samar da fassara. Ana adana rubutun asali."
 }
