@@ -62,7 +62,7 @@ test('configured translation provider enables both opt-in switches and preserves
  await page.route('**/api/v1/users/language-preferences',r=>{if(r.request().method()==='PATCH'){const {key,value}=r.request().postDataJSON();const column=key==='translatePosts'?'TranslatePosts':'TranslateMessages';preferences[column]=value;changes.push(key);return r.fulfill({headers,json:{success:true}})}return r.fulfill({headers,json:preferences})});
  await page.goto('/settings/language');const posts=page.getByRole('switch',{name:/Translate Posts/}),messages=page.getByRole('switch',{name:/Translate Messages/});
  await expect(posts).toBeEnabled();await expect(messages).toBeEnabled();await expect(page.getByText('When enabled, post and message text is sent to the translation provider. Your original content is kept.',{exact:true})).toBeVisible();
- await posts.check();await expect(posts).toBeEnabled();await messages.check();await expect(messages).toBeEnabled();expect(changes).toEqual(['translatePosts','translateMessages']);
+ await posts.click();await expect(posts).toBeChecked();await expect(posts).toBeEnabled();await messages.click();await expect(messages).toBeChecked();await expect(messages).toBeEnabled();expect(changes).toEqual(['translatePosts','translateMessages']);
  await page.reload();await expect(posts).toBeChecked();await expect(messages).toBeChecked();
 });
 test('missing translation provider explains why translation switches are disabled',async({page})=>{
