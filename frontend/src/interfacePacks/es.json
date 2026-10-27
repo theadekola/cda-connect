@@ -93,5 +93,6 @@
   "Open": "Abrir",
   "Unsave": "Quitar de guardados",
   "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "Al seleccionar un idioma se aplican de inmediato las traducciones disponibles. La traducción está incompleta, por lo que algunas páginas y controles siguen en inglés.",
-  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Los paquetes incluidos traducen los controles comunes. Algunas páginas siguen en inglés. Las publicaciones y los mensajes tienen sus propios ajustes de traducción."
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Los paquetes incluidos traducen los controles comunes. Algunas páginas siguen en inglés. Las publicaciones y los mensajes tienen sus propios ajustes de traducción.",
+  "When enabled, post and message text is sent to the translation provider. Your original content is kept.": "Al activar esta opción, el texto de las publicaciones y mensajes se envía al proveedor de traducción. El contenido original se conserva."
 }

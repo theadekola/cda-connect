@@ -20,6 +20,7 @@ const schema = z.object({
   JWT_REFRESH_EXPIRES_DAYS: z.coerce.number().default(30),
   PUBLIC_BASE_URL: z.string().default('http://localhost:4000'),
   OPEN_METEO_API_KEY: z.string().optional(),
+  GOOGLE_TRANSLATE_API_KEY: z.string().trim().optional(),
   LANGUAGE_SERVICE_URL: z.string().optional(),
   LANGUAGE_SERVICE_API_KEY: z.string().optional(),
   PLATFORM_ADMIN_EMAILS: z.string().default(''),

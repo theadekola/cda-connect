@@ -93,5 +93,6 @@
   "Open": "فتح",
   "Unsave": "إلغاء الحفظ",
   "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "يطبّق اختيار اللغة ترجمات الواجهة المتاحة فورًا. الترجمة غير مكتملة، لذا تظل بعض الصفحات وعناصر التحكم بالإنجليزية.",
-  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "تترجم الحزم المضمنة عناصر التحكم الشائعة. تظل بعض صفحات التطبيق بالإنجليزية. للمنشورات والرسائل إعدادات ترجمة مستقلة."
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "تترجم الحزم المضمنة عناصر التحكم الشائعة. تظل بعض صفحات التطبيق بالإنجليزية. للمنشورات والرسائل إعدادات ترجمة مستقلة.",
+  "When enabled, post and message text is sent to the translation provider. Your original content is kept.": "عند التفعيل، يُرسل نص المنشورات والرسائل إلى مزوّد الترجمة. يُحتفظ بالمحتوى الأصلي."
 }
