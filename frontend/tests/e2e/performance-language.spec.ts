@@ -47,7 +47,7 @@ for(const [code,privacy,visibility,communities,discover,privateCommunity] of [
  await expect(page.locator('html')).toHaveAttribute('lang',code);
  await expect(page.locator(`.language-choice:has(strong[lang="${code}"]) input`)).toBeEnabled();
  await page.goto('/settings/privacy');await expect(page.locator('.topbar-title')).toHaveText(privacy);
- await expect(page.getByText(visibility,{exact:true})).toBeVisible();await expect(page.getByText(communities,{exact:true})).toBeVisible();
+ await expect(page.getByText(visibility,{exact:true})).toBeVisible();await expect(page.locator('.settings-row').filter({has:page.getByText(visibility,{exact:true})}).locator('.privacy-value')).toHaveText(communities);
  await expect(page.getByText('Control who can see your member profile',{exact:true})).toHaveCount(0);
  await expect(page.getByText('Share location',{exact:true})).toHaveCount(0);
  await page.goto('/communities');await expect(page.getByRole('button',{name:communities,exact:true})).toBeVisible();await expect(page.getByRole('button',{name:discover,exact:true})).toBeVisible();await expect(page.getByText(privateCommunity,{exact:true})).toBeVisible();
