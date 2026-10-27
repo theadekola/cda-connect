@@ -91,5 +91,7 @@
   "Community guidelines": "Gemeinschaftsregeln",
   "Privacy preference saved.": "Datenschutzeinstellung gespeichert.",
   "Open": "Öffnen",
-  "Unsave": "Nicht mehr speichern"
+  "Unsave": "Nicht mehr speichern",
+  "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "Die Sprachauswahl aktiviert die verfügbaren Übersetzungen sofort. Die Übersetzung ist unvollständig, daher bleiben einige Seiten und Bedienelemente auf Englisch.",
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Die enthaltenen Sprachpakete übersetzen häufige Bedienelemente. Einige Seiten bleiben auf Englisch. Beiträge und Nachrichten haben eigene Übersetzungseinstellungen."
 }

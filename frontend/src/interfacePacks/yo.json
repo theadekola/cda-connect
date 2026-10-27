@@ -183,5 +183,7 @@
   "No trusted devices yet.": "Kò tíì sí ẹ̀rọ tí a fọkàn tán.",
   "(this device)": "(ẹ̀rọ yìí)",
   "Signed in": "Wọlé",
-  "Remove and sign out": "Yọ kúrò kí o sì jáde"
+  "Remove and sign out": "Yọ kúrò kí o sì jáde",
+  "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "Yíyan èdè máa ń fi ìtumọ̀ ìṣàfilọ́lẹ̀ tó wà sílò lẹ́sẹ̀kẹsẹ̀. Ìtumọ̀ kò tíì pé, nítorí náà àwọn ojú ìwé àti bọ́tìnì kan ṣì wà ní èdè Gẹ̀ẹ́sì.",
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Àwọn èdè tó wà túmọ̀ àwọn bọ́tìnì tí a sábà máa ń lò. Àwọn ojú ìwé kan ṣì wà ní èdè Gẹ̀ẹ́sì. Àtẹ̀jáde àti ọ̀rọ̀ ní ètò ìtumọ̀ tiwọn."
 }

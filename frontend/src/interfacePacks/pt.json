@@ -91,5 +91,7 @@
   "Community guidelines": "Regras da comunidade",
   "Privacy preference saved.": "Preferência de privacidade guardada.",
   "Open": "Abrir",
-  "Unsave": "Remover dos guardados"
+  "Unsave": "Remover dos guardados",
+  "Selecting a language updates the available interface translations immediately. Translation coverage is incomplete, so some pages and controls remain in English.": "A escolha de idioma aplica imediatamente as traduções disponíveis. A tradução está incompleta, pelo que algumas páginas e controlos continuam em inglês.",
+  "Included packs translate common controls. Some app pages remain in English. Posts and messages have separate translation settings.": "Os pacotes incluídos traduzem os controlos comuns. Algumas páginas continuam em inglês. As publicações e mensagens têm definições de tradução próprias."
 }
