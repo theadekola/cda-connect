@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import ts from 'typescript';
+const source=(await readFile(new URL('../src/communityActivity.ts',import.meta.url),'utf8')).replace(/^import .*;$/gm,"const str=(v)=>v==null?'':String(v);");
+const output=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {notificationGroupKey,notificationPath}=await import('data:text/javascript;base64,'+Buffer.from(output).toString('base64'));
+const first={Id:'one',CommunityId:'community',NotificationType:'CHAT_MESSAGE',NavigationData:{actorUserId:'sender'},Destination:'/chat/first'};
+test('updates from the same actor and destination share a group',()=>assert.equal(notificationGroupKey(first),notificationGroupKey({...first,Id:'two'})));
+test('the same sender in different chats stays separate so opening one cannot mark the other read',()=>assert.notEqual(notificationGroupKey(first),notificationGroupKey({...first,Id:'two',Destination:'/chat/second'})));
+test('different posts, communities, senders and unowned notices stay separate',()=>{for(const change of [{NotificationType:'POST',Destination:'/post/one'},{CommunityId:'another'},{NavigationData:{actorUserId:'another'}}])assert.notEqual(notificationGroupKey(first),notificationGroupKey({...first,...change}));assert.notEqual(notificationGroupKey({...first,NavigationData:{}}),notificationGroupKey({...first,Id:'two',NavigationData:{}}))});
+test('notification links reject external and backslash destinations',()=>{for(const Destination of ['https://evil.test','//evil.test','/\\evil.test'])assert.equal(notificationPath({...first,Destination}),'/community/community/feed');assert.equal(notificationPath(first),'/chat/first')});

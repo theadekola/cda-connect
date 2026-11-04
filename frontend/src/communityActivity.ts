@@ -23,3 +23,6 @@ export function communityActivitySection(item:RecordData){
 export function isUnreadCommunityActivity(item:RecordData,communityId:string,section?:string){
  return str(item.CommunityId).toLowerCase()===communityId.toLowerCase()&&!item.IsRead&&!item.ReadAt&&(!section||communityActivitySection(item)===section);
 }
+
+export function notificationPath(r:RecordData){const destination=str(r.Destination);return destination.startsWith('/')&&!destination.startsWith('//')&&!destination.includes('\\')?destination:r.CommunityId?'/community/'+r.CommunityId+'/feed':'/notifications'}
+export function notificationGroupKey(r:RecordData){const data=r.NavigationData&&typeof r.NavigationData==='object'?r.NavigationData as RecordData:{},actor=str(data.actorUserId);return actor?JSON.stringify([actor,str(r.CommunityId),str(r.NotificationType),notificationPath(r)]):str(r.Id)}

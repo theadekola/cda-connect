@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 const id=(x:unknown)=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x)?x:null;
 export function notificationDestination(data:Record<string,unknown>={}){const community=id(data.communityId),entity=id(data.entityId);switch(data.type){
  case 'POST':case 'COMMENT':case 'MENTION':{const post=id(data.postId)||entity;return post?'/post/'+post+(data.type==='COMMENT'?'#comments':''):'/notifications'}
- case 'CHAT_MESSAGE':return id(data.conversationId)?'/chat/'+data.conversationId:'/notifications';
+ case 'ANNOUNCEMENT':{const announcement=id(data.announcementId)||entity;return community&&announcement?'/community/'+community+'/announcements?announcement='+announcement:'/notifications'}
+ case 'INVITATION':case 'CHAT_MESSAGE':return id(data.conversationId)?'/chat/'+data.conversationId:'/notifications';
  case 'CALL_INCOMING':return id(data.conversationId)?'/chat/'+data.conversationId+'?incoming='+(data.mode==='video'?'video':'audio'):'/notifications';
  case 'POLL':return community&&(id(data.pollId)||entity)?'/poll/'+community+'/'+(id(data.pollId)||entity):'/notifications';
  case 'MEETING':case 'EVENT_REMINDER':case 'EVENT':{const meeting=data.type==='MEETING',target=entity||id(meeting?data.meetingId:data.eventId);return community&&target?'/community/'+community+'/'+(meeting?'meetings?meeting=':'events?event=')+target:'/notifications'}
