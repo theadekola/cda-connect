@@ -122,3 +122,11 @@ sudo systemctl restart cda-api
 ```
 
 Only restart after the check prints PASS. Reload Language settings, choose a translation language and enable Translate Posts / Translate Messages. Configuration readiness enables the controls; provider billing, key restrictions or quota failures can still make a translation fail. Errors preserve the original text. No live provider call is part of CI.
+
+## Community and chat group creation safeguards
+
+New communities require an active account, verified email, a country and an account age of at least seven days. Existing ownership limits (three non-archived communities) and the 24-hour creation cooldown still apply. Creation now produces a restricted community awaiting platform approval. A platform administrator reviews it under Super Admin > Communities and uses Approve community, with the existing MFA, password-confirmation, exact-name and written-reason controls. Until activation, normal membership and content mutations remain blocked and the creation screen does not offer invitations. The verification badge remains a separate review.
+
+New communities start with member discussion creation switched off. Owners/admins can enable that existing preference for their members. Chat group creators must have a verified active account and community permission. The API rechecks permission and platform status inside a transaction, limits each account to three groups in a rolling 24-hour period, rejects duplicate community group names and permits at most 99 other participants. Every selected participant must be an active account and community member allowed by blocking/hiding rules; invalid selections fail the whole request. Account/community locks serialize quotas and duplicate names. Memberships and the audit entry commit together; notifications target only validated participants after commit.
+
+No schema migration is introduced. Existing communities keep their current platform status and preferences. Deploy both frontend/backend source and updated dependency lockfiles. These checks do not replace platform moderation or physical-device verification of calls, push delivery and store signing.
