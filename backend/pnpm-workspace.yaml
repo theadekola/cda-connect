@@ -4,6 +4,8 @@ allowBuilds:
   sharp: true
 overrides:
   engine.io: 6.6.10
+  # GHSA-6pq8-jhm2-2vcw: fix qs stringify denial of service.
+  qs: 6.16.1
   # GHSA-xcx6-jx8p-x3h5; SQL identity adapter compatibility is tested.
   "@azure/msal-node": 7.1.1
 # Permit the newly released security fix while retaining pnpm's default

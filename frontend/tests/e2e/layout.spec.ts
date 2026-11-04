@@ -149,18 +149,18 @@ test('weather respects denied device permission without using a profile location
  await page.route('**/api/v1/me/weather',r=>{calls++;return r.abort()});await page.goto('/home');await expect(page.locator('.weather-reading small')).toHaveText('Allow location');expect(calls).toBe(0);await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-for(const width of [390,768,1440])test(`community creation privacy and generated invitation at ${width}px`,async({page})=>{
+for(const width of [390,768,1440])test(`community creation privacy and platform approval at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});await setup(page);let payload:any;
  await page.route('**/api/v1/communities**',async r=>{const u=new URL(r.request().url());let json:any;
  if(u.pathname.endsWith('/locations'))json=u.searchParams.has('state')?['Ikeja']:u.searchParams.has('country')?[{id:'NG025',name:'Lagos'}]:[{id:'NG',name:'Nigeria'}];
- else if(u.pathname.endsWith('/communities')&&r.request().method()==='POST'){payload=r.request().postDataJSON();json={...community,Name:payload.name,JoinCode:'AABBCCDDEEFF0011'}}else return r.fallback();
+ else if(u.pathname.endsWith('/communities')&&r.request().method()==='POST'){payload=r.request().postDataJSON();json={...community,Name:payload.name,JoinCode:'AABBCCDDEEFF0011',PlatformStatus:'RESTRICTED',requiresPlatformApproval:true}}else return r.fallback();
  return r.fulfill({json,headers:{'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'}});
  });
  await page.goto('/communities/create');await expect(page.getByText('Bring your community together')).toHaveCount(0);await expect(page.getByText('Location information',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Invite code',{exact:true})).toHaveCount(0);
  await page.getByLabel('Community Name *',{exact:true}).fill('New community');await page.getByLabel('Description *',{exact:true}).fill('A welcoming community');await page.getByLabel('Community category').selectOption('Sports');await expect(page.getByRole('combobox',{name:'Country *',exact:true})).toHaveCount(0);await page.getByLabel(/State \/ Region/).selectOption('NG025');await page.getByRole('combobox',{name:'LGA *',exact:true}).selectOption('Ikeja');await page.getByLabel('Community rules',{exact:true}).fill('Be respectful');await page.getByRole('button',{name:'Next',exact:true}).click();
  await expect(page.getByRole('switch',{name:/Private community/})).toBeChecked();await page.getByRole('switch',{name:/Public community/}).check();await expect(page.getByRole('switch',{name:/Private community/})).not.toBeChecked();
  const boxes=await page.locator('.create-footer-actions>button').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().top));expect(new Set(boxes).size).toBe(1);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- if(width===390)await page.screenshot({path:test.info().outputPath('community-preferences.png'),fullPage:true});await page.getByRole('button',{name:'Create Community',exact:true}).click();await expect(page.getByLabel('Invite code',{exact:true})).toHaveValue('AABBCCDDEEFF0011');expect(payload.isPrivate).toBe(false);expect(payload.joinCode).toBeUndefined();expect(payload.category).toBe('Sports');expect(payload.countryCode).toBeUndefined();expect(payload.country).toBeUndefined();
+ if(width===390)await page.screenshot({path:test.info().outputPath('community-preferences.png'),fullPage:true});await page.getByRole('button',{name:'Create Community',exact:true}).click();await expect(page.getByRole('heading',{name:'Community submitted for approval'})).toBeVisible();await expect(page.getByLabel('Invite code',{exact:true})).toHaveCount(0);expect(payload.allowMemberDiscussions).toBe(false);expect(payload.isPrivate).toBe(false);expect(payload.joinCode).toBeUndefined();expect(payload.category).toBe('Sports');expect(payload.countryCode).toBeUndefined();expect(payload.country).toBeUndefined();
 });
 
 for(const width of [390,412,1440])test(`feed announcement navigation and actual photos at ${width}px`,async({page,context})=>{
