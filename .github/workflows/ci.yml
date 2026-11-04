@@ -59,6 +59,13 @@ jobs:
         timeout-minutes: 5
       - run: pnpm --dir backend audit --audit-level high
   web:
+    name: web (${{ matrix.shard }}/4)
+    # A fresh Chromium process per shard bounds Windows network-buffer usage.
+    # Keep every test and assertion, with no retries that could hide failures.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     # Baselines were recorded on Windows with the pinned Playwright browser.
     runs-on: windows-latest
     env:
@@ -74,10 +81,10 @@ jobs:
       - run: npm --prefix frontend run check:bundle
       - run: npm audit --prefix frontend --audit-level high
       - run: node frontend/node_modules/playwright/cli.js install chromium
-      - run: node frontend/node_modules/playwright/cli.js test --config frontend/playwright.config.ts
+      - run: node frontend/node_modules/playwright/cli.js test --config frontend/playwright.config.ts --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@v4
         if: failure()
-        with: {name: visual-failures, path: frontend/test-results, retention-days: 7}
+        with: {name: "visual-failures-${{ matrix.shard }}", path: frontend/test-results, retention-days: 7}
   ios:
     name: iOS simulator build (unsigned)
     runs-on: macos-latest
