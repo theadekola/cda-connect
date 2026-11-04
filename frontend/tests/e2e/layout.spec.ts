@@ -439,3 +439,11 @@ test('unread activity is shown on the navigation and clears after marking all re
  await page.getByRole('button',{name:'Open notifications, 2 unread'}).click();await expect(page.locator('.notification-card')).toHaveCount(2);await expect(page.getByText('2 updates',{exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'View update',exact:true})).toHaveCount(0);await expect(page.getByText('New',{exact:true})).toHaveCount(1);await page.getByRole('button',{name:'Mark all read'}).click();
  await expect(page.locator('.notification-badge')).toHaveCount(0);await expect(page.getByText('New',{exact:true})).toHaveCount(0);
 });
+
+for(const width of [390,1440])test(`notifications keep different conversations separate at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:844});await setup(page);const actor='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',first='/chat/44444444-4444-4444-8444-444444444444',second='/chat/55555555-5555-4555-8555-555555555555',headers={'access-control-allow-origin':'http://127.0.0.1:4173','access-control-allow-credentials':'true'};let readIds:string[]=[];
+ const notice=(Id:string,Destination:string,Title:string)=>({Id,Destination,Title,CommunityId:community.Id,NotificationType:'CHAT_MESSAGE',NavigationData:{actorUserId:actor},IsRead:false});
+ await page.route('**/api/v1/me/notifications',r=>r.fulfill({headers,json:[notice('11111111-1111-4111-8111-111111111111',first,'First conversation'),notice('22222222-2222-4222-8222-222222222222',first,'Earlier update'),notice('33333333-3333-4333-8333-333333333333',second,'Second conversation')]}));
+ await page.route('**/api/v1/me/notifications/read',r=>{readIds=r.request().postDataJSON().notificationIds;return r.fulfill({headers,json:{success:true}})});
+ await page.goto('/notifications');await expect(page.locator('.notification-card')).toHaveCount(2);await expect(page.getByRole('link',{name:/Second conversation/})).toHaveAttribute('href',second);await page.getByRole('link',{name:/First conversation/}).click();await expect.poll(()=>readIds).toEqual(['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222']);
+});
