@@ -176,7 +176,8 @@ test('session expiry keeps push cleanup authenticated while private screens are 
  // Serve the local build under the API origin so the browser applies production SameSite rules.
  await page.route(/^https:\/\/cdaconnect\.org\/(?!api\/|socket\.io\/)/,async route=>{
   const url=new URL(route.request().url());
-  await route.fulfill({response:await route.fetch({url:new URL(url.pathname+url.search,baseURL).href})});
+  const response=await fetch(new URL(url.pathname+url.search,baseURL));
+  await route.fulfill({status:response.status,contentType:response.headers.get('content-type')??undefined,body:Buffer.from(await response.arrayBuffer())});
  });
  await page.context().addCookies([{name:'__Secure-cda-access',value:'fixture-cookie',domain:'cdaconnect.org',path:'/api/v1',httpOnly:true,secure:true,sameSite:'Strict'}]);
  await page.addInitScript(()=>{
@@ -200,7 +201,10 @@ test('session expiry keeps push cleanup authenticated while private screens are 
   await expireIdleSession(page,'https://cdaconnect.org/home');
   await page.evaluate(()=>(window as any).releasePushLookup());
   await expect.poll(()=>removed).toBe(true);await expect(page).toHaveURL(/\/login/);
- }finally{releaseLogout()}
+ }finally{
+  releaseLogout();
+  await page.unrouteAll({behavior:'wait'});
+ }
 });
 
 test('chat message options support keyboard focus, Escape and focus restoration',async({page})=>{
