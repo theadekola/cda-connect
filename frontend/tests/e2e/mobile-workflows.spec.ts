@@ -7,8 +7,8 @@ async function setup(page:Page,signedIn=true){
  await page.route(/^https:\/\/(fonts\.|www\.googletagmanager|.*google-analytics)/,route=>route.abort());
  await page.route('**/api/v1/**',async route=>{
   const path=new URL(route.request().url()).pathname;let json:unknown=[];
-  if(path.endsWith('/auth/refresh'))return route.fulfill({headers,status:signedIn?200:401,json:signedIn?{accessToken:'fixture-access',user}:{error:'Signed out'}});
-  if(path.endsWith('/auth/login'))json={accessToken:'fixture-access',user};
+  if(path.endsWith('/auth/refresh'))return route.fulfill({headers,status:signedIn?200:401,json:signedIn?{user}:{error:'Signed out'}});
+  if(path.endsWith('/auth/login'))json={user};
   else if(path.endsWith('/users/me')||path.endsWith('/users/account'))json=user;
   else if(path.endsWith('/communities'))json=[{Id:community,Name:'Example CDA'}];
   else if(path.endsWith('/communities/'+community))json={Id:community,Name:'Example CDA'};
@@ -22,9 +22,9 @@ async function setup(page:Page,signedIn=true){
 
 // Start from a settled signed-in screen. Pause only after navigation so the
 // sign-out assertions cannot race startup imports or the two-second deadline.
-async function expireIdleSession(page:Page){
+async function expireIdleSession(page:Page,home='/home'){
  await page.clock.install({time:new Date('2026-10-23T08:00:00Z')});
- await page.goto('/home');await expect(page.locator('.home-activities')).toBeVisible();
+ await page.goto(home);await expect(page.locator('.home-activities')).toBeVisible();
  await page.clock.pauseAt(new Date('2026-10-23T08:31:00Z'));
  await expect(page.getByText('Signing out...', {exact:true})).toBeVisible();
  await expect(page.locator('.home-activities')).toBeHidden();
@@ -171,8 +171,14 @@ for(const platform of ['android','ios'])test(`native ${platform} keeps a late bi
  await page.getByLabel('Message',{exact:true}).fill('Keep this draft');await page.evaluate(()=>(window as any).testAppState(false));await expect(page.getByLabel('Message',{exact:true})).toBeHidden();await page.evaluate(()=>(window as any).testAppState(true));await expect(page.getByLabel('Message',{exact:true})).toHaveValue('Keep this draft');expect(await page.evaluate(()=>(window as any).biometricCalls)).toBe(2);
 });
 
-test('session expiry keeps push cleanup authenticated while private screens are covered',async({page})=>{
+test('session expiry keeps push cleanup authenticated while private screens are covered',async({page,baseURL})=>{
  await setup(page);
+ // Serve the local build under the API origin so the browser applies production SameSite rules.
+ await page.route(/^https:\/\/cdaconnect\.org\/(?!api\/|socket\.io\/)/,async route=>{
+  const url=new URL(route.request().url());
+  await route.fulfill({response:await route.fetch({url:new URL(url.pathname+url.search,baseURL).href})});
+ });
+ await page.context().addCookies([{name:'__Secure-cda-access',value:'fixture-cookie',domain:'cdaconnect.org',path:'/api/v1',httpOnly:true,secure:true,sameSite:'Strict'}]);
  await page.addInitScript(()=>{
   const w=window as any;let release:()=>void;const lookup=new Promise<void>(resolve=>{release=resolve});
   w.releasePushLookup=()=>release();
@@ -183,11 +189,15 @@ test('session expiry keeps push cleanup authenticated while private screens are 
  await page.route('**/api/v1/auth/logout',async route=>{logoutStarted=true;await logout;await route.fulfill({status:204})});
  await page.route('**/api/v1/users/web-push/subscribe',async route=>{
   if(route.request().method()!=='DELETE')return route.fulfill({headers,json:{}});
-  expect(logoutStarted).toBe(false);expect(route.request().headers().authorization).toBe('Bearer fixture-access');removed=true;
+  const requestHeaders=await route.request().allHeaders();
+  expect(logoutStarted).toBe(false);
+  expect(requestHeaders.authorization).toBeUndefined();
+  expect(requestHeaders.cookie?.split('; ')).toContain('__Secure-cda-access=fixture-cookie');
+  removed=true;
   await route.fulfill({headers,status:204});releaseLogout();
  });
  try{
-  await expireIdleSession(page);
+  await expireIdleSession(page,'https://cdaconnect.org/home');
   await page.evaluate(()=>(window as any).releasePushLookup());
   await expect.poll(()=>removed).toBe(true);await expect(page).toHaveURL(/\/login/);
  }finally{releaseLogout()}
