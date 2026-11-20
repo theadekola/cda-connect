@@ -11,13 +11,13 @@ const main=fs.readFileSync(new URL('../src/main.tsx',import.meta.url),'utf8');
 const account=fs.readFileSync(new URL('../src/account.tsx',import.meta.url),'utf8');
 
 test('protected super-admin does not receive the delete-account link',()=>{
- assert.match(help,/account\.isSuccess&&!account\.data\.IsProtectedAccount/);
- assert.match(help,/queryKey:\['\/users\/account'\]/);
+ assert.match(help,/current&&!current\.user\.IsProtectedAccount/);
+ assert.doesNotMatch(help,/\/users\/account/);
 });
 
 test('protected super-admin cannot open the delete-account page directly',()=>{
- assert.match(deletion,/if\(account\.data\.IsProtectedAccount\)return <Navigate to="\/settings\/support" replace\/>/);
- assert.match(deletion,/queryKey:\['\/users\/account'\]/);
+ assert.match(deletion,/if\(current\?\.user\.IsProtectedAccount\)return <Navigate to="\/settings\/support" replace\/>/);
+ assert.doesNotMatch(deletion,/\/users\/account/);
 });
 
 test('registered email is read-only for every member and protected accounts cannot deactivate',()=>{

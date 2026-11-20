@@ -1,31 +1,36 @@
 import {Capacitor} from '@capacitor/core';
 import {resolveAssetUrl} from './assetUrl';
 export type RecordData=Record<string,unknown>;
-export type User={Id:string;FirstName:string;LastName:string;Email:string;Phone?:string;ProfileImage?:string;IsSuperAdmin?:boolean;IsProtectedAccount?:boolean};
-export type Session={accessToken:string;user:User;sessionExpiresAt?:string};
-// Credentials live only in memory. The refresh credential is an HttpOnly cookie.
+export type User={Id:string;FirstName:string;LastName:string;ProfileImage?:string|null;IsSuperAdmin?:boolean;IsProtectedAccount?:boolean};
+export type Session={accessToken?:string;user:User;sessionExpiresAt?:string};
+// Web credentials are HttpOnly cookies. Native bearer credentials live only in memory.
 try{sessionStorage.removeItem('cda-connect-session');localStorage.removeItem('cda-connect-session')}catch{}
 let current:Session|null=null;let sessionRevision=0;
 const listeners=new Set<()=>void>();let refreshPromise:Promise<void>|null=null;
-export const session={get:()=>current,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn)}},set:(value:Session|null)=>{sessionRevision++;current=value?{accessToken:value.accessToken,user:value.user,sessionExpiresAt:value.sessionExpiresAt}:null;listeners.forEach(fn=>fn())}};
+function updateSession(value:Session|null){
+ current=value?{accessToken:Capacitor.isNativePlatform()?value.accessToken:undefined,user:value.user,sessionExpiresAt:value.sessionExpiresAt}:null;
+ listeners.forEach(fn=>fn());
+}
+export const session={get:()=>current,subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn)}},set:(value:Session|null)=>{sessionRevision++;updateSession(value)}};
+
 export async function restoreSession(){const revision=sessionRevision;try{await refreshSession()}catch{if(revision===sessionRevision)session.set(null)}}
 // Shared links can wait for startup restoration without sending another refresh.
 export function waitForSessionRestore(){return refreshPromise??Promise.resolve()}
-export async function refreshSession(){if(!refreshPromise){const revision=sessionRevision;const refresh=async()=>{const data=await perform<Session>('/auth/refresh',{method:'POST',body:'{}'},false);if(revision===sessionRevision)session.set(data)};refreshPromise=(async()=>{if(navigator.locks)await navigator.locks.request('cda-refresh',refresh);else await refresh()})().finally(()=>{refreshPromise=null})}return refreshPromise}
+export async function refreshSession(){if(!refreshPromise){const revision=sessionRevision;const refresh=async()=>{const data=await perform<Session>('/auth/refresh',{method:'POST',body:'{}'},false);if(revision===sessionRevision)updateSession(data)};refreshPromise=(async()=>{if(navigator.locks)await navigator.locks.request('cda-refresh',refresh);else await refresh()})().finally(()=>{refreshPromise=null})}return refreshPromise}
 export class ApiError extends Error{constructor(public status:number,message:string){super(message)}}
 function base(){const configured=import.meta.env.VITE_API_URL;const value=Capacitor.isNativePlatform()&&(!configured||configured.startsWith('/'))?'https://cdaconnect.org/api/v1':configured;if(!value)throw new ApiError(0,'Set VITE_API_URL before connecting to your backend.');const url=new URL(value,window.location.origin);if(import.meta.env.PROD&&url.protocol!=='https:')throw new ApiError(0,'Production API URL must use HTTPS.');return value.replace(/\/$/,'')}
-async function perform<T>(path:string,options:RequestInit={},retry=true):Promise<T>{
- const token=current?.accessToken;const headers=new Headers(options.headers);headers.set('x-cda-client','app');if(token)headers.set('Authorization','Bearer '+token);if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json');
+async function perform<T>(path:string,options:RequestInit={},retry=true,readBody:(response:Response)=>Promise<T>=response=>response.json() as Promise<T>):Promise<T>{
+ const revision=sessionRevision,requestSession=current;const token=requestSession?.accessToken;const headers=new Headers(options.headers);headers.set('x-cda-client',Capacitor.isNativePlatform()?'app':'web');if(token)headers.set('Authorization','Bearer '+token);if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json');
  const controller=new AbortController();let timedOut=false;const abort=()=>controller.abort();if(options.signal?.aborted)abort();else options.signal?.addEventListener('abort',abort,{once:true});const timer=setTimeout(()=>{timedOut=true;controller.abort()},options.body instanceof FormData?120000:20000);
  try{const response=await fetch(base()+path,{...options,headers,cache:'no-store',credentials:'include',signal:controller.signal});
- if(response.status===401&&retry&&current&&current.accessToken!==token)throw new ApiError(401,'Your sign-in changed. Retry this action.');
- if(response.status===401&&retry&&current&&!['/auth/refresh','/auth/login','/auth/register','/auth/logout'].includes(path)){
+ if(response.status===401&&retry&&requestSession&&revision!==sessionRevision)throw new ApiError(401,'Your sign-in changed. Retry this action.');
+ if(response.status===401&&retry&&requestSession&&!['/auth/refresh','/auth/login','/auth/login/two-factor','/auth/register','/auth/logout'].includes(path)){
   clearTimeout(timer);
-  try{await refreshSession()}catch(e){if(e instanceof ApiError&&[401,403].includes(e.status)&&current?.accessToken===token)session.set(null);throw e}
-  if(!current)throw new ApiError(401,'Your session has ended.');return perform<T>(path,options,false);
+  try{await refreshSession()}catch(e){if(e instanceof ApiError&&[401,403].includes(e.status)&&revision===sessionRevision)session.set(null);throw e}
+  if(!current||revision!==sessionRevision||current.user.Id!==requestSession.user.Id)throw new ApiError(401,'Your sign-in changed. Retry this action.');return perform<T>(path,options,false,readBody);
  }
  if(!response.ok){const data=await response.json().catch(error=>{if(controller.signal.aborted)throw error;return {}});throw new ApiError(response.status,data.error||'The request could not be completed.')}
- const data=response.status===204?undefined as T:await response.json() as T;
+ const data=response.status===204?undefined as T:await readBody(response);
  if(options.method&&options.method!=='GET')mutationListeners.forEach(fn=>fn(path));
  return data;
  }catch(e){if(e instanceof ApiError)throw e;if(options.signal?.aborted)throw new DOMException('Request cancelled','AbortError');throw new ApiError(0,timedOut?'The request timed out. Please try again.':'Unable to connect. Check your network and retry.')}finally{clearTimeout(timer);options.signal?.removeEventListener('abort',abort)}
@@ -34,7 +39,7 @@ function asset(value:string){if(!value)return '';try{return resolveAssetUrl(valu
 export function socketOrigin(){return import.meta.env.VITE_SOCKET_URL||new URL(base(),window.location.origin).origin}
 const mutationListeners=new Set<(path:string)=>void>();
 export function observeMutations(fn:(path:string)=>void){mutationListeners.add(fn);return()=>{mutationListeners.delete(fn)}}
-export const api={url:(path:string)=>base()+path,get:<T>(p:string,signal?:AbortSignal,headers?:HeadersInit)=>perform<T>(p,{signal,headers}),send:<T=RecordData>(p:string,body:unknown={},method='POST')=>perform<T>(p,{method,body:JSON.stringify(body)}),upload:<T>(p:string,data:FormData)=>perform<T>(p,{method:'POST',body:data}),asset};
+export const api={url:(path:string)=>base()+path,get:<T>(p:string,signal?:AbortSignal,headers?:HeadersInit)=>perform<T>(p,{signal,headers}),send:<T=RecordData>(p:string,body:unknown={},method='POST')=>perform<T>(p,{method,body:JSON.stringify(body)}),upload:<T>(p:string,data:FormData)=>perform<T>(p,{method:'POST',body:data}),blob:(path:string,signal?:AbortSignal)=>perform<Blob>(path,{signal},true,response=>response.blob()),asset};
 export function rows(value:unknown):RecordData[]{if(Array.isArray(value))return value as RecordData[];if(value&&typeof value==='object'){const v=value as RecordData;for(const key of ['items','data','posts','documents','members'])if(Array.isArray(v[key]))return v[key] as RecordData[]}return[]}
 export const str=(v:unknown)=>v===null||v===undefined?'':String(v);
 

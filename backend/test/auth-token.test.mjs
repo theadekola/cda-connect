@@ -7,7 +7,7 @@ Object.assign(process.env, { NODE_ENV: 'test', DB_SERVER: 'localhost', DB_NAME: 
   JWT_ACCESS_SECRET: crypto.randomBytes(32).toString('hex'), JWT_REFRESH_SECRET: crypto.randomBytes(32).toString('hex') });
 // Run the backend build before tests, so these exercise the code shipped to the VM.
 const { signAccess, signRefresh, verifyAccess, verifyRefresh } = await import('../dist/utils/auth.js');
-const user = { id: crypto.randomUUID(), email: 'test@example.invalid' };
+const user = { id: crypto.randomUUID(), sessionId: crypto.randomUUID() };
 test('login challenges and phone-verification tokens cannot authenticate API or socket requests', () => {
   for (const purpose of ['two-factor-login', 'phone-verification', 'password-reset']) {
     const challenge = jwt.sign({ ...user, purpose }, process.env.JWT_ACCESS_SECRET, { expiresIn: '5m' });

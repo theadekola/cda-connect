@@ -1,4 +1,5 @@
 import type { RequestHandler } from 'express';
+import {requestAccessToken} from '../services/sessionCookies.js';
 import { verifyAccess } from '../utils/auth.js';
 import { env } from '../config/env.js';
 import { getRedis } from '../config/redis.js';
@@ -11,7 +12,8 @@ export function rateLimitSubject(raw:string|undefined,ip:string|undefined){
 
 export const distributedRateLimit: RequestHandler = async (req, res, next) => {
   try {
-    const subject=rateLimitSubject(req.headers.authorization,req.ip);
+    const token=requestAccessToken(req);
+    const subject=rateLimitSubject(token?'Bearer '+token:undefined,req.ip);
     const bucket = Math.floor(Date.now() / (env.RATE_LIMIT_WINDOW_SECONDS * 1000));
     const key = `ratelimit:${subject}:${bucket}`;
     const redis = getRedis();
