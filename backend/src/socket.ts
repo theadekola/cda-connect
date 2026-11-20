@@ -3,7 +3,7 @@ import {communicationSettings,allowCall,requireCallParticipants} from './service
 import {requireConversationContact} from './services/privacy.js';
 import type { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { verifyAccess } from './utils/auth.js';
+import {verifyAccess,verifySocketTicket} from './utils/auth.js';
 import { getPool, sql } from './config/db.js';
 import { getRedis } from './config/redis.js';
 import type {CommunityNotificationRequest} from './queues/index.js';
@@ -16,6 +16,11 @@ const CLIENT_MESSAGE_TYPES=new Set(['TEXT','PHOTO','IMAGE','VIDEO','DOCUMENT','V
 async function enqueueCommunityNotification(message:CommunityNotificationRequest){const queues=await import('./queues/index.js');return queues.enqueueCommunityNotification(message)}
 export function disconnectUserSockets(userId:string){activeSocketServer?.in(`user:${userId}`).disconnectSockets(true)}
 export function disconnectCommunitySockets(communityId:string){activeSocketServer?.in(`community:${communityId}`).disconnectSockets(true)}
+
+// Older native builds still authenticate their sockets with an access token.
+function verifySocketCredential(token:string){
+ return (jwt.decode(token) as jwt.JwtPayload|null)?.purpose==='socket'?verifySocketTicket(token):verifyAccess(token);
+}
 
 export function configureSocket(io: Server) {
   activeSocketServer=io;
@@ -37,7 +42,7 @@ export function configureSocket(io: Server) {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token as string;
-      socket.data.user = verifyAccess(token);
+      socket.data.user = verifySocketCredential(token);
       const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, socket.data.user.id).input('maxHours',sql.Int,env.SESSION_MAX_HOURS).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
         .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() AND (SELECT MIN(origin.CreatedAt) FROM UserSessions origin WHERE origin.FamilyId=@family)>DATEADD(hour,-@maxHours,SYSUTCDATETIME()))");
       if (!account.recordset[0]) return next(new Error('unauthorized'));
@@ -59,7 +64,7 @@ export function configureSocket(io: Server) {
         if(!_packet[1]||typeof _packet[1]!=='object')throw new Error('Invalid socket payload');
         const renewal=_packet[0]==='session:refresh';
         const token=renewal?_packet[1].token:socket.handshake.auth.token;
-        const identity=verifyAccess(token);
+        const identity=verifySocketCredential(token);
         if(identity.id!==user.id||identity.sessionId!==socket.data.user.sessionId)throw new Error('Session identity changed');
         const account = await (await getPool()).request().input('id', sql.UniqueIdentifier, user.id).input('maxHours',sql.Int,env.SESSION_MAX_HOURS).input('family',sql.UniqueIdentifier,socket.data.user.sessionId??null)
           .query("SELECT Id FROM Users WHERE Id=@id AND AccountStatus='ACTIVE' AND EXISTS(SELECT 1 FROM UserSessions WHERE UserId=@id AND FamilyId=@family AND RevokedAt IS NULL AND ExpiresAt>SYSUTCDATETIME() AND (SELECT MIN(origin.CreatedAt) FROM UserSessions origin WHERE origin.FamilyId=@family)>DATEADD(hour,-@maxHours,SYSUTCDATETIME()))");

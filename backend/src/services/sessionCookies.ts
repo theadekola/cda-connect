@@ -1,17 +1,34 @@
+import jwt from 'jsonwebtoken';
 import type {Request,Response,NextFunction} from 'express';
 import {env} from '../config/env.js';
 import {AppError} from '../utils/errors.js';
 export const refreshCookieName=env.NODE_ENV==='production'?'__Secure-cda-refresh':'cda-refresh';
-export function refreshCookie(req:Request){const part=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(refreshCookieName+'='));try{return part?decodeURIComponent(part.slice(refreshCookieName.length+1)):''}catch{return ''}}
+const accessCookieName=env.NODE_ENV==='production'?'__Secure-cda-access':'cda-access';
+function readCookie(req:Request,name:string){const part=req.headers.cookie?.split(';').map(x=>x.trim()).find(x=>x.startsWith(name+'='));try{return part?decodeURIComponent(part.slice(name.length+1)):''}catch{return ''}}
 const cookieOptions={httpOnly:true,secure:env.NODE_ENV==='production',sameSite:'strict' as const,path:'/api/v1'};
+export const refreshCookie=(req:Request)=>readCookie(req,refreshCookieName);
+export function requestAccessToken(req:Request){
+ const authorization=req.headers.authorization;
+ return authorization?.startsWith('Bearer ')?authorization.slice(7):readCookie(req,accessCookieName);
+}
+export function setAccessCookie(res:Response,token:string){
+ const expiresAt=(jwt.decode(token) as jwt.JwtPayload).exp!*1000;
+ res.cookie(accessCookieName,token,{...cookieOptions,expires:new Date(expiresAt)});
+}
 export function setRefreshCookie(res:Response,token:string){res.cookie(refreshCookieName,token,{...cookieOptions,maxAge:env.JWT_REFRESH_EXPIRES_DAYS*86400000});res.set('Cache-Control','no-store')}
-export function clearRefreshCookie(res:Response){res.clearCookie(refreshCookieName,cookieOptions)}
+export function clearSessionCookies(res:Response){res.clearCookie(refreshCookieName,cookieOptions);res.clearCookie(accessCookieName,cookieOptions)}
 export function trustedWebOrigins(){
  const values=[env.PUBLIC_BASE_URL,...env.CORS_ORIGIN.split(',')];
  return [...new Set(values.flatMap(value=>{const candidate=value.trim();if(!candidate||candidate==='*')return [];try{return [new URL(candidate).origin]}catch{return []}}))];
 }
 export const nativeClientOrigins=['capacitor://localhost','https://localhost'] as const;
 export function trustedRequestOrigins(){return [...new Set([...trustedWebOrigins(),...nativeClientOrigins])]}
+export function usesNativeSession(req:Request){
+ if(req.headers['x-cda-client']!=='app')return false;
+ const source=req.headers.origin??req.headers.referer;
+ if(!source)return !req.headers['sec-fetch-site'];
+ try{return nativeClientOrigins.some(origin=>origin===normalizedOrigin(source))}catch{return false}
+}
 function normalizedOrigin(value:string|undefined){if(!value||value==='null')return '';const parsed=new URL(value);return parsed.protocol==='capacitor:'&&parsed.hostname==='localhost'?'capacitor://localhost':parsed.origin}
 export function protectCookieMutation(req:Request,res:Response,next:NextFunction){
  if(['GET','HEAD','OPTIONS'].includes(req.method))return next();

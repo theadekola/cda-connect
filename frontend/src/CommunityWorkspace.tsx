@@ -25,7 +25,7 @@ export function CommunityNavigation({id,title,menu=false,compose=false}:{id:stri
 export function CommunityMenu({id,community}:{id:string;community:RecordData}){
  const navigate=useNavigate(),queryClient=useQueryClient();
  const q=useQuery({queryKey:['/communities/'+id+'/announcements'],queryFn:()=>api.get<RecordData[]>('/communities/'+id+'/announcements')});
- const notifications=useQuery({queryKey:['/me/notifications'],queryFn:({signal})=>api.get<RecordData[]>('/me/notifications',signal),refetchInterval:()=>document.visibilityState==='visible'&&navigator.onLine?5000:false,refetchOnWindowFocus:true});
+ const notifications=useQuery({queryKey:['/me/notifications'],queryFn:({signal})=>api.get<RecordData[]>('/me/notifications',signal)});
  const capabilities=useQuery({queryKey:['/communities/'+id+'/capabilities'],queryFn:({signal})=>api.get<{permissions:string[]}>('/communities/'+id+'/capabilities',signal)}),canReview=!!capabilities.data?.permissions.includes('MEMBER_APPROVE');
  const pending=useQuery({queryKey:['/communities/'+id+'/join-requests'],queryFn:({signal})=>api.get<RecordData[]>('/communities/'+id+'/join-requests',signal),enabled:canReview,refetchInterval:()=>document.visibilityState==='visible'&&navigator.onLine?5000:false,refetchOnWindowFocus:true});
  const announcements=rows(q.data),latest=announcements[0],unread=rows(notifications.data).filter(item=>isUnreadCommunityActivity(item,id)),activeSections=new Set(unread.map(communityActivitySection));if(canReview&&rows(pending.data).length)activeSections.add('members');

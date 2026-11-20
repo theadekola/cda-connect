@@ -45,7 +45,7 @@ export function Shell(){
  const mobileHeader=useMobileHeader(location.pathname+location.search,open);
  useEffect(()=>{setRouteChanging(false);const frame=requestAnimationFrame(()=>setRouteChanging(true));const timer=window.setTimeout(()=>setRouteChanging(false),240);return()=>{cancelAnimationFrame(frame);clearTimeout(timer)}},[location.key]);
  const profile=useQuery({queryKey:['/users/me'],queryFn:()=>api.get<RecordData>('/users/me')});
- const notifications=useQuery({queryKey:['/me/notifications'],queryFn:({signal})=>api.get<RecordData[]>('/me/notifications',signal),refetchInterval:()=>document.visibilityState==='visible'&&navigator.onLine?5000:false,refetchOnWindowFocus:true});
+ const notifications=useQuery({queryKey:['/me/notifications'],queryFn:({signal})=>api.get<RecordData[]>('/me/notifications',signal),refetchInterval:()=>document.visibilityState==='visible'&&navigator.onLine?30000:false,refetchOnWindowFocus:true});
  const unreadNotifications=(notifications.data||[]).filter(item=>!item.IsRead&&!item.ReadAt).length;
  useEffect(()=>listenNativePush(path=>nav(path),()=>void qc.invalidateQueries({queryKey:['/me/notifications']})),[s?.user.Id,nav,qc]);
  useEffect(()=>{if(!('serviceWorker' in navigator))return;const refresh=(event:MessageEvent)=>{if(event.data?.type==='CDA_NOTIFICATION_RECEIVED')void qc.invalidateQueries({queryKey:['/me/notifications']})};navigator.serviceWorker.addEventListener('message',refresh);return()=>navigator.serviceWorker.removeEventListener('message',refresh)},[qc]);

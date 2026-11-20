@@ -1,24 +1,38 @@
-import {refreshCookie,setRefreshCookie,clearRefreshCookie} from '../services/sessionCookies.js';
+import {sessionUser} from '../services/sessionUser.js';
+import {refreshCookie,setRefreshCookie,clearSessionCookies,setAccessCookie,usesNativeSession} from '../services/sessionCookies.js';
 import {rotateSession} from '../services/refreshSession.js';
 import {securitySettingsRouter} from './securitySettings.js';
 import {notifyNewLogin} from '../services/securitySettings.js';
 import {emailVerificationRouter} from './emailVerification.js';
 import {verifyRegistrationIdentity} from '../utils/registration.js';
-import { Router } from 'express';
+import { Router,type Request,type Response } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { getPool, sql } from '../config/db.js';
 import { asyncHandler, AppError } from '../utils/errors.js';
-import { hashToken, signAccess, signRefresh, verifyRefresh } from '../utils/auth.js';
+import { hashToken, signAccess, signRefresh, signSocketTicket, verifyRefresh } from '../utils/auth.js';
 import { env } from '../config/env.js';
 import {normalizePhone,sendVerificationSms} from '../services/sms.js';
 import {sendEmailBatch} from '../services/notifications.js';
 import {requireAuth} from '../middleware/auth.js';
 
 export const authRouter=Router();
+authRouter.use((_req,res,next)=>{res.set('Cache-Control','no-store');next()});
 authRouter.use(emailVerificationRouter);
+
+function sessionResponse(req:Request,res:Response,result:{user:Parameters<typeof sessionUser>[0];accessToken:string;sessionExpiresAt:string},refreshToken:string){
+ setRefreshCookie(res,refreshToken);
+ const user=sessionUser(result.user);
+ if(usesNativeSession(req))return {...result,user};
+ setAccessCookie(res,result.accessToken);
+ return {user,sessionExpiresAt:result.sessionExpiresAt};
+}
+
+authRouter.get('/socket-ticket',requireAuth,(req,res)=>{
+ res.json({ticket:signSocketTicket(req.user!)});
+});
 const verificationHash=(phone:string,code:string)=>hashToken(`${phone}:${code}:${env.JWT_ACCESS_SECRET}`);
 const base32Alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const base32Encode=(input:Buffer)=>{let bits=0,value=0,out='';for(const byte of input){value=(value<<8)|byte;bits+=8;while(bits>=5){out+=base32Alphabet[(value>>>(bits-5))&31];bits-=5}}if(bits)out+=base32Alphabet[(value<<(5-bits))&31];return out};
@@ -30,7 +44,7 @@ const encryptSecret=(value:string)=>{const iv=crypto.randomBytes(12),cipher=cryp
 const decryptSecret=(value:string)=>{const[iv,tag,data]=value.split('.');const decipher=crypto.createDecipheriv('aes-256-gcm',secretKey(),Buffer.from(iv,'base64url'));decipher.setAuthTag(Buffer.from(tag,'base64url'));return Buffer.concat([decipher.update(Buffer.from(data,'base64url')),decipher.final()]).toString('utf8')};
 async function createSmsChallenge(pool:any,userId:string,phone:string,purpose:string){const code=crypto.randomInt(100000,1000000).toString(),expires=new Date(Date.now()+env.SMS_CODE_EXPIRES_MINUTES*60000);const result=await pool.request().input('uid',sql.UniqueIdentifier,userId).input('purpose',sql.NVarChar(30),purpose).input('hash',sql.NVarChar(64),verificationHash(userId,code)).input('expires',sql.DateTime2,expires).query('INSERT INTO TwoFactorChallenges(UserId,Purpose,CodeHash,ExpiresAt) OUTPUT INSERTED.Id VALUES(@uid,@purpose,@hash,@expires)');const challengeId=result.recordset[0].Id as string;try{await sendVerificationSms(phone,code)}catch(error){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('DELETE FROM TwoFactorChallenges WHERE Id=@id');throw error}return challengeId}
 async function verifySmsChallenge(pool:any,userId:string,challengeId:string,purpose:string,code:string){const result=await pool.request().input('id',sql.UniqueIdentifier,challengeId).input('uid',sql.UniqueIdentifier,userId).input('purpose',sql.NVarChar(30),purpose).query('SELECT CodeHash,Attempts,ExpiresAt,ConsumedAt FROM TwoFactorChallenges WHERE Id=@id AND UserId=@uid AND Purpose=@purpose');const row=result.recordset[0];if(!row||row.ConsumedAt||new Date(row.ExpiresAt)<=new Date())throw new AppError(400,'Verification code is invalid or expired');if(row.Attempts>=5)throw new AppError(429,'Too many incorrect attempts');const actual=Buffer.from(verificationHash(userId,code),'hex'),expected=Buffer.from(row.CodeHash,'hex');if(actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected)){await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('UPDATE TwoFactorChallenges SET Attempts=Attempts+1 WHERE Id=@id');throw new AppError(400,'Verification code is incorrect')}await pool.request().input('id',sql.UniqueIdentifier,challengeId).query('UPDATE TwoFactorChallenges SET ConsumedAt=SYSUTCDATETIME() WHERE Id=@id')}
-async function issueSession(pool:any,row:any,res:any){if(row.AccountStatus!=='ACTIVE')throw new AppError(403,'Account is not active');const user={id:row.Id,email:row.Email,sessionId:crypto.randomUUID()},accessToken=signAccess(user),refreshToken=signRefresh(user);await pool.request().input('uid',sql.UniqueIdentifier,user.id).input('family',sql.UniqueIdentifier,user.sessionId).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000))).query('INSERT INTO UserSessions(UserId,FamilyId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@family,@hash,@exp)');void notifyNewLogin(pool,user.id).catch(()=>undefined);delete row.PasswordHash;delete row.TwoFactorSecret;setRefreshCookie(res,refreshToken);return{user:row,accessToken,sessionExpiresAt:new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000)).toISOString()}}
+async function issueSession(pool:any,row:any,req:Request,res:Response){if(row.AccountStatus!=='ACTIVE')throw new AppError(403,'Account is not active');const user={id:row.Id,sessionId:crypto.randomUUID()},accessToken=signAccess(user),refreshToken=signRefresh(user);await pool.request().input('uid',sql.UniqueIdentifier,user.id).input('family',sql.UniqueIdentifier,user.sessionId).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000))).query('INSERT INTO UserSessions(UserId,FamilyId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@family,@hash,@exp)');void notifyNewLogin(pool,user.id).catch(()=>undefined);return sessionResponse(req,res,{user:row,accessToken,sessionExpiresAt:new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000)).toISOString()},refreshToken)}
 
 authRouter.post('/phone-verification/request',asyncHandler(async(req,res)=>{
   const phone=normalizePhone(z.object({phone:z.string().min(8).max(30)}).parse(req.body).phone);const pool=await getPool();
@@ -66,20 +80,20 @@ authRouter.post('/register',asyncHandler(async(req,res)=>{
   const tx=new sql.Transaction(pool);await tx.begin();
   try{
     const request=new sql.Request(tx).input('first',sql.NVarChar(100),d.firstName.trim()).input('last',sql.NVarChar(100),d.lastName.trim()).input('email',sql.NVarChar(255),email).input('phone',sql.NVarChar(30),phone).input('country',sql.NVarChar(100),d.country.trim()).input('state',sql.NVarChar(100),d.state.trim()).input('lga',sql.NVarChar(150),d.lga?.trim()??null).input('postcode',sql.NVarChar(30),d.postcode?.trim()??null).input('address',sql.NVarChar(500),d.address.trim()).input('dob',sql.Date,d.dateOfBirth).input('hash',sql.NVarChar(500),passwordHash).input('phoneVerified',sql.Bit,verified.phoneVerified?1:0).input('emailVerified',sql.Bit,verified.emailVerified?1:0);
-    const r=await request.query(`INSERT INTO Users(FirstName,LastName,Email,Phone,Country,State,LGA,Postcode,Address,DateOfBirth,PasswordHash,PhoneVerified,EmailVerified) OUTPUT INSERTED.Id,INSERTED.FirstName,INSERTED.LastName,INSERTED.Email,INSERTED.Phone,INSERTED.ProfileImage,INSERTED.CoverImage,INSERTED.Country,INSERTED.State,INSERTED.LGA,INSERTED.Postcode,INSERTED.Address,INSERTED.DateOfBirth,INSERTED.CreatedAt VALUES(@first,@last,@email,@phone,@country,@state,@lga,@postcode,@address,@dob,@hash,@phoneVerified,@emailVerified)`);
-    const user={id:r.recordset[0].Id,email:r.recordset[0].Email,sessionId:crypto.randomUUID()}; const accessToken=signAccess(user); const refreshToken=signRefresh(user);
+    const r=await request.query(`INSERT INTO Users(FirstName,LastName,Email,Phone,Country,State,LGA,Postcode,Address,DateOfBirth,PasswordHash,PhoneVerified,EmailVerified) OUTPUT INSERTED.Id,INSERTED.FirstName,INSERTED.LastName,INSERTED.ProfileImage VALUES(@first,@last,@email,@phone,@country,@state,@lga,@postcode,@address,@dob,@hash,@phoneVerified,@emailVerified)`);
+    const user={id:r.recordset[0].Id,sessionId:crypto.randomUUID()}; const accessToken=signAccess(user); const refreshToken=signRefresh(user);
     await new sql.Request(tx).input('uid',sql.UniqueIdentifier,user.id).input('family',sql.UniqueIdentifier,user.sessionId).input('hash',sql.NVarChar(64),hashToken(refreshToken)).input('exp',sql.DateTime2,new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000))).query('INSERT INTO UserSessions(UserId,FamilyId,RefreshTokenHash,ExpiresAt) VALUES(@uid,@family,@hash,@exp)');
-    await tx.commit();setRefreshCookie(res,refreshToken);res.status(201).json({user:r.recordset[0],accessToken,sessionExpiresAt:new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000)).toISOString()});
+    await tx.commit();res.status(201).json(sessionResponse(req,res,{user:r.recordset[0],accessToken,sessionExpiresAt:new Date(Date.now()+Math.min(env.JWT_REFRESH_EXPIRES_DAYS*86400000,env.SESSION_MAX_HOURS*3600000)).toISOString()},refreshToken));
   }catch(error:any){await tx.rollback();const number=Number(error?.number??error?.originalError?.info?.number);if(number===2601||number===2627){const duplicatePhone=String(error?.message??'').toLowerCase().includes('phone');throw new AppError(409,duplicatePhone?'This phone number is already registered':'This email address is already registered')}throw error}
 }));
 const loginSchema=z.object({email:z.string().email(),password:z.string().min(1)});
 authRouter.post('/login',asyncHandler(async(req,res)=>{
-  const d=loginSchema.parse(req.body); const pool=await getPool(); const r=await pool.request().input('email',sql.NVarChar(255),d.email.toLowerCase()).query(`SELECT TOP 1 Id,FirstName,LastName,Email,Phone,PasswordHash,ProfileImage,CoverImage,Country,State,LGA,Postcode,Address,DateOfBirth,CreatedAt,AccountStatus,IsSuperAdmin,IsProtectedAccount,TwoFactorEnabled,TwoFactorMethod FROM Users WHERE Email=@email`);
+  const d=loginSchema.parse(req.body); const pool=await getPool(); const r=await pool.request().input('email',sql.NVarChar(255),d.email.toLowerCase()).query(`SELECT TOP 1 Id,FirstName,LastName,Phone,PasswordHash,ProfileImage,AccountStatus,IsSuperAdmin,IsProtectedAccount,TwoFactorEnabled,TwoFactorMethod FROM Users WHERE Email=@email`);
   const row=r.recordset[0]; if(!row||!(await bcrypt.compare(d.password,row.PasswordHash))) throw new AppError(401,'Invalid email or password'); if(row.AccountStatus!=='ACTIVE') throw new AppError(403,'Account is not active');
-  if(row.TwoFactorEnabled&&!row.IsSuperAdmin){let challengeId:string|undefined;if(row.TwoFactorMethod==='sms'){if(!row.Phone)throw new AppError(400,'No phone number is available for SMS verification');challengeId=await createSmsChallenge(pool,row.Id,row.Phone,'login')}const challengeToken=jwt.sign({purpose:'two-factor-login',id:row.Id,email:row.Email,method:row.TwoFactorMethod,challengeId},env.JWT_ACCESS_SECRET,{expiresIn:'10m'});return res.json({requiresTwoFactor:true,method:row.TwoFactorMethod,challengeToken})}
-  res.json(await issueSession(pool,row,res));
+  if(row.TwoFactorEnabled&&!row.IsSuperAdmin){let challengeId:string|undefined;if(row.TwoFactorMethod==='sms'){if(!row.Phone)throw new AppError(400,'No phone number is available for SMS verification');challengeId=await createSmsChallenge(pool,row.Id,row.Phone,'login')}const challengeToken=jwt.sign({purpose:'two-factor-login',id:row.Id,method:row.TwoFactorMethod,challengeId},env.JWT_ACCESS_SECRET,{expiresIn:'10m'});return res.json({requiresTwoFactor:true,method:row.TwoFactorMethod,challengeToken})}
+  res.json(await issueSession(pool,row,req,res));
 }));
-authRouter.post('/login/two-factor',asyncHandler(async(req,res)=>{const d=z.object({challengeToken:z.string(),code:z.string().regex(/^\d{6}$/)}).parse(req.body);let challenge:{purpose?:string;id?:string;method?:string;challengeId?:string};try{challenge=jwt.verify(d.challengeToken,env.JWT_ACCESS_SECRET) as typeof challenge}catch{throw new AppError(401,'Two-factor challenge has expired')}if(challenge.purpose!=='two-factor-login'||!challenge.id)throw new AppError(401,'Invalid two-factor challenge');const pool=await getPool(),result=await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).query('SELECT TOP 1 Id,FirstName,LastName,Email,Phone,PasswordHash,ProfileImage,CoverImage,Country,State,LGA,Postcode,Address,DateOfBirth,CreatedAt,AccountStatus,IsSuperAdmin,IsProtectedAccount,TwoFactorEnabled,TwoFactorMethod,TwoFactorSecret FROM Users WHERE Id=@uid'),row=result.recordset[0];if(!row||!row.TwoFactorEnabled||row.TwoFactorMethod!==challenge.method)throw new AppError(401,'Two-factor authentication is no longer active');if(row.TwoFactorMethod==='sms')await verifySmsChallenge(pool,row.Id,challenge.challengeId||'', 'login',d.code);else if(!row.TwoFactorSecret||!verifyTotp(decryptSecret(row.TwoFactorSecret),d.code))throw new AppError(400,'Authenticator code is incorrect');res.json(await issueSession(pool,row,res))}));
+authRouter.post('/login/two-factor',asyncHandler(async(req,res)=>{const d=z.object({challengeToken:z.string(),code:z.string().regex(/^\d{6}$/)}).parse(req.body);let challenge:{purpose?:string;id?:string;method?:string;challengeId?:string};try{challenge=jwt.verify(d.challengeToken,env.JWT_ACCESS_SECRET) as typeof challenge}catch{throw new AppError(401,'Two-factor challenge has expired')}if(challenge.purpose!=='two-factor-login'||!challenge.id)throw new AppError(401,'Invalid two-factor challenge');const pool=await getPool(),result=await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).query('SELECT TOP 1 Id,FirstName,LastName,Phone,PasswordHash,ProfileImage,AccountStatus,IsSuperAdmin,IsProtectedAccount,TwoFactorEnabled,TwoFactorMethod,TwoFactorSecret FROM Users WHERE Id=@uid'),row=result.recordset[0];if(!row||!row.TwoFactorEnabled||row.TwoFactorMethod!==challenge.method)throw new AppError(401,'Two-factor authentication is no longer active');if(row.TwoFactorMethod==='sms')await verifySmsChallenge(pool,row.Id,challenge.challengeId||'', 'login',d.code);else if(!row.TwoFactorSecret||!verifyTotp(decryptSecret(row.TwoFactorSecret),d.code))throw new AppError(400,'Authenticator code is incorrect');res.json(await issueSession(pool,row,req,res))}));
 
 authRouter.post('/password-reset/request',asyncHandler(async(req,res)=>{
   const email=z.object({email:z.string().trim().toLowerCase().email().max(255)}).parse(req.body).email,pool=await getPool();
@@ -106,8 +120,8 @@ authRouter.post('/password-reset/complete',asyncHandler(async(req,res)=>{
   await pool.request().input('uid',sql.UniqueIdentifier,challenge.id).input('hash',sql.NVarChar(500),passwordHash).query("UPDATE Users SET PasswordHash=@hash,PasswordChangedAt=SYSUTCDATETIME(),UpdatedAt=SYSUTCDATETIME() WHERE Id=@uid AND AccountStatus='ACTIVE'; UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE UserId=@uid AND RevokedAt IS NULL");
   res.json({success:true});
 }));
-authRouter.post('/refresh',asyncHandler(async(req,res)=>{try{const {refreshToken,...result}=await rotateSession(refreshCookie(req));setRefreshCookie(res,refreshToken);res.json(result)}catch(e){if(e instanceof AppError&&[401,403].includes(e.status))clearRefreshCookie(res);throw e}}));
-authRouter.post('/logout',asyncHandler(async(req,res)=>{const pool=await getPool();await pool.request().input('hash',sql.NVarChar(64),hashToken(refreshCookie(req))).query('UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE FamilyId=(SELECT FamilyId FROM UserSessions WHERE RefreshTokenHash=@hash)');clearRefreshCookie(res);res.status(204).end()}));
+authRouter.post('/refresh',asyncHandler(async(req,res)=>{try{const {refreshToken,...result}=await rotateSession(refreshCookie(req));res.json(sessionResponse(req,res,result,refreshToken))}catch(e){if(e instanceof AppError&&[401,403].includes(e.status))clearSessionCookies(res);throw e}}));
+authRouter.post('/logout',asyncHandler(async(req,res)=>{const pool=await getPool();await pool.request().input('hash',sql.NVarChar(64),hashToken(refreshCookie(req))).query('UPDATE UserSessions SET RevokedAt=SYSUTCDATETIME() WHERE FamilyId=(SELECT FamilyId FROM UserSessions WHERE RefreshTokenHash=@hash)');clearSessionCookies(res);res.status(204).end()}));
 
 authRouter.get('/security',requireAuth,asyncHandler(async(req,res)=>{
   const pool=await getPool();

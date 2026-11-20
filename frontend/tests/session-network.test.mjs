@@ -31,3 +31,19 @@ test('caller cancellation remains connected while reading the response body',asy
  globalThis.fetch=async(_url,{signal})=>({ok:true,status:200,json:()=>{started();return new Promise((_resolve,reject)=>signal.addEventListener('abort',()=>reject(new DOMException('Aborted','AbortError')),{once:true}))}});
  const request=api.get('/slow-body',controller.signal);const rejected=assert.rejects(request,{name:'AbortError'});await bodyStarted;controller.abort();await rejected;
 });
+test('web API uses cookies and retries an expired session without a bearer token',async()=>{
+ const {api,session}=await module();
+ const user={Id:'member'};
+ session.set({user,accessToken:'unexpected-browser-token',sessionExpiresAt:'original'});
+ const requests=[];
+ globalThis.fetch=async(url,options)=>{
+  requests.push(url);
+  assert.equal(options.credentials,'include');
+  assert.equal(options.headers.has('Authorization'),false);
+  if(url.endsWith('/auth/refresh'))return Response.json({user,sessionExpiresAt:'updated'});
+  return requests.length===1?new Response('{}',{status:401}):Response.json({Id:'member'});
+ };
+ assert.deepEqual(await api.get('/users/me'),user);
+ assert.equal(requests.length,3);
+ assert.equal(session.get().accessToken,undefined);
+});
